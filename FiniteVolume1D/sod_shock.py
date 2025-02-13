@@ -10,18 +10,18 @@ def get_initial_system(num_cell: int) -> System:
     )
     system.volume.fill(1.0 / num_cell)
     system.surface_area.fill(1.0)
-    system.momentum.fill(0.0)
+    system.velocity.fill(0.0)
     for i in range(num_cell + system.num_ghosts_cells):
         system.mid_points[i] = ((i - 1) + 0.5) / num_cell
 
         if i < num_cell / 2:
-            system.mass[i] = 1.0 / num_cell
-            system.energy[i] = (1.0 / num_cell) / (system.gamma - 1.0)
+            system.density[i] = 1.0
+            system.pressure[i] = 1.0
         else:
-            system.mass[i] = 0.125 * (1.0 / num_cell)
-            system.energy[i] = 0.1 * (1.0 / num_cell) / (system.gamma - 1.0)
+            system.density[i] = 0.125
+            system.pressure[i] = 0.1
 
-    system.convert_conserved_to_primitive()
+    system.convert_primitive_to_conserved()
     system.set_boundary_condition()
 
     return system

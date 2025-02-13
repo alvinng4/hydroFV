@@ -57,3 +57,10 @@ class System:
             self.energy / self.volume
             - 0.5 * self.density * self.velocity * self.velocity
         )
+
+    def convert_primitive_to_conserved(self):
+        self.mass = self.density * self.volume
+        self.momentum = self.mass * self.velocity
+        self.energy = self.volume * (
+            0.5 * self.mass * self.velocity * self.velocity + self.pressure / (self.gamma - 1.0)
+        )
