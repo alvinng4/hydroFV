@@ -31,7 +31,7 @@ def get_sound_speed(
     return np.sqrt(gamma * p / rho)
 
 
-def get_time_step(cfl: float, system: System, gamma: float) -> float:
+def get_time_step(cfl: float, system: System) -> float:
     """Get the time step based on the CFL condition.
 
     Calculate dt = cfl * dx / S_max, where S_max = max{|u| + a}. Note
@@ -46,8 +46,6 @@ def get_time_step(cfl: float, system: System, gamma: float) -> float:
         CFL number.
     system : System
         System object.
-    gamma : float
-        Adiabatic index.
 
     Returns
     -------
@@ -60,7 +58,9 @@ def get_time_step(cfl: float, system: System, gamma: float) -> float:
     Riemann Solvers and Numerical Methods for Fluid Dynamics,
     3rd ed. Springer., 2009, pp.221.
     """
-    a_max = get_sound_speed(gamma, system.density, system.pressure).max()
+    a_max = get_sound_speed(system.gamma, system.density, system.pressure)
+    if isinstance(a_max, np.ndarray):
+        a_max = a_max.max()
     S_max = np.abs(system.velocity).max() + a_max
     dx = np.abs(np.diff(system.mid_points)).max()
 

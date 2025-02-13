@@ -22,6 +22,7 @@ def get_initial_system(num_cell: int) -> System:
             system.energy[i] = 0.1 * (1.0 / num_cell) / (system.gamma - 1.0)
 
     system.convert_conserved_to_primitive()
+    system.set_boundary_condition()
 
     return system
 
