@@ -2,7 +2,7 @@ import numpy as np
 
 
 class System:
-    AVAILABLE_BOUNDARY_CONDITIONS = ["reflective"]
+    AVAILABLE_BOUNDARY_CONDITIONS = ["reflective", "transmissive"]
 
     def __init__(self, num_cells: int, gamma: float, boundary_condition: str):
         self.num_cells = num_cells
@@ -33,6 +33,10 @@ class System:
             self._set_reflective_boundary_condition(
                 self.velocity, self.pressure, self.density
             )
+        elif self.boundary_condition == "transmissive":
+            self._set_transmissive_boundary_condition(
+                self.velocity, self.pressure, self.density
+            )
         else:
             raise ValueError(
                 f"Invalid boundary condition: {self.boundary_condition}. Available boundary conditions: {self.AVAILABLE_BOUNDARY_CONDITIONS}"
@@ -47,6 +51,18 @@ class System:
         density[0] = density[1]
 
         velocity[-1] = -velocity[-2]
+        pressure[-1] = pressure[-2]
+        density[-1] = density[-2]
+
+    @staticmethod
+    def _set_transmissive_boundary_condition(
+        velocity: np.ndarray, pressure: np.ndarray, density: np.ndarray
+    ):
+        velocity[0] = velocity[1]
+        pressure[0] = pressure[1]
+        density[0] = density[1]
+
+        velocity[-1] = velocity[-2]
         pressure[-1] = pressure[-2]
         density[-1] = density[-2]
 
