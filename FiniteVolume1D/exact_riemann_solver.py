@@ -6,11 +6,19 @@ import numpy as np
 
 from . import utils
 
+
 class ExactRiemannSolver:
     @staticmethod
-    def solve_system(gamma: float, rho: np.ndarray, u: np.ndarray, p: np.ndarray, speed: float = 0.0, tol: float = 1e-6) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def solve_system(
+        gamma: float,
+        rho: np.ndarray,
+        u: np.ndarray,
+        p: np.ndarray,
+        speed: float = 0.0,
+        tol: float = 1e-6,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Solve the Riemann problem for the entire system.
-        
+
         Parameters
         ----------
         gamma : float
@@ -21,7 +29,7 @@ class ExactRiemannSolver:
             Velocity of the system.
         p : np.ndarray
             Pressure of the system.
-        
+
         Returns
         -------
         np.ndarray
@@ -29,7 +37,7 @@ class ExactRiemannSolver:
         np.ndarray
             Pressure in the middle state.
         np.ndarray
-            Velocity in the middle state.    
+            Velocity in the middle state.
 
         References
         ----------
@@ -97,7 +105,7 @@ class ExactRiemannSolver:
                     gamma, rho_R, u_R, p_R, a_R, u_star, p_star, speed
                 )
 
-        return sol_rho, sol_u, sol_p 
+        return sol_rho, sol_u, sol_p
 
     @staticmethod
     def solve(
@@ -311,7 +319,9 @@ class ExactRiemannSolver:
             count += 1
 
             if count > 1000:
-                warnings.warn("Newton-Raphson method did not converge for 1000 iterations!")
+                warnings.warn(
+                    "Newton-Raphson method did not converge for 1000 iterations!"
+                )
 
     @staticmethod
     def sample_left_state(

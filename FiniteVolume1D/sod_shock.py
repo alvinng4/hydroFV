@@ -1,37 +1,29 @@
-from typing import List
-
 import numpy as np
 
-from . import utils
-from .cell import Cell
+from .system import System
 from .exact_riemann_solver import ExactRiemannSolver
 
 
-def cells_initial_condition(num_cell: int, gamma: float) -> list:
-    cells: List[Cell] = []
-    for i in range(num_cell):
-        cell = Cell()
-        cell._midpoint = (i + 0.5) / num_cell
-        cell._volume = 1.0 / num_cell
+def get_initial_system(num_cell: int) -> System:
+    system = System(
+        num_cells=num_cell, gamma=5.0 / 3.0, boundary_condition="reflective"
+    )
+    system.volume.fill(1.0 / num_cell)
+    system.surface_area.fill(1.0)
+    system.momentum.fill(0.0)
+    for i in range(num_cell + system.num_ghosts_cells):
+        system.mid_points[i] = ((i - 1) + 0.5) / num_cell
 
         if i < num_cell / 2:
-            cell._mass = 1.0 / num_cell
-            cell._energy = (1.0 / num_cell) / (gamma - 1.0)
+            system.mass[i] = 1.0 / num_cell
+            system.energy[i] = (1.0 / num_cell) / (system.gamma - 1.0)
         else:
-            cell._mass = 0.125 * (1.0 / num_cell)
-            cell._energy = 0.1 * (1.0 / num_cell) / (gamma - 1.0)
-        cell._momentum = 0.0
+            system.mass[i] = 0.125 * (1.0 / num_cell)
+            system.energy[i] = 0.1 * (1.0 / num_cell) / (system.gamma - 1.0)
 
-        if i > 0:
-            cells[-1]._right_ngb = cell
+    system.convert_conserved_to_primitive()
 
-        cell._surface_area = 1.0
-
-        cells.append(cell)
-
-    utils.convert_conserved_to_primitive(cells, gamma)
-
-    return cells
+    return system
 
 
 def get_reference_sol(
@@ -39,7 +31,10 @@ def get_reference_sol(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     x_ref = np.arange(0.0, 1.0, 0.001)
     sol = np.array(
-        [solver.solve(gamma, 1.0, 0.0, 1.0, 0.125, 0.0, 0.1, (x - 0.5) / tf) for x in x_ref]
+        [
+            solver.solve(gamma, 1.0, 0.0, 1.0, 0.125, 0.0, 0.1, (x - 0.5) / tf)
+            for x in x_ref
+        ]
     )
     rho_ref = sol[:, 0]
     u_ref = sol[:, 1]

@@ -16,7 +16,7 @@ def main() -> None:
 
     riemann_solver = ExactRiemannSolver()
 
-    cells = sod_shock.cells_initial_condition(num_cell, gamma)
+    system = sod_shock.get_initial_system(num_cell)
 
     t = 0.0
     num_steps = 0
@@ -26,14 +26,14 @@ def main() -> None:
         task = progress.add_task("", total=tf)
         while t < tf:
             if num_steps <= 50:
-                dt = utils.get_time_step(cfl * 0.2, cells, gamma)
+                dt = utils.get_time_step(cfl * 0.2, system, gamma)
             else:
-                dt = utils.get_time_step(cfl, cells, gamma)
-
+                dt = utils.get_time_step(cfl, system, gamma)
+    
             if t + dt > tf:
                 dt = tf - t
             
-            godunov_first_order.solving_step(cells, dt, gamma, riemann_solver)
+            godunov_first_order.solving_step(system, dt, riemann_solver)
 
             t += dt
             num_steps += 1
@@ -43,25 +43,25 @@ def main() -> None:
     print(f"Number of steps: {num_steps}")
 
     # plot the reference solution and the actual solution
-    x_ref, rho_ref, u_ref, p_ref = sod_shock.get_reference_sol(gamma, tf, riemann_solver)
+    x_ref, rho_ref, u_ref, p_ref = sod_shock.get_reference_sol(system.gamma, tf, riemann_solver)
 
     fig, axs = plt.subplots(1, 3, figsize=(14, 4))
     axs[0].plot(
-        [cell._midpoint for cell in cells], [cell._density for cell in cells], "k."
+        system.mid_points[1:-1], system.density[1:-1], "k."
     )
     axs[0].plot(x_ref, rho_ref, "r-")
     axs[0].set_xlabel("Position")
     axs[0].set_ylabel("Density")
 
     axs[1].plot(
-        [cell._midpoint for cell in cells], [cell._velocity for cell in cells], "k."
+        system.mid_points[1:-1], system.velocity[1:-1], "k."
     )
     axs[1].plot(x_ref, u_ref, "r-")
     axs[1].set_xlabel("Position")
     axs[1].set_ylabel("Velocity")
 
     axs[2].plot(
-        [cell._midpoint for cell in cells], [cell._pressure for cell in cells], "k."
+        system.mid_points[1:-1], system.pressure[1:-1], "k."
     )
     axs[2].plot(x_ref, p_ref, "r-")
     axs[2].set_xlabel("Position")
