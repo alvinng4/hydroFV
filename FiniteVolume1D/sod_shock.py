@@ -4,17 +4,17 @@ from .system import System
 from .exact_riemann_solver import ExactRiemannSolver
 
 
-def get_initial_system(num_cell: int) -> System:
+def get_initial_system(num_cells: int) -> System:
     system = System(
-        num_cells=num_cell, gamma=5.0 / 3.0, boundary_condition="reflective"
+        num_cells=num_cells, gamma=5.0 / 3.0, boundary_condition="reflective"
     )
-    system.volume.fill(1.0 / num_cell)
+    system.volume.fill(1.0 / num_cells)
     system.surface_area.fill(1.0)
     system.velocity.fill(0.0)
-    for i in range(num_cell + system.num_ghosts_cells):
-        system.mid_points[i] = ((i - 1) + 0.5) / num_cell
+    for i in range(num_cells + system.num_ghosts_cells):
+        system.mid_points[i] = ((i - 1) + 0.5) / num_cells
 
-        if i < num_cell / 2:
+        if i < num_cells / 2:
             system.density[i] = 1.0
             system.pressure[i] = 1.0
         else:

@@ -1117,7 +1117,6 @@ class ExactRiemannSolver:
         else:
             # Speed of the front
             S_star_L = u_L + 2.0 * a_L / (gamma - 1.0)
-            print(S_star_L)
             ### Rarefaction wave regime ###
             if speed < S_star_L:
                 two_over_gamma_plus_one = 2.0 / (gamma + 1.0)
