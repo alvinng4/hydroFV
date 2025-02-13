@@ -2,6 +2,22 @@ from .system import System
 
 
 def solving_step(system: System, dt: float, solver) -> None:
+    """Advance the system by one time step using Godunov's first-order scheme.
+    
+    Parameters
+    ----------
+    system : System
+        System object.
+    dt : float
+        Time step.
+    solver
+        Riemann solver.
+
+    Notes
+    -----
+    It is assumed that the system has been initialized with ghost cells and
+    the boundary conditions have been set.
+    """
     density_sol, velocity_sol, pressure_sol = solver.solve_system(
         system.gamma, system.density, system.velocity, system.pressure
     )
