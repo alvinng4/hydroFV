@@ -1,12 +1,104 @@
 import math
+import warnings
 from typing import Tuple
 
 import numpy as np
 
 from . import utils
 
-
 class ExactRiemannSolver:
+    @staticmethod
+    def solve_system(gamma: float, rho: np.ndarray, u: np.ndarray, p: np.ndarray, speed: float = 0.0, tol: float = 1e-6) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Solve the Riemann problem for the entire system.
+        
+        Parameters
+        ----------
+        gamma : float
+            Adiabatic index.
+        rho : np.ndarray
+            Density of the system.
+        u : np.ndarray
+            Velocity of the system.
+        p : np.ndarray
+            Pressure of the system.
+        
+        Returns
+        -------
+        np.ndarray
+            Density in the middle state.
+        np.ndarray
+            Pressure in the middle state.
+        np.ndarray
+            Velocity in the middle state.    
+
+        References
+        ----------
+        1. Toro, E. F., "The Riemann Problem for the Euler Equations" in
+           Riemann Solvers and Numerical Methods for Fluid Dynamics,
+           3rd ed. Springer., 2009, pp. 115-162.
+        """
+        if gamma <= 1.0:
+            raise ValueError("The adiabatic index needs to be larger than 1!")
+
+        sol_rho = np.zeros(len(rho) - 1)
+        sol_u = np.zeros(len(rho) - 1)
+        sol_p = np.zeros(len(rho) - 1)
+        for i in range(len(rho) - 1):
+            rho_L = rho[i]
+            u_L = u[i]
+            p_L = p[i]
+
+            rho_R = rho[i + 1]
+            u_R = u[i + 1]
+            p_R = p[i + 1]
+
+            ### Compute the sound speeds ###
+            if rho_L > 0.0:
+                a_L = float(utils.get_sound_speed(gamma, rho_L, p_L))
+            else:
+                # Vacuum
+                # Assuming isentropic-type EOS, p = p(rho), see Toro [1]
+                a_L = 0.0
+
+            if rho_R > 0.0:
+                a_R = float(utils.get_sound_speed(gamma, rho_R, p_R))
+            else:
+                # Vacuum
+                # Assuming isentropic-type EOS, p = p(rho), see Toro [1]
+                a_R = 0.0
+
+            ### Check for vacuum or vacuum generation ###
+            # (1) If left or right state is vacuum, or
+            # (2) pressure positivity condition is met
+            if (rho_L <= 0.0 or rho_R <= 0.0) or (
+                ((2.0 / (gamma + 1.0)) * (a_L + a_R)) <= (u_R - u_L)
+            ):
+                sol_rho[i], sol_u[i], sol_p[i] = ExactRiemannSolver.solve_vacuum(
+                    gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, speed
+                )
+                continue
+
+            ### Solve for p_star and u_star ###
+            p_star = ExactRiemannSolver.solve_p_star(
+                gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, tol
+            )
+            u_star = 0.5 * (u_L + u_R) + 0.5 * (
+                ExactRiemannSolver.riemann_f_L_or_R(gamma, rho_R, p_R, a_R, p_star)
+                - ExactRiemannSolver.riemann_f_L_or_R(gamma, rho_L, p_L, a_L, p_star)
+            )
+
+            ### The riemann problem is solved. Now we sample the solution ###
+            if speed < u_star:
+                sol_rho[i], sol_u[i], sol_p[i] = ExactRiemannSolver.sample_left_state(
+                    gamma, rho_L, u_L, p_L, a_L, u_star, p_star, speed
+                )
+            else:
+                sol_rho[i], sol_u[i], sol_p[i] = ExactRiemannSolver.sample_right_state(
+                    gamma, rho_R, u_R, p_R, a_R, u_star, p_star, speed
+                )
+
+        return sol_rho, sol_u, sol_p 
+
     @staticmethod
     def solve(
         gamma: float,
@@ -198,6 +290,7 @@ class ExactRiemannSolver:
             gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, tol
         )
 
+        count = 0
         while True:
             f = ExactRiemannSolver.riemann_f(
                 gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, p_guess
@@ -214,6 +307,11 @@ class ExactRiemannSolver:
                 return p
 
             p_guess = p
+
+            count += 1
+
+            if count > 1000:
+                warnings.warn("Newton-Raphson method did not converge for 1000 iterations!")
 
     @staticmethod
     def sample_left_state(
