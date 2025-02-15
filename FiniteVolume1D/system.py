@@ -78,5 +78,6 @@ class System:
         self.mass = self.density * self.volume
         self.momentum = self.mass * self.velocity
         self.energy = self.volume * (
-            0.5 * self.density * self.velocity * self.velocity + self.pressure / (self.gamma - 1.0)
+            0.5 * self.density * self.velocity * self.velocity
+            + self.pressure / (self.gamma - 1.0)
         )

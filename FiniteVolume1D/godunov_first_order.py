@@ -1,34 +1,33 @@
+from riemann_solvers import solve_system_flux
+
 from .system import System
 
 
-def solving_step(system: System, dt: float, solver) -> None:
+def solving_step(system: System, dt: float, solver: str) -> None:
     """Advance the system by one time step using Godunov's first-order scheme.
-    
+
     Parameters
     ----------
     system : System
         System object.
     dt : float
         Time step.
-    solver
-        Riemann solver.
+    solver : str
+        Riemann solver to use, either "exact" or "hllc".
 
     Notes
     -----
     It is assumed that the system has been initialized with ghost cells and
     the boundary conditions have been set.
     """
-    density_sol, velocity_sol, pressure_sol = solver.solve_system(
-        system.gamma, system.density, system.velocity, system.pressure
+    flux_mass, flux_momentum, flux_energy = solve_system_flux(
+        system.gamma,
+        system.density,
+        system.velocity,
+        system.pressure,
+        "cartesian_1d",
+        solver,
     )
-
-    # Get the fluxes
-    flux_mass = density_sol * velocity_sol
-    flux_momentum = density_sol * (velocity_sol * velocity_sol) + pressure_sol
-    flux_energy = (
-        pressure_sol * (system.gamma / (system.gamma - 1.0))
-        + 0.5 * density_sol * (velocity_sol * velocity_sol)
-    ) * velocity_sol
 
     # Flux exchange
     system.mass[:-1] -= flux_mass * system.surface_area[:-1] * dt

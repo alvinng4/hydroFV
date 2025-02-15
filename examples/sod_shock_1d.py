@@ -1,26 +1,28 @@
 import sys
+import timeit
+
 sys.path.append("../")
 
 import matplotlib.pyplot as plt
 import rich.progress
 
-from FiniteVolume1D.exact_riemann_solver import ExactRiemannSolver
 from FiniteVolume1D import godunov_first_order
 from FiniteVolume1D import utils
 from FiniteVolume1D import sod_shock
 
 
 def main() -> None:
-    num_cell = 1000
+    num_cell = 100
 
     cfl = 0.9
     tf = 0.2
 
-    riemann_solver = ExactRiemannSolver()
+    riemann_solver = "hllc"
     system = sod_shock.get_initial_system(num_cell)
 
     t = 0.0
     num_steps = 0
+    start = timeit.default_timer()
     with rich.progress.Progress() as progress:
         print("Simulation in progress...")
         task = progress.add_task("", total=tf)
@@ -39,12 +41,13 @@ def main() -> None:
             num_steps += 1
             progress.update(task, completed=t)
 
-    print("Done!")
-    print(f"Number of steps: {num_steps}")
+    end = timeit.default_timer()
+    print(f"Done! Num steps: {num_steps}, Time: {end - start:.3f}s")
 
     # plot the reference solution and the actual solution
     x_ref, rho_ref, u_ref, p_ref = sod_shock.get_reference_sol(
-        system.gamma, tf, riemann_solver
+        system.gamma,
+        tf,
     )
 
     fig, axs = plt.subplots(1, 3, figsize=(14, 4))

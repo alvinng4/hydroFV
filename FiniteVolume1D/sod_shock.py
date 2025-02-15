@@ -1,7 +1,7 @@
 import numpy as np
+import riemann_solvers
 
 from .system import System
-from .exact_riemann_solver import ExactRiemannSolver
 
 
 def get_initial_system(num_cells: int) -> System:
@@ -28,12 +28,23 @@ def get_initial_system(num_cells: int) -> System:
 
 
 def get_reference_sol(
-    gamma: float, tf: float, solver: ExactRiemannSolver
+    gamma: float, tf: float
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     x_ref = np.arange(0.0, 1.0, 0.001)
     sol = np.array(
         [
-            solver.solve(gamma, 1.0, 0.0, 1.0, 0.125, 0.0, 0.1, (x - 0.5) / tf)
+            riemann_solvers.solve(
+                gamma=gamma,
+                rho_L=1.0,
+                u_L=0.0,
+                p_L=1.0,
+                rho_R=0.125,
+                u_R=0.0,
+                p_R=0.1,
+                speed=(x - 0.5) / tf,
+                coord_sys="cartesian_1d",
+                solver="exact",
+            )
             for x in x_ref
         ]
     )

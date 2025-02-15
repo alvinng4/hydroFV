@@ -1,3 +1,21 @@
+"""
+Exact Riemann solver for the 1D Euler equations.
+
+Usage:
+    exact_riemann_solver = ExactRiemannSolverCartesian1D()
+    rho_sol, u_sol, p_sol = exact_riemann_solver.solve(
+        gamma, rho_L, u_L, p_L, rho_R, u_R, p_R, speed, tol
+    )
+    flux_mass, flux_momentum, flux_energy = ExactRiemannSolverCartesian1D.solve_system_flux(
+        gamma, rho, u, p, speed, tol
+    )
+
+References:
+    1. Toro, E. F., "The Riemann Problem for the Euler Equations" in
+       Riemann Solvers and Numerical Methods for Fluid Dynamics,
+       3rd ed. Springer., 2009, pp. 115-162.
+"""
+
 import math
 import warnings
 from typing import Tuple
@@ -7,9 +25,9 @@ import numpy as np
 from . import utils
 
 
-class ExactRiemannSolver:
+class ExactRiemannSolverCartesian1D:
     @staticmethod
-    def solve_system(
+    def solve_system_flux(
         gamma: float,
         rho: np.ndarray,
         u: np.ndarray,
@@ -32,18 +50,12 @@ class ExactRiemannSolver:
 
         Returns
         -------
-        np.ndarray
-            Density in the middle state.
-        np.ndarray
-            Pressure in the middle state.
-        np.ndarray
-            Velocity in the middle state.
-
-        References
-        ----------
-        1. Toro, E. F., "The Riemann Problem for the Euler Equations" in
-           Riemann Solvers and Numerical Methods for Fluid Dynamics,
-           3rd ed. Springer., 2009, pp. 115-162.
+        flux_mass : np.ndarray
+            Mass flux of the system.
+        flux_momentum : np.ndarray
+            Momentum flux of the system.
+        flux_energy : np.ndarray
+            Energy flux of the system
         """
         if gamma <= 1.0:
             raise ValueError("The adiabatic index needs to be larger than 1!")
@@ -81,31 +93,47 @@ class ExactRiemannSolver:
             if (rho_L <= 0.0 or rho_R <= 0.0) or (
                 ((2.0 / (gamma + 1.0)) * (a_L + a_R)) <= (u_R - u_L)
             ):
-                sol_rho[i], sol_u[i], sol_p[i] = ExactRiemannSolver.solve_vacuum(
-                    gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, speed
+                sol_rho[i], sol_u[i], sol_p[i] = (
+                    ExactRiemannSolverCartesian1D.solve_vacuum(
+                        gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, speed
+                    )
                 )
                 continue
 
             ### Solve for p_star and u_star ###
-            p_star = ExactRiemannSolver.solve_p_star(
+            p_star = ExactRiemannSolverCartesian1D.solve_p_star(
                 gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, tol
             )
             u_star = 0.5 * (u_L + u_R) + 0.5 * (
-                ExactRiemannSolver.riemann_f_L_or_R(gamma, rho_R, p_R, a_R, p_star)
-                - ExactRiemannSolver.riemann_f_L_or_R(gamma, rho_L, p_L, a_L, p_star)
+                ExactRiemannSolverCartesian1D.riemann_f_L_or_R(
+                    gamma, rho_R, p_R, a_R, p_star
+                )
+                - ExactRiemannSolverCartesian1D.riemann_f_L_or_R(
+                    gamma, rho_L, p_L, a_L, p_star
+                )
             )
 
             ### The riemann problem is solved. Now we sample the solution ###
             if speed < u_star:
-                sol_rho[i], sol_u[i], sol_p[i] = ExactRiemannSolver.sample_left_state(
-                    gamma, rho_L, u_L, p_L, a_L, u_star, p_star, speed
+                sol_rho[i], sol_u[i], sol_p[i] = (
+                    ExactRiemannSolverCartesian1D.sample_left_state(
+                        gamma, rho_L, u_L, p_L, a_L, u_star, p_star, speed
+                    )
                 )
             else:
-                sol_rho[i], sol_u[i], sol_p[i] = ExactRiemannSolver.sample_right_state(
-                    gamma, rho_R, u_R, p_R, a_R, u_star, p_star, speed
+                sol_rho[i], sol_u[i], sol_p[i] = (
+                    ExactRiemannSolverCartesian1D.sample_right_state(
+                        gamma, rho_R, u_R, p_R, a_R, u_star, p_star, speed
+                    )
                 )
 
-        return sol_rho, sol_u, sol_p
+        flux_mass = sol_rho * sol_u
+        flux_momentum = sol_rho * (sol_u * sol_u) + sol_p
+        flux_energy = (
+            sol_p * (gamma / (gamma - 1.0)) + 0.5 * sol_rho * (sol_u * sol_u)
+        ) * sol_u
+
+        return flux_mass, flux_momentum, flux_energy
 
     @staticmethod
     def solve(
@@ -150,12 +178,6 @@ class ExactRiemannSolver:
             Pressure in the middle state.
         float
             Velocity in the middle state.
-
-        References
-        ----------
-        1. Toro, E. F., "The Riemann Problem for the Euler Equations" in
-           Riemann Solvers and Numerical Methods for Fluid Dynamics,
-           3rd ed. Springer., 2009, pp. 115-162.
         """
         if gamma <= 1.0:
             raise ValueError("The adiabatic index needs to be larger than 1!")
@@ -181,27 +203,31 @@ class ExactRiemannSolver:
         if (rho_L <= 0.0 or rho_R <= 0.0) or (
             ((2.0 / (gamma + 1.0)) * (a_L + a_R)) <= (u_R - u_L)
         ):
-            rho, u, p = ExactRiemannSolver.solve_vacuum(
+            rho, u, p = ExactRiemannSolverCartesian1D.solve_vacuum(
                 gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, speed
             )
             return rho, u, p
 
         ### Solve for p_star and u_star ###
-        p_star = ExactRiemannSolver.solve_p_star(
+        p_star = ExactRiemannSolverCartesian1D.solve_p_star(
             gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, tol
         )
         u_star = 0.5 * (u_L + u_R) + 0.5 * (
-            ExactRiemannSolver.riemann_f_L_or_R(gamma, rho_R, p_R, a_R, p_star)
-            - ExactRiemannSolver.riemann_f_L_or_R(gamma, rho_L, p_L, a_L, p_star)
+            ExactRiemannSolverCartesian1D.riemann_f_L_or_R(
+                gamma, rho_R, p_R, a_R, p_star
+            )
+            - ExactRiemannSolverCartesian1D.riemann_f_L_or_R(
+                gamma, rho_L, p_L, a_L, p_star
+            )
         )
 
         ### The riemann problem is solved. Now we sample the solution ###
         if speed < u_star:
-            rho, u, p = ExactRiemannSolver.sample_left_state(
+            rho, u, p = ExactRiemannSolverCartesian1D.sample_left_state(
                 gamma, rho_L, u_L, p_L, a_L, u_star, p_star, speed
             )
         else:
-            rho, u, p = ExactRiemannSolver.sample_right_state(
+            rho, u, p = ExactRiemannSolverCartesian1D.sample_right_state(
                 gamma, rho_R, u_R, p_R, a_R, u_star, p_star, speed
             )
 
@@ -226,19 +252,19 @@ class ExactRiemannSolver:
 
         # Right state is vacuum
         if rho_L <= 0.0:
-            rho, u, p = ExactRiemannSolver.sample_for_right_vacuum(
+            rho, u, p = ExactRiemannSolverCartesian1D.sample_for_right_vacuum(
                 gamma, rho_L, u_L, p_L, a_L, speed
             )
 
         # Left state is vacuum
         elif rho_R <= 0.0:
-            rho, u, p = ExactRiemannSolver.sample_for_left_vacuum(
+            rho, u, p = ExactRiemannSolverCartesian1D.sample_for_left_vacuum(
                 gamma, rho_L, u_L, p_L, a_L, speed
             )
 
         # Vacuum generation
         else:
-            rho, u, p = ExactRiemannSolver.sample_vacuum_generation(
+            rho, u, p = ExactRiemannSolverCartesian1D.sample_vacuum_generation(
                 gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, speed
             )
 
@@ -287,23 +313,17 @@ class ExactRiemannSolver:
         -------
         p_star : float
             Pressure in the star region.
-
-        References
-        ----------
-        Toro, E. F., "The Riemann Problem for the Euler Equations" in
-        Riemann Solvers and Numerical Methods for Fluid Dynamics,
-        3rd ed. Springer., 2009, pp. 115-162.
         """
-        p_guess = ExactRiemannSolver.guess_p(
+        p_guess = ExactRiemannSolverCartesian1D.guess_p(
             gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, tol
         )
 
         count = 0
         while True:
-            f = ExactRiemannSolver.riemann_f(
+            f = ExactRiemannSolverCartesian1D.riemann_f(
                 gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, p_guess
             )
-            f_prime = ExactRiemannSolver.riemann_f_prime(
+            f_prime = ExactRiemannSolverCartesian1D.riemann_f_prime(
                 gamma, rho_L, p_L, a_L, rho_R, p_R, a_R, p_guess
             )
             p = p_guess - f / f_prime
@@ -363,21 +383,15 @@ class ExactRiemannSolver:
             Velocity in the middle state.
         p : float
             Pressure in the middle state.
-
-        References
-        ----------
-        Toro, E. F., "The Riemann Problem for the Euler Equations" in
-        Riemann Solvers and Numerical Methods for Fluid Dynamics,
-        3rd ed. Springer., 2009, pp. 115-162.
         """
         if p_star > p_L:
             # Shock wave
-            return ExactRiemannSolver.sample_left_shock_wave(
+            return ExactRiemannSolverCartesian1D.sample_left_shock_wave(
                 gamma, rho_L, u_L, p_L, a_L, u_star, p_star, speed
             )
         else:
             # Rarefaction wave
-            return ExactRiemannSolver.sample_left_rarefaction_wave(
+            return ExactRiemannSolverCartesian1D.sample_left_rarefaction_wave(
                 gamma, rho_L, u_L, p_L, a_L, u_star, p_star, speed
             )
 
@@ -421,21 +435,15 @@ class ExactRiemannSolver:
             Velocity in the middle state.
         p : float
             Pressure in the middle state.
-
-        References
-        ----------
-        Toro, E. F., "The Riemann Problem for the Euler Equations" in
-        Riemann Solvers and Numerical Methods for Fluid Dynamics,
-        3rd ed. Springer., 2009, pp. 115-162.
         """
         if p_star > p_R:
             # Shock wave
-            return ExactRiemannSolver.sample_right_shock_wave(
+            return ExactRiemannSolverCartesian1D.sample_right_shock_wave(
                 gamma, rho_R, u_R, p_R, a_R, u_star, p_star, speed
             )
         else:
             # Rarefaction wave
-            return ExactRiemannSolver.sample_right_rarefaction_wave(
+            return ExactRiemannSolverCartesian1D.sample_right_rarefaction_wave(
                 gamma, rho_R, u_R, p_R, a_R, u_star, p_star, speed
             )
 
@@ -454,12 +462,6 @@ class ExactRiemannSolver:
         -------
         float
             Value of the A_L or A_R function.
-
-        References
-        ----------
-        Toro, E. F., "The Riemann Problem for the Euler Equations" in
-        Riemann Solvers and Numerical Methods for Fluid Dynamics,
-        3rd ed. Springer., 2009, pp. 115-162.
         """
         return 2.0 / ((gamma + 1.0) * rho_X)
 
@@ -478,12 +480,6 @@ class ExactRiemannSolver:
         -------
         float
             Value of the B_L or B_R function.
-
-        References
-        ----------
-        Toro, E. F., "The Riemann Problem for the Euler Equations" in
-        Riemann Solvers and Numerical Methods for Fluid Dynamics,
-        3rd ed. Springer., 2009, pp. 115-162.
         """
         return ((gamma - 1.0) / (gamma + 1.0)) * p_X
 
@@ -510,17 +506,11 @@ class ExactRiemannSolver:
         -------
         float
             Value of the f_L or f_R function.
-
-        References
-        ----------
-        Toro, E. F., "The Riemann Problem for the Euler Equations" in
-        Riemann Solvers and Numerical Methods for Fluid Dynamics,
-        3rd ed. Springer., 2009, pp. 115-162.
         """
         # if p > p_X (shock)
         if p > p_X:
-            A_X = ExactRiemannSolver.riemann_A_L_or_R(gamma, rho_X)
-            B_X = ExactRiemannSolver.riemann_B_L_or_R(gamma, p_X)
+            A_X = ExactRiemannSolverCartesian1D.riemann_A_L_or_R(gamma, rho_X)
+            B_X = ExactRiemannSolverCartesian1D.riemann_B_L_or_R(gamma, p_X)
             return (p - p_X) * np.sqrt(A_X / (p + B_X))
 
         # if p <= p_X (rarefaction)
@@ -556,17 +546,11 @@ class ExactRiemannSolver:
         -------
         float
             Value of the derivative of the f_L or f_R function.
-
-        References
-        ----------
-        Toro, E. F., "The Riemann Problem for the Euler Equations" in
-        Riemann Solvers and Numerical Methods for Fluid Dynamics,
-        3rd ed. Springer., 2009, pp. 115-162.
         """
         # if p > p_X (shock)
         if p > p_X:
-            A_X = ExactRiemannSolver.riemann_A_L_or_R(gamma, rho_X)
-            B_X = ExactRiemannSolver.riemann_B_L_or_R(gamma, p_X)
+            A_X = ExactRiemannSolverCartesian1D.riemann_A_L_or_R(gamma, rho_X)
+            B_X = ExactRiemannSolverCartesian1D.riemann_B_L_or_R(gamma, p_X)
             return np.sqrt(A_X / (B_X + p)) * (1.0 - 0.5 * (p - p_X) / (B_X + p))
 
         # if p <= p_X (rarefaction)
@@ -615,16 +599,10 @@ class ExactRiemannSolver:
         -------
         float
             Value of the Riemann f function.
-
-        References
-        ----------
-        Toro, E. F., "The Riemann Problem for the Euler Equations" in
-        Riemann Solvers and Numerical Methods for Fluid Dynamics,
-        3rd ed. Springer., 2009, pp. 115-162.
         """
         return (
-            ExactRiemannSolver.riemann_f_L_or_R(gamma, rho_L, p_L, a_L, p)
-            + ExactRiemannSolver.riemann_f_L_or_R(gamma, rho_R, p_R, a_R, p)
+            ExactRiemannSolverCartesian1D.riemann_f_L_or_R(gamma, rho_L, p_L, a_L, p)
+            + ExactRiemannSolverCartesian1D.riemann_f_L_or_R(gamma, rho_R, p_R, a_R, p)
             + (u_R - u_L)
         )
 
@@ -665,9 +643,11 @@ class ExactRiemannSolver:
         float
             Value of the derivative of the Riemann f function.
         """
-        return ExactRiemannSolver.riemann_f_L_or_R_prime(
+        return ExactRiemannSolverCartesian1D.riemann_f_L_or_R_prime(
             gamma, rho_L, p_L, a_L, p
-        ) + ExactRiemannSolver.riemann_f_L_or_R_prime(gamma, rho_R, p_R, a_R, p)
+        ) + ExactRiemannSolverCartesian1D.riemann_f_L_or_R_prime(
+            gamma, rho_R, p_R, a_R, p
+        )
 
     @staticmethod
     def guess_p(
@@ -709,12 +689,6 @@ class ExactRiemannSolver:
         -------
         p_guess : float
            Initial guess for the pressure in the middle state.
-
-        References
-        ----------
-        Toro, E. F., "The Riemann Problem for the Euler Equations" in
-        Riemann Solvers and Numerical Methods for Fluid Dynamics,
-        3rd ed. Springer., 2009, pp. 115-162.
         """
         p_min = min(p_L, p_R)
         p_max = max(p_L, p_R)
@@ -739,12 +713,12 @@ class ExactRiemannSolver:
 
         # Select Two-Shock Riemann solver with PVRS as estimate
         else:
-            A_L = ExactRiemannSolver.riemann_A_L_or_R(gamma, rho_L)
-            B_L = ExactRiemannSolver.riemann_B_L_or_R(gamma, p_L)
+            A_L = ExactRiemannSolverCartesian1D.riemann_A_L_or_R(gamma, rho_L)
+            B_L = ExactRiemannSolverCartesian1D.riemann_B_L_or_R(gamma, p_L)
             g_L = math.sqrt(A_L / (ppv + B_L))
 
-            A_R = ExactRiemannSolver.riemann_A_L_or_R(gamma, rho_R)
-            B_R = ExactRiemannSolver.riemann_B_L_or_R(gamma, p_R)
+            A_R = ExactRiemannSolverCartesian1D.riemann_A_L_or_R(gamma, rho_R)
+            B_R = ExactRiemannSolverCartesian1D.riemann_B_L_or_R(gamma, p_R)
             g_R = math.sqrt(A_R / (ppv + B_R))
 
             p_guess = (g_L * p_L + g_R * p_R - (u_R - u_L)) / (g_L + g_R)
@@ -792,12 +766,6 @@ class ExactRiemannSolver:
             Velocity in the middle state.
         p : float
             Pressure in the middle state.
-
-        References
-        ----------
-        Toro, E. F., "The Riemann Problem for the Euler Equations" in
-        Riemann Solvers and Numerical Methods for Fluid Dynamics,
-        3rd ed. Springer., 2009, pp. 115-162.
         """
         p_star_over_p_L = p_star / p_L
 
@@ -865,12 +833,6 @@ class ExactRiemannSolver:
             Velocity in the middle state.
         p : float
             Pressure in the middle state.
-
-        References
-        ----------
-        Toro, E. F., "The Riemann Problem for the Euler Equations" in
-        Riemann Solvers and Numerical Methods for Fluid Dynamics,
-        3rd ed. Springer., 2009, pp. 115-162.
         """
         # The rarefaction wave is enclosed by the Head and the Tail
 
@@ -951,12 +913,6 @@ class ExactRiemannSolver:
             Velocity in the middle state.
         p : float
             Pressure in the middle state.
-
-        References
-        ----------
-        Toro, E. F., "The Riemann Problem for the Euler Equations" in
-        Riemann Solvers and Numerical Methods for Fluid Dynamics,
-        3rd ed. Springer., 2009, pp. 115-162.
         """
         p_star_over_p_R = p_star / p_R
 
@@ -1024,12 +980,6 @@ class ExactRiemannSolver:
             Velocity in the middle state.
         p : float
             Pressure in the middle state.
-
-        References
-        ----------
-        Toro, E. F., "The Riemann Problem for the Euler Equations" in
-        Riemann Solvers and Numerical Methods for Fluid Dynamics,
-        3rd ed. Springer., 2009, pp. 115-162.
         """
         # The rarefaction wave is enclosed by the Head and the Tail
 
@@ -1100,12 +1050,6 @@ class ExactRiemannSolver:
             Velocity in the middle state.
         p : float
             Pressure in the middle state.
-
-        References
-        ----------
-        Toro, E. F., "The Riemann Problem for the Euler Equations" in
-        Riemann Solvers and Numerical Methods for Fluid Dynamics,
-        3rd ed. Springer., 2009, pp. 115-162.
         """
         ### Left state regime ###
         if speed <= u_L - a_L:
@@ -1168,12 +1112,6 @@ class ExactRiemannSolver:
             Velocity in the middle state.
         p : float
             Pressure in the middle state.
-
-        References
-        ----------
-        Toro, E. F., "The Riemann Problem for the Euler Equations" in
-        Riemann Solvers and Numerical Methods for Fluid Dynamics,
-        3rd ed. Springer., 2009, pp. 115-162.
         """
         ### Right state regime ###
         if speed > u_R + a_R:
@@ -1254,12 +1192,6 @@ class ExactRiemannSolver:
             Velocity in the middle state.
         p : float
             Pressure in the middle state.
-
-        References
-        ----------
-        Toro, E. F., "The Riemann Problem for the Euler Equations" in
-        Riemann Solvers and Numerical Methods for Fluid Dynamics,
-        3rd ed. Springer., 2009, pp. 115-162.
         """
         # Speed of the left and right rarefaction waves
         S_star_L = 2.0 * a_L / (gamma - 1.0)
@@ -1267,7 +1199,7 @@ class ExactRiemannSolver:
 
         # Left state
         if speed < S_star_L:
-            rho, u, p = ExactRiemannSolver.sample_for_right_vacuum(
+            rho, u, p = ExactRiemannSolverCartesian1D.sample_for_right_vacuum(
                 gamma, rho_L, u_L, p_L, a_L, speed
             )
 
@@ -1277,7 +1209,7 @@ class ExactRiemannSolver:
             p = 0.0
 
         else:
-            rho, u, p = ExactRiemannSolver.sample_for_left_vacuum(
+            rho, u, p = ExactRiemannSolverCartesian1D.sample_for_left_vacuum(
                 gamma, rho_R, u_R, p_R, a_R, speed
             )
 
