@@ -6,7 +6,10 @@ from .system import System
 
 def get_initial_system(num_cells: int) -> System:
     system = System(
-        num_cells=num_cells, gamma=5.0 / 3.0, boundary_condition="reflective"
+        num_cells=num_cells,
+        gamma=5.0 / 3.0,
+        left_boundary_condition="reflective",
+        right_boundary_condition="reflective",
     )
     system.volume.fill(1.0 / num_cells)
     system.surface_area.fill(1.0)
