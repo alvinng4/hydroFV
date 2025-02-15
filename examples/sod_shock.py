@@ -14,16 +14,14 @@ RIEMANN_SOLVER = "hllc"
 COORD_SYS = "spherical_1d"
 NUM_CELLS = 128
 
+
 def main() -> None:
     assert COORD_SYS in ["cartesian_1d", "spherical_1d"]
 
     cfl = 0.9
     tf = 0.2
 
-    simulate(NUM_CELLS, cfl, tf, COORD_SYS)
-
-def simulate(num_cells: int, cfl: float, tf: float, coord_sys: str) -> None:
-    system = get_initial_system(num_cells, coord_sys)
+    system = get_initial_system(NUM_CELLS, COORD_SYS)
 
     t = 0.0
     num_steps = 0
@@ -74,6 +72,7 @@ def simulate(num_cells: int, cfl: float, tf: float, coord_sys: str) -> None:
     plt.tight_layout()
     plt.show()
 
+
 def get_initial_system(num_cells: int, coord_sys: str) -> FiniteVolume1D.system.System:
     system = FiniteVolume1D.system.System(
         num_cells=num_cells,
@@ -99,7 +98,10 @@ def get_initial_system(num_cells: int, coord_sys: str) -> FiniteVolume1D.system.
         for i in range(total_num_cells):
             system.mid_points[i] = (i + 0.5) / total_num_cells
             system.volume[i] = (
-                4.0 / 3.0 * np.pi * (((i + 1) / total_num_cells) ** 3 - (i / total_num_cells) ** 3)
+                4.0
+                / 3.0
+                * np.pi
+                * (((i + 1) / total_num_cells) ** 3 - (i / total_num_cells) ** 3)
             )
             system.surface_area[i] = 4.0 * np.pi * ((i / total_num_cells) ** 2)
 
@@ -114,8 +116,9 @@ def get_initial_system(num_cells: int, coord_sys: str) -> FiniteVolume1D.system.
 
     system.convert_primitive_to_conserved()
     system.set_boundary_condition()
-    
+
     return system
+
 
 def get_reference_sol(
     gamma: float, tf: float
@@ -143,6 +146,7 @@ def get_reference_sol(
     p_ref = sol[:, 2]
 
     return x_ref, rho_ref, u_ref, p_ref
+
 
 if __name__ == "__main__":
     main()
