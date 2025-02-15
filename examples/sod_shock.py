@@ -11,20 +11,18 @@ import FiniteVolumeSpherical1D
 
 RIEMANN_SOLVER = "hllc"
 COORD_SYS = "cartesian_1d"
-NUM_CELL = 500
+NUM_CELLS = 128
 
 def main() -> None:
     assert COORD_SYS in ["cartesian_1d", "spherical_1d"]
-
-    num_cells = 100
 
     cfl = 0.9
     tf = 0.2
 
     if COORD_SYS == "cartesian_1d":
-        simulate_cartesian_1d(num_cells, cfl, tf)
+        simulate_cartesian_1d(NUM_CELLS, cfl, tf)
     elif COORD_SYS == "spherical_1d":
-        simulate_spherical_1d(num_cells, cfl, tf)
+        simulate_spherical_1d(NUM_CELLS, cfl, tf)
 
 def simulate_cartesian_1d(num_cells: int, cfl: float, tf: float) -> None:
     system = FiniteVolume1D.sod_shock.get_initial_system(num_cells)
