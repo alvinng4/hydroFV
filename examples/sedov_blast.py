@@ -18,15 +18,15 @@ import FiniteVolume1D
 import riemann_solvers
 
 RIEMANN_SOLVER = "hllc"
-COORD_SYS = "spherical_1d"
+COORD_SYS = "cartesian_1d"
 NUM_CELLS = 100
 
 
 def main() -> None:
-    assert COORD_SYS in ["spherical_1d"]
+    assert COORD_SYS in ["cartesian_1d", "spherical_1d"]
 
     cfl = 0.9
-    tf = 0.05
+    tf = 2.0
 
     system = get_initial_system(NUM_CELLS, COORD_SYS)
 
@@ -91,19 +91,13 @@ def get_initial_system(num_cells: int, coord_sys: str) -> FiniteVolume1D.system.
     system.density.fill(1.0)
     system.velocity.fill(0.0)
     system.pressure.fill(1e-5)
-    # if coord_sys == "cartesian_1d":
-    #     system.volume.fill(1.0 / total_num_cells)
-    #     system.surface_area.fill(1.0)
-    #     for i in range(total_num_cells):
-    #         system.mid_points[i] = (i + 0.5) / total_num_cells
-
-    #         if i < num_cells / 2:
-    #             system.density[i] = 1.0
-    #             system.pressure[i] = 1.0
-    #         else:
-    #             system.density[i] = 0.125
-    #             system.pressure[i] = 0.1
-    if coord_sys == "spherical_1d":
+    if coord_sys == "cartesian_1d":
+        for i in range(total_num_cells):
+            system.mid_points[i] = (i + 0.5) / total_num_cells
+            system.volume[i] = 1.0 / total_num_cells
+            system.surface_area[i] = 1.0
+            alpha = 0.0
+    elif coord_sys == "spherical_1d":
         for i in range(total_num_cells):
             system.mid_points[i] = (i + 0.5) / total_num_cells
             system.volume[i] = (
