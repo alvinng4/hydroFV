@@ -19,7 +19,7 @@ import riemann_solvers
 
 RIEMANN_SOLVER = "hllc"
 COORD_SYS = "cartesian_1d"
-NUM_CELLS = 100
+NUM_CELLS = 1024
 
 
 def main() -> None:
