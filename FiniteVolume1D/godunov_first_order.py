@@ -25,18 +25,18 @@ def solving_step(system: System, dt: float, solver: str) -> None:
         system.density,
         system.velocity,
         system.pressure,
-        "cartesian_1d",
+        system.coord_sys,
         solver,
     )
 
     # Flux exchange
-    system.mass[:-1] -= flux_mass * system.surface_area[:-1] * dt
-    system.momentum[:-1] -= flux_momentum * system.surface_area[:-1] * dt
-    system.energy[:-1] -= flux_energy * system.surface_area[:-1] * dt
+    system.mass[:-1] -= flux_mass * system.surface_area[1:-1] * dt
+    system.momentum[:-1] -= flux_momentum * system.surface_area[1:-1] * dt
+    system.energy[:-1] -= flux_energy * system.surface_area[1:-1] * dt
 
-    system.mass[1:] += flux_mass * system.surface_area[:-1] * dt
-    system.momentum[1:] += flux_momentum * system.surface_area[:-1] * dt
-    system.energy[1:] += flux_energy * system.surface_area[:-1] * dt
+    system.mass[1:] += flux_mass * system.surface_area[1:-1] * dt
+    system.momentum[1:] += flux_momentum * system.surface_area[1:-1] * dt
+    system.energy[1:] += flux_energy * system.surface_area[1:-1] * dt
 
     system.convert_conserved_to_primitive()
     system.set_boundary_condition()

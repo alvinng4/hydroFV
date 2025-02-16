@@ -20,11 +20,11 @@ def solve_system_flux(
     # Check input
     if coord_sys not in ["cartesian_1d", "spherical_1d"]:
         raise ValueError(
-            f"Invalid coordinate system: {coord_sys}. Available coordinate systems: ['cartesian_1d', 'spherical_1d']"
+            f'Invalid coordinate system: {coord_sys}. Available coordinate systems: ["cartesian_1d", "spherical_1d"]'
         )
     if solver not in ["exact", "hllc"]:
         raise ValueError(
-            f"Invalid solver: {solver}. Available solvers: ['exact', 'hllc']"
+            f'Invalid solver: {solver}. Available solvers: ["exact", "hllc"]'
         )
     elif solver == "exact":
         if speed != 0.0:
@@ -32,7 +32,7 @@ def solve_system_flux(
                 'The "speed" parameter is available for the exact riemann solver only. Ignoring the input value.'
             )
 
-    if coord_sys == "cartesian_1d":
+    if coord_sys in ["cartesian_1d", "spherical_1d"]:
         if solver == "exact":
             flux_mass, flux_momentum, flux_energy = (
                 ExactRiemannSolverCartesian1D.solve_system_flux(
@@ -41,12 +41,11 @@ def solve_system_flux(
             )
         elif solver == "hllc":
             flux_mass, flux_momentum, flux_energy = (
-                HLLCRiemannSolverCartesian1D.solve_system_flux(
-                    gamma, rho, u, p, tol
-                )
+                HLLCRiemannSolverCartesian1D.solve_system_flux(gamma, rho, u, p, tol)
             )
 
     return flux_mass, flux_momentum, flux_energy
+
 
 def solve(
     gamma: float,
@@ -107,10 +106,10 @@ def solve(
     if solver not in available_solvers:
         if solver == "hllc":
             raise ValueError(
-                f"Invalid solver: \"hllc\". Use solve_system_flux() for the HLLC solver."
+                f'Invalid solver: "hllc". Use solve_system_flux() for the HLLC solver.'
             )
         raise ValueError(
-            f"Invalid solver: \"{solver}\". Available solvers: {available_solvers}"
+            f'Invalid solver: "{solver}". Available solvers: {available_solvers}'
         )
 
     if coord_sys == "cartesian_1d":
@@ -120,6 +119,5 @@ def solve(
             )
     elif coord_sys == "spherical_1d":
         raise NotImplementedError
-    
+
     return rho, u, p
-    

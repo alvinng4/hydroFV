@@ -183,14 +183,17 @@ class HLLCRiemannSolverCartesian1D:
             rho_star_L = rho_L * (S_L - u_L) / (S_L - S_star)
             momentum_star_L = rho_star_L * S_star
             energy_star_L = rho_star_L * (
-                energy_density_L + (S_star - u_L) * (S_star + p_L / (rho_L * (S_L - u_L)))
+                energy_density_L
+                + (S_star - u_L) * (S_star + p_L / (rho_L * (S_L - u_L)))
             )
 
             flux_mass_star_L = flux_mass_L + S_L * (rho_star_L - rho_L)
             flux_momentum_star_L = flux_momentum_L + S_L * (
                 momentum_star_L - rho_L * u_L
             )
-            flux_energy_star_L = flux_energy_L + S_L * (energy_star_L - rho_L * energy_density_L)
+            flux_energy_star_L = flux_energy_L + S_L * (
+                energy_star_L - rho_L * energy_density_L
+            )
 
             return flux_mass_star_L, flux_momentum_star_L, flux_energy_star_L
         elif S_star <= 0.0 <= S_R:
@@ -202,14 +205,17 @@ class HLLCRiemannSolverCartesian1D:
             rho_star_R = rho_R * (S_R - u_R) / (S_R - S_star)
             momentum_star_R = rho_star_R * S_star
             energy_star_R = rho_star_R * (
-                energy_density_R + (S_star - u_R) * (S_star + p_R / (rho_R * (S_R - u_R)))
+                energy_density_R
+                + (S_star - u_R) * (S_star + p_R / (rho_R * (S_R - u_R)))
             )
 
             flux_mass_star_R = flux_mass_R + S_R * (rho_star_R - rho_R)
             flux_momentum_star_R = flux_momentum_R + S_R * (
                 momentum_star_R - rho_R * u_R
             )
-            flux_energy_star_R = flux_energy_R + S_R * (energy_star_R - rho_R * energy_density_R)
+            flux_energy_star_R = flux_energy_R + S_R * (
+                energy_star_R - rho_R * energy_density_R
+            )
 
             return flux_mass_star_R, flux_momentum_star_R, flux_energy_star_R
         elif S_R <= 0.0:

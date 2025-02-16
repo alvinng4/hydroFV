@@ -12,7 +12,7 @@ import riemann_solvers
 
 RIEMANN_SOLVER = "hllc"
 COORD_SYS = "cartesian_1d"
-NUM_CELLS = 128
+NUM_CELLS = 2048
 
 
 def main() -> None:
@@ -77,43 +77,25 @@ def get_initial_system(num_cells: int, coord_sys: str) -> FiniteVolume1D.system.
     system = FiniteVolume1D.system.System(
         num_cells=num_cells,
         gamma=5.0 / 3.0,
+        coord_sys=coord_sys,
         left_boundary_condition="reflective",
         right_boundary_condition="reflective",
     )
-    total_num_cells = num_cells + system.num_ghosts_cells
     system.velocity.fill(0.0)
-    if coord_sys == "cartesian_1d":
-        system.volume.fill(1.0 / total_num_cells)
-        system.surface_area.fill(1.0)
-        for i in range(total_num_cells):
-            system.mid_points[i] = (i + 0.5) / total_num_cells
+    for i in range(system.total_num_cells):
+        system.cell_left[i] = i / system.total_num_cells
+        system.cell_right[i] = (i + 1) / system.total_num_cells
 
-            if i < num_cells / 2:
-                system.density[i] = 1.0
-                system.pressure[i] = 1.0
-            else:
-                system.density[i] = 0.125
-                system.pressure[i] = 0.1
-    elif coord_sys == "spherical_1d":
-        for i in range(total_num_cells):
-            system.mid_points[i] = (i + 0.5) / total_num_cells
-            system.volume[i] = (
-                4.0
-                / 3.0
-                * np.pi
-                * (((i + 1) / total_num_cells) ** 3 - (i / total_num_cells) ** 3)
-            )
-            system.surface_area[i] = 4.0 * np.pi * ((i / total_num_cells) ** 2)
+        if i < num_cells / 2:
+            system.density[i] = 1.0
+            system.pressure[i] = 1.0
+        else:
+            system.density[i] = 0.125
+            system.pressure[i] = 0.1
 
-            if i < num_cells / 2:
-                system.density[i] = 1.0
-                system.pressure[i] = 1.0
-            else:
-                system.density[i] = 0.125
-                system.pressure[i] = 0.1
-    else:
-        raise ValueError("Invalid coord_sys")
-
+    system.compute_volume()
+    system.compute_surface_area()
+    system.compute_mid_points()
     system.convert_primitive_to_conserved()
     system.set_boundary_condition()
 
