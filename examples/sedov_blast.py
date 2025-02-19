@@ -15,10 +15,10 @@ import numpy as np
 import rich.progress
 
 import FiniteVolume1D
-import riemann_solvers
+# import riemann_solvers
 
 RIEMANN_SOLVER = "hllc"
-COORD_SYS = "cartesian_1d"
+COORD_SYS = "spherical_1d"
 NUM_CELLS = 256
 
 
