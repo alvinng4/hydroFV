@@ -2,11 +2,14 @@
 HLLC Riemann solver for the 1D Euler equations.
 
 Usage:
-    solver = HLLCRiemannSolverCartesian1D()
+    solver = HLLCRiemannSolver1D()
 
 References:
     1. Toro, E. F., Riemann Solvers and Numerical Methods for Fluid Dynamics,
        3rd ed. Springer., 2009.
+
+Author: Ching-Yin Ng
+Date: 2025-2-20
 """
 
 import math
@@ -19,7 +22,7 @@ import numpy as np
 from . import utils
 
 
-class HLLCRiemannSolverCartesian1D:
+class HLLCRiemannSolver1D:
     @staticmethod
     def solve_system_flux(
         gamma: float,
@@ -70,7 +73,7 @@ class HLLCRiemannSolverCartesian1D:
             p_R = p[i + 1]
 
             flux_mass[i], flux_momentum[i], flux_energy[i] = (
-                HLLCRiemannSolverCartesian1D.solve_flux(
+                HLLCRiemannSolver1D.solve_flux(
                     gamma,
                     rho_L,
                     u_L,
@@ -154,11 +157,11 @@ class HLLCRiemannSolverCartesian1D:
             a_R = 0.0
 
         ### Estimate the wave speeds ###
-        p_star = HLLCRiemannSolverCartesian1D.guess_p(
+        p_star = HLLCRiemannSolver1D.guess_p(
             gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, tol
         )
-        q_L = HLLCRiemannSolverCartesian1D.compute_q_L_or_R(gamma, p_L, p_star)
-        q_R = HLLCRiemannSolverCartesian1D.compute_q_L_or_R(gamma, p_R, p_star)
+        q_L = HLLCRiemannSolver1D.compute_q_L_or_R(gamma, p_L, p_star)
+        q_R = HLLCRiemannSolver1D.compute_q_L_or_R(gamma, p_R, p_star)
 
         S_L = u_L - a_L * q_L
         S_R = u_R + a_R * q_R
@@ -352,12 +355,12 @@ class HLLCRiemannSolverCartesian1D:
 
         # Select Two-Shock Riemann solver with PVRS as estimate
         else:
-            A_L = HLLCRiemannSolverCartesian1D.riemann_A_L_or_R(gamma, rho_L)
-            B_L = HLLCRiemannSolverCartesian1D.riemann_B_L_or_R(gamma, p_L)
+            A_L = HLLCRiemannSolver1D.riemann_A_L_or_R(gamma, rho_L)
+            B_L = HLLCRiemannSolver1D.riemann_B_L_or_R(gamma, p_L)
             g_L = math.sqrt(A_L / (ppv + B_L))
 
-            A_R = HLLCRiemannSolverCartesian1D.riemann_A_L_or_R(gamma, rho_R)
-            B_R = HLLCRiemannSolverCartesian1D.riemann_B_L_or_R(gamma, p_R)
+            A_R = HLLCRiemannSolver1D.riemann_A_L_or_R(gamma, rho_R)
+            B_R = HLLCRiemannSolver1D.riemann_B_L_or_R(gamma, p_R)
             g_R = math.sqrt(A_R / (ppv + B_R))
 
             p_guess = (g_L * p_L + g_R * p_R - (u_R - u_L)) / (g_L + g_R)

@@ -3,8 +3,8 @@ from typing import Tuple
 
 import numpy as np
 
-from .exact_riemann_solver_1d import ExactRiemannSolverCartesian1D
-from .hllc_riemann_solver_1d import HLLCRiemannSolverCartesian1D
+from .exact_riemann_solver_1d import ExactRiemannSolver1D
+from .hllc_riemann_solver_1d import HLLCRiemannSolver1D
 
 
 def solve_system_flux(
@@ -12,37 +12,35 @@ def solve_system_flux(
     rho: np.ndarray,
     u: np.ndarray,
     p: np.ndarray,
-    coord_sys: str,
+    dim: int,
     solver: str,
     speed: float = 0.0,
     tol: float = 1e-6,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     # Check input
-    if coord_sys not in ["cartesian_1d", "spherical_1d"]:
+    available_solvers = ["exact", "hllc"]
+    available_dimensions = [1]
+    if solver not in available_solvers:
         raise ValueError(
-            f'Invalid coordinate system: {coord_sys}. Available coordinate systems: ["cartesian_1d", "spherical_1d"]'
+            f"Invalid solver: {solver}. Available solvers: {available_solvers}"
         )
-    if solver not in ["exact", "hllc"]:
+    if dim not in available_dimensions:
         raise ValueError(
-            f'Invalid solver: {solver}. Available solvers: ["exact", "hllc"]'
+            f"Invalid dimension: {dim}. Available dimensions: {available_dimensions}"
         )
-    elif solver == "exact":
+
+    if solver == "exact":
+        flux_mass, flux_momentum, flux_energy = ExactRiemannSolver1D.solve_system_flux(
+            gamma, rho, u, p, speed, tol
+        )
+    elif solver == "hllc":
         if speed != 0.0:
             warnings.warn(
                 'The "speed" parameter is available for the exact riemann solver only. Ignoring the input value.'
             )
-
-    if coord_sys in ["cartesian_1d", "spherical_1d"]:
-        if solver == "exact":
-            flux_mass, flux_momentum, flux_energy = (
-                ExactRiemannSolverCartesian1D.solve_system_flux(
-                    gamma, rho, u, p, speed, tol
-                )
-            )
-        elif solver == "hllc":
-            flux_mass, flux_momentum, flux_energy = (
-                HLLCRiemannSolverCartesian1D.solve_system_flux(gamma, rho, u, p, tol)
-            )
+        flux_mass, flux_momentum, flux_energy = HLLCRiemannSolver1D.solve_system_flux(
+            gamma, rho, u, p, tol
+        )
 
     return flux_mass, flux_momentum, flux_energy
 
@@ -55,7 +53,7 @@ def solve(
     rho_R: float,
     u_R: float,
     p_R: float,
-    coord_sys: str,
+    dim: int,
     solver: str,
     speed: float = 0.0,
     tol: float = 1e-6,
@@ -78,8 +76,8 @@ def solve(
         Velocity of the right state.
     p_R : float
         Pressure of the right state.
-    coord_sys : str
-        Coordinate system.
+    dim : int
+        Dimension of the problem.
     solver : str
         Riemann solver to use, available options: ["exact"].
     speed : float (optional)
@@ -97,27 +95,25 @@ def solve(
         Velocity in the middle state.
     """
     # Check input
-    available_coord_sys = ["cartesian_1d", "spherical_1d"]
-    if coord_sys not in available_coord_sys:
-        raise ValueError(
-            f"Invalid coordinate system: {coord_sys}. Available coordinate systems: f{available_coord_sys}"
-        )
     available_solvers = ["exact"]
+    available_dimensions = [1]
     if solver not in available_solvers:
         if solver == "hllc":
             raise ValueError(
                 f'Invalid solver: "hllc". Use solve_system_flux() for the HLLC solver.'
             )
+        else:
+            raise ValueError(
+                f"Invalid solver: {solver}. Available solvers: {available_solvers}"
+            )
+    if dim not in available_dimensions:
         raise ValueError(
-            f'Invalid solver: "{solver}". Available solvers: {available_solvers}'
+            f"Invalid dimension: {dim}. Available dimensions: {available_dimensions}"
         )
 
-    if coord_sys == "cartesian_1d":
-        if solver == "exact":
-            rho, u, p = ExactRiemannSolverCartesian1D.solve(
-                gamma, rho_L, u_L, p_L, rho_R, u_R, p_R, speed, tol
-            )
-    elif coord_sys == "spherical_1d":
-        raise NotImplementedError
+    if solver == "exact":
+        rho, u, p = ExactRiemannSolver1D.solve(
+            gamma, rho_L, u_L, p_L, rho_R, u_R, p_R, speed, tol
+        )
 
     return rho, u, p

@@ -26,7 +26,7 @@ def solving_step(system: System, dt: float, solver: str) -> None:
         system.density,
         system.velocity,
         system.pressure,
-        system.coord_sys,
+        1,
         solver,
     )
 

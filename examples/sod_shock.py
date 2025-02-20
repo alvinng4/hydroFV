@@ -22,7 +22,7 @@ import FiniteVolume1D
 import riemann_solvers
 
 RIEMANN_SOLVER = "hllc"
-COORD_SYS = "spherical_1d"
+COORD_SYS = "cartesian_1d"
 NUM_CELLS = 126  # 2 for ghost cells
 
 
@@ -132,7 +132,7 @@ def get_reference_sol(
                 u_R=0.0,
                 p_R=0.1,
                 speed=(x - 0.5) / tf,
-                coord_sys="cartesian_1d",
+                dim=1,
                 solver="exact",
             )
             for x in x_ref
