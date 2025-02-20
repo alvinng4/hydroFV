@@ -1,3 +1,14 @@
+#!/usr/bin/env python
+"""
+Sod shock tube test
+
+Usage:
+    python sod_shock.py
+
+Author: Ching-Yin Ng
+Date: 2025-2-20
+"""
+
 import sys
 import timeit
 
@@ -12,7 +23,7 @@ import riemann_solvers
 
 RIEMANN_SOLVER = "hllc"
 COORD_SYS = "spherical_1d"
-NUM_CELLS = 100
+NUM_CELLS = 126  # 2 for ghost cells
 
 
 def main() -> None:
@@ -48,24 +59,28 @@ def main() -> None:
     print(f"Done! Num steps: {num_steps}, Time: {end - start:.3f}s")
 
     # plot the reference solution and the actual solution
-    x_ref, rho_ref, u_ref, p_ref = get_reference_sol(
-        system.gamma,
-        tf,
-    )
+    if COORD_SYS == "cartesian_1d":
+        x_ref, rho_ref, u_ref, p_ref = get_reference_sol(
+            system.gamma,
+            tf,
+        )
 
-    fig, axs = plt.subplots(1, 3, figsize=(14, 4))
+    _, axs = plt.subplots(1, 3, figsize=(14, 4))
     axs[0].plot(system.mid_points[1:-1], system.density[1:-1], "k.")
-    axs[0].plot(x_ref, rho_ref, "r-")
+    if COORD_SYS == "cartesian_1d":
+        axs[0].plot(x_ref, rho_ref, "r-")
     axs[0].set_xlabel("Position")
     axs[0].set_ylabel("Density")
 
     axs[1].plot(system.mid_points[1:-1], system.velocity[1:-1], "k.")
-    axs[1].plot(x_ref, u_ref, "r-")
+    if COORD_SYS == "cartesian_1d":
+        axs[1].plot(x_ref, u_ref, "r-")
     axs[1].set_xlabel("Position")
     axs[1].set_ylabel("Velocity")
 
     axs[2].plot(system.mid_points[1:-1], system.pressure[1:-1], "k.")
-    axs[2].plot(x_ref, p_ref, "r-")
+    if COORD_SYS == "cartesian_1d":
+        axs[2].plot(x_ref, p_ref, "r-")
     axs[2].set_xlabel("Position")
     axs[2].set_ylabel("Pressure")
 
