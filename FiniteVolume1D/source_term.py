@@ -5,11 +5,11 @@ import numpy as np
 from .system import System
 
 
-def add_spherical_source_term(
+def add_geometry_source_term(
     system: System,
     dt: float,
 ) -> None:
-    """Add the spherical source term for the spherical 1D euler equations."""
+    """Add the cylindrical / spherical geometry source term for the 1D euler equations."""
     d_mass, d_momentum, d_energy = rk2(system, dt)
 
     system.mass[1:-1] += d_mass
@@ -36,7 +36,7 @@ def compute_source_term(
 
 
 def euler(system: System, dt: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    pre_factor = -2.0 / system.mid_points[1:-1] * system.volume[1:-1]
+    pre_factor = -system.alpha / system.mid_points[1:-1] * system.volume[1:-1]
     d_mass, d_momentum, d_energy = compute_source_term(
         system.gamma,
         pre_factor * dt,
@@ -49,7 +49,7 @@ def euler(system: System, dt: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray
 
 
 def rk2(system: System, dt: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    pre_factor = -2.0 / system.mid_points[1:-1] * system.volume[1:-1]
+    pre_factor = -system.alpha / system.mid_points[1:-1] * system.volume[1:-1]
     k1_mass, k1_momentum, k1_energy = compute_source_term(
         system.gamma,
         pre_factor,
@@ -78,7 +78,7 @@ def rk2(system: System, dt: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
 
 def rk4(system: System, dt: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    pre_factor = -2.0 / system.mid_points[1:-1] * system.volume[1:-1]
+    pre_factor = -system.alpha / system.mid_points[1:-1] * system.volume[1:-1]
     k1_mass, k1_momentum, k1_energy = compute_source_term(
         system.gamma,
         pre_factor,

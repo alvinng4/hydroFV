@@ -5,7 +5,7 @@ import numpy as np
 
 class System:
     AVAILABLE_BOUNDARY_CONDITIONS = ["reflective", "transmissive"]
-    AVAILABLE_COORD_SYS = ["cartesian_1d", "spherical_1d"]
+    AVAILABLE_COORD_SYS = ["cartesian_1d", "cylindrical_1d", "spherical_1d"]
 
     def __init__(
         self,
@@ -14,7 +14,7 @@ class System:
         coord_sys: str = "cartesian_1d",
         left_boundary_condition: Optional[str] = None,
         right_boundary_condition: Optional[str] = None,
-    ):
+    ) -> None:
         self.num_cells = num_cells
         self.num_ghosts_cells = 2
         self.total_num_cells = self.num_cells + self.num_ghosts_cells
@@ -25,6 +25,13 @@ class System:
                 f"Invalid coordinate system: {coord_sys}. Available coordinate systems: {self.AVAILABLE_COORD_SYS}"
             )
         self.coord_sys = coord_sys
+
+        if self.coord_sys == "cartesian_1d":
+            self.alpha = 0.0
+        elif self.coord_sys == "cylindrical_1d":
+            self.alpha = 1.0
+        elif self.coord_sys == "spherical_1d":
+            self.alpha = 2.0
 
         if (
             left_boundary_condition is not None
@@ -61,6 +68,8 @@ class System:
     def compute_volume(self):
         if self.coord_sys == "cartesian_1d":
             self.volume = self.cell_right - self.cell_left
+        elif self.coord_sys == "cylindrical_1d":
+            self.volume = np.pi * (self.cell_right**2 - self.cell_left**2)
         elif self.coord_sys == "spherical_1d":
             self.volume = 4.0 / 3.0 * np.pi * (self.cell_right**3 - self.cell_left**3)
         else:
@@ -69,6 +78,9 @@ class System:
     def compute_surface_area(self):
         if self.coord_sys == "cartesian_1d":
             self.surface_area.fill(1.0)
+        elif self.coord_sys == "cylindrical_1d":
+            self.surface_area[1:] = 2.0 * np.pi * self.cell_right
+            self.surface_area[0] = 2.0 * np.pi * self.cell_left[0]
         elif self.coord_sys == "spherical_1d":
             self.surface_area[1:] = 4.0 * np.pi * self.cell_right**2
             self.surface_area[0] = 4.0 * np.pi * self.cell_left[0] ** 2

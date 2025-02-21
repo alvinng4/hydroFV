@@ -47,6 +47,6 @@ def solving_step(system: System, dt: float, solver: str) -> None:
     system.convert_conserved_to_primitive()
     system.set_boundary_condition()
 
-    ### Add spherical source term ###
-    if system.coord_sys == "spherical_1d":
-        source_term.add_spherical_source_term(system, dt)
+    ### Add cylindrical / spherical geometry source term ###
+    if system.coord_sys != "cartesian_1d":
+        source_term.add_geometry_source_term(system, dt)
