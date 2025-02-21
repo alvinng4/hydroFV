@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Sod shock tube test
 
@@ -6,7 +5,7 @@ Usage:
     python sod_shock.py
 
 Author: Ching-Yin Ng
-Date: 2025-2-20
+Date: 2025-2-21
 """
 
 import sys
@@ -23,11 +22,23 @@ import riemann_solvers
 
 RIEMANN_SOLVER = "hllc"
 COORD_SYS = "cartesian_1d"
-NUM_CELLS = 126  # 2 for ghost cells
+NUM_CELLS = 256
+
+### Sod shock parameters ###
+GAMMA = 1.4
+RHO_L = 1.0
+U_L = 0.0
+P_L = 1.0
+RHO_R = 0.125
+U_R = 0.0
+P_R = 0.1
+DISCONTINUITY_POS = 0.5
+LEFT_BOUNDARY_CONDITION = "reflective"
+RIGHT_BOUNDARY_CONDITION = "reflective"
 
 
 def main() -> None:
-    assert COORD_SYS in ["cartesian_1d", "spherical_1d"]
+    assert COORD_SYS in ["cartesian_1d", "cylindrical_1d", "spherical_1d"]
 
     cfl = 0.9
     tf = 0.2
@@ -58,29 +69,28 @@ def main() -> None:
     end = timeit.default_timer()
     print(f"Done! Num steps: {num_steps}, Time: {end - start:.3f}s")
 
-    # plot the reference solution and the actual solution
+    # Plot the reference solution and the actual solution
+    # Currently, only cartesian_1d is supported
     if COORD_SYS == "cartesian_1d":
-        x_ref, rho_ref, u_ref, p_ref = get_reference_sol(
-            system.gamma,
-            tf,
-        )
+        x_sol, rho_sol, u_sol, p_sol = get_reference_sol(tf)
 
     _, axs = plt.subplots(1, 3, figsize=(14, 4))
-    axs[0].plot(system.mid_points[1:-1], system.density[1:-1], "k.")
     if COORD_SYS == "cartesian_1d":
-        axs[0].plot(x_ref, rho_ref, "r-")
+        axs[0].plot(x_sol, rho_sol, "r-")
+    axs[0].plot(system.mid_points[1:-1], system.density[1:-1], "k.", markersize=2)
     axs[0].set_xlabel("Position")
     axs[0].set_ylabel("Density")
 
-    axs[1].plot(system.mid_points[1:-1], system.velocity[1:-1], "k.")
     if COORD_SYS == "cartesian_1d":
-        axs[1].plot(x_ref, u_ref, "r-")
+        axs[1].plot(x_sol, u_sol, "r-")
+    axs[1].plot(system.mid_points[1:-1], system.velocity[1:-1], "k.", markersize=2)
     axs[1].set_xlabel("Position")
     axs[1].set_ylabel("Velocity")
+    axs[1].set_ylim(-0.1, 1.2)
 
-    axs[2].plot(system.mid_points[1:-1], system.pressure[1:-1], "k.")
     if COORD_SYS == "cartesian_1d":
-        axs[2].plot(x_ref, p_ref, "r-")
+        axs[2].plot(x_sol, p_sol, "r-")
+    axs[2].plot(system.mid_points[1:-1], system.pressure[1:-1], "k.", markersize=2)
     axs[2].set_xlabel("Position")
     axs[2].set_ylabel("Pressure")
 
@@ -91,22 +101,23 @@ def main() -> None:
 def get_initial_system(num_cells: int, coord_sys: str) -> FiniteVolume1D.system.System:
     system = FiniteVolume1D.system.System(
         num_cells=num_cells,
-        gamma=5.0 / 3.0,
+        gamma=GAMMA,
         coord_sys=coord_sys,
-        left_boundary_condition="reflective",
-        right_boundary_condition="reflective",
+        left_boundary_condition=LEFT_BOUNDARY_CONDITION,
+        right_boundary_condition=RIGHT_BOUNDARY_CONDITION,
     )
-    system.velocity.fill(0.0)
     for i in range(system.total_num_cells):
         system.cell_left[i] = i / system.total_num_cells
         system.cell_right[i] = (i + 1) / system.total_num_cells
 
-        if i < num_cells / 2:
-            system.density[i] = 1.0
-            system.pressure[i] = 1.0
+        if (i + 0.5) / system.total_num_cells < DISCONTINUITY_POS:
+            system.density[i] = RHO_L
+            system.velocity[i] = U_L
+            system.pressure[i] = P_L
         else:
-            system.density[i] = 0.125
-            system.pressure[i] = 0.1
+            system.density[i] = RHO_R
+            system.velocity[i] = U_R
+            system.pressure[i] = P_R
 
     system.compute_volume()
     system.compute_surface_area()
@@ -118,31 +129,49 @@ def get_initial_system(num_cells: int, coord_sys: str) -> FiniteVolume1D.system.
 
 
 def get_reference_sol(
-    gamma: float, tf: float
+    tf: float,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    x_ref = np.arange(0.0, 1.0, 0.001)
+    """Get the reference solution of the Sod shock tube problem.
+
+    Parameters
+    ----------
+    tf : float
+        Final time.
+
+    Returns
+    -------
+    x_sol : np.ndarray
+        Position solution.
+    rho_sol : np.ndarray
+        Density solution.
+    u_sol : np.ndarray
+        Velocity solution.
+    p_sol : np.ndarray
+        Pressure solution.
+    """
+    x_sol = np.arange(0.0, 1.0, 0.001)
     sol = np.array(
         [
             riemann_solvers.solve(
-                gamma=gamma,
-                rho_L=1.0,
-                u_L=0.0,
-                p_L=1.0,
-                rho_R=0.125,
-                u_R=0.0,
-                p_R=0.1,
-                speed=(x - 0.5) / tf,
+                gamma=GAMMA,
+                rho_L=RHO_L,
+                u_L=U_L,
+                p_L=P_L,
+                rho_R=RHO_R,
+                u_R=U_R,
+                p_R=P_R,
+                speed=(x - DISCONTINUITY_POS) / tf,
                 dim=1,
                 solver="exact",
             )
-            for x in x_ref
+            for x in x_sol
         ]
     )
-    rho_ref = sol[:, 0]
-    u_ref = sol[:, 1]
-    p_ref = sol[:, 2]
+    rho_sol = sol[:, 0]
+    u_sol = sol[:, 1]
+    p_sol = sol[:, 2]
 
-    return x_ref, rho_ref, u_ref, p_ref
+    return x_sol, rho_sol, u_sol, p_sol
 
 
 if __name__ == "__main__":
