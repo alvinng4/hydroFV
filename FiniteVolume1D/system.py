@@ -12,12 +12,14 @@ class System:
         num_cells: int,
         gamma: float,
         coord_sys: str = "cartesian_1d",
+        domain: tuple[float, float] = (0.0, 1.0),
+        num_ghost_cells_side: int = 1,
         left_boundary_condition: Optional[str] = None,
         right_boundary_condition: Optional[str] = None,
     ) -> None:
         self.num_cells = num_cells
-        self.num_ghosts_cells = 2
-        self.total_num_cells = self.num_cells + self.num_ghosts_cells
+        self.num_ghost_cells_side = num_ghost_cells_side
+        self.total_num_cells = self.num_cells + 2 * self.num_ghost_cells_side
         self.gamma = gamma
 
         if coord_sys not in self.AVAILABLE_COORD_SYS:
@@ -65,6 +67,14 @@ class System:
         self.velocity = np.zeros(self.total_num_cells)
         self.pressure = np.zeros(self.total_num_cells)
 
+        for i in range(self.total_num_cells):
+            self.cell_left[i] = i / self.total_num_cells
+            self.cell_right[i] = (i + 1) / self.total_num_cells
+
+        self.compute_volume()
+        self.compute_surface_area()
+        self.compute_mid_points()
+
     def compute_volume(self):
         if self.coord_sys == "cartesian_1d":
             self.volume = self.cell_right - self.cell_left
@@ -94,11 +104,17 @@ class System:
         if self._left_boundary_condition is not None:
             if self._left_boundary_condition == "reflective":
                 self._set_left_reflective_boundary_condition(
-                    self.velocity, self.pressure, self.density
+                    self.num_ghost_cells_side,
+                    self.velocity,
+                    self.pressure,
+                    self.density,
                 )
             elif self._left_boundary_condition == "transmissive":
                 self._set_left_transmissive_boundary_condition(
-                    self.velocity, self.pressure, self.density
+                    self.num_ghost_cells_side,
+                    self.velocity,
+                    self.pressure,
+                    self.density,
                 )
             else:
                 raise ValueError
@@ -106,46 +122,72 @@ class System:
         if self._right_boundary_condition is not None:
             if self._right_boundary_condition == "reflective":
                 self._set_right_reflective_boundary_condition(
-                    self.velocity, self.pressure, self.density
+                    self.num_ghost_cells_side,
+                    self.velocity,
+                    self.pressure,
+                    self.density,
                 )
             elif self._right_boundary_condition == "transmissive":
                 self._set_right_transmissive_boundary_condition(
-                    self.velocity, self.pressure, self.density
+                    self.num_ghost_cells_side,
+                    self.velocity,
+                    self.pressure,
+                    self.density,
                 )
             else:
                 raise ValueError
 
     @staticmethod
     def _set_left_reflective_boundary_condition(
-        velocity: np.ndarray, pressure: np.ndarray, density: np.ndarray
+        num_ghost_cells_side: int,
+        velocity: np.ndarray,
+        pressure: np.ndarray,
+        density: np.ndarray,
     ):
-        velocity[0] = -velocity[1]
-        pressure[0] = pressure[1]
-        density[0] = density[1]
+        for i in range(num_ghost_cells_side):
+            density[num_ghost_cells_side - 1 - i] = density[num_ghost_cells_side + i]
+            velocity[num_ghost_cells_side - 1 - i] = -velocity[num_ghost_cells_side + i]
+            pressure[num_ghost_cells_side - 1 - i] = pressure[num_ghost_cells_side + i]
 
     @staticmethod
     def _set_right_reflective_boundary_condition(
-        velocity: np.ndarray, pressure: np.ndarray, density: np.ndarray
+        num_ghost_cells_side: int,
+        velocity: np.ndarray,
+        pressure: np.ndarray,
+        density: np.ndarray,
     ):
-        velocity[-1] = -velocity[-2]
-        pressure[-1] = pressure[-2]
-        density[-1] = density[-2]
+        for i in range(num_ghost_cells_side):
+            density[-num_ghost_cells_side + i] = density[-num_ghost_cells_side - 1 - i]
+            velocity[-num_ghost_cells_side + i] = -velocity[
+                -num_ghost_cells_side - 1 - i
+            ]
+            pressure[-num_ghost_cells_side + i] = pressure[
+                -num_ghost_cells_side - 1 - i
+            ]
 
     @staticmethod
     def _set_left_transmissive_boundary_condition(
-        velocity: np.ndarray, pressure: np.ndarray, density: np.ndarray
+        num_ghost_cells_side: int,
+        velocity: np.ndarray,
+        pressure: np.ndarray,
+        density: np.ndarray,
     ):
-        velocity[0] = velocity[1]
-        pressure[0] = pressure[1]
-        density[0] = density[1]
+        for i in range(num_ghost_cells_side):
+            density[i] = density[num_ghost_cells_side]
+            velocity[i] = velocity[num_ghost_cells_side]
+            pressure[i] = pressure[num_ghost_cells_side]
 
     @staticmethod
     def _set_right_transmissive_boundary_condition(
-        velocity: np.ndarray, pressure: np.ndarray, density: np.ndarray
+        num_ghost_cells_side: int,
+        velocity: np.ndarray,
+        pressure: np.ndarray,
+        density: np.ndarray,
     ):
-        velocity[-1] = velocity[-2]
-        pressure[-1] = pressure[-2]
-        density[-1] = density[-2]
+        for i in range(num_ghost_cells_side):
+            density[-1 - i] = density[-1 - num_ghost_cells_side]
+            velocity[-1 - i] = velocity[-1 - num_ghost_cells_side]
+            pressure[-1 - i] = pressure[-1 - num_ghost_cells_side]
 
     def convert_conserved_to_primitive(self):
         self.density = self.mass / self.volume

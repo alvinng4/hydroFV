@@ -22,7 +22,9 @@ import riemann_solvers
 
 RIEMANN_SOLVER = "hllc"
 COORD_SYS = "cartesian_1d"
-NUM_CELLS = 256
+NUM_TOTAL_CELLS = 256
+NUM_GHOST_CELLS_SIDE = 1
+NUM_CELLS = NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
 
 ### Sod shock parameters ###
 GAMMA = 1.4
@@ -77,20 +79,35 @@ def main() -> None:
     _, axs = plt.subplots(1, 3, figsize=(14, 4))
     if COORD_SYS == "cartesian_1d":
         axs[0].plot(x_sol, rho_sol, "r-")
-    axs[0].plot(system.mid_points[1:-1], system.density[1:-1], "k.", markersize=2)
+    axs[0].plot(
+        system.mid_points[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
+        system.density[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
+        "k.",
+        markersize=2,
+    )
     axs[0].set_xlabel("Position")
     axs[0].set_ylabel("Density")
 
     if COORD_SYS == "cartesian_1d":
         axs[1].plot(x_sol, u_sol, "r-")
-    axs[1].plot(system.mid_points[1:-1], system.velocity[1:-1], "k.", markersize=2)
+    axs[1].plot(
+        system.mid_points[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
+        system.velocity[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
+        "k.",
+        markersize=2,
+    )
     axs[1].set_xlabel("Position")
     axs[1].set_ylabel("Velocity")
     axs[1].set_ylim(-0.1, 1.2)
 
     if COORD_SYS == "cartesian_1d":
         axs[2].plot(x_sol, p_sol, "r-")
-    axs[2].plot(system.mid_points[1:-1], system.pressure[1:-1], "k.", markersize=2)
+    axs[2].plot(
+        system.mid_points[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
+        system.pressure[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
+        "k.",
+        markersize=2,
+    )
     axs[2].set_xlabel("Position")
     axs[2].set_ylabel("Pressure")
 
@@ -103,13 +120,12 @@ def get_initial_system(num_cells: int, coord_sys: str) -> FiniteVolume1D.system.
         num_cells=num_cells,
         gamma=GAMMA,
         coord_sys=coord_sys,
+        domain=(0.0, 1.0),
+        num_ghost_cells_side=NUM_GHOST_CELLS_SIDE,
         left_boundary_condition=LEFT_BOUNDARY_CONDITION,
         right_boundary_condition=RIGHT_BOUNDARY_CONDITION,
     )
     for i in range(system.total_num_cells):
-        system.cell_left[i] = i / system.total_num_cells
-        system.cell_right[i] = (i + 1) / system.total_num_cells
-
         if (i + 0.5) / system.total_num_cells < DISCONTINUITY_POS:
             system.density[i] = RHO_L
             system.velocity[i] = U_L
@@ -119,9 +135,6 @@ def get_initial_system(num_cells: int, coord_sys: str) -> FiniteVolume1D.system.
             system.velocity[i] = U_R
             system.pressure[i] = P_R
 
-    system.compute_volume()
-    system.compute_surface_area()
-    system.compute_mid_points()
     system.convert_primitive_to_conserved()
     system.set_boundary_condition()
 

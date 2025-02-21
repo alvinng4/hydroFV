@@ -12,9 +12,13 @@ def add_geometry_source_term(
     """Add the cylindrical / spherical geometry source term for the 1D euler equations."""
     d_mass, d_momentum, d_energy = rk2(system, dt)
 
-    system.mass[1:-1] += d_mass
-    system.momentum[1:-1] += d_momentum
-    system.energy[1:-1] += d_energy
+    system.mass[system.num_ghost_cells_side : -system.num_ghost_cells_side] += d_mass
+    system.momentum[system.num_ghost_cells_side : -system.num_ghost_cells_side] += (
+        d_momentum
+    )
+    system.energy[system.num_ghost_cells_side : -system.num_ghost_cells_side] += (
+        d_energy
+    )
 
     system.convert_conserved_to_primitive()
     system.set_boundary_condition()
@@ -36,38 +40,62 @@ def compute_source_term(
 
 
 def euler(system: System, dt: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    pre_factor = -system.alpha / system.mid_points[1:-1] * system.volume[1:-1]
+    pre_factor = (
+        -system.alpha
+        / system.mid_points[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+        * system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+    )
     d_mass, d_momentum, d_energy = compute_source_term(
         system.gamma,
         pre_factor * dt,
-        system.density[1:-1],
-        system.momentum[1:-1] / system.volume[1:-1],
-        system.energy[1:-1] / system.volume[1:-1],
+        system.density[system.num_ghost_cells_side : -system.num_ghost_cells_side],
+        system.momentum[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
+        system.energy[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
     )
 
     return d_mass, d_momentum, d_energy
 
 
 def rk2(system: System, dt: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    pre_factor = -system.alpha / system.mid_points[1:-1] * system.volume[1:-1]
+    pre_factor = (
+        -system.alpha
+        / system.mid_points[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+        * system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+    )
     k1_mass, k1_momentum, k1_energy = compute_source_term(
         system.gamma,
         pre_factor,
-        system.density[1:-1],
-        system.momentum[1:-1] / system.volume[1:-1],
-        system.energy[1:-1] / system.volume[1:-1],
+        system.density[system.num_ghost_cells_side : -system.num_ghost_cells_side],
+        system.momentum[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
+        system.energy[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
     )
 
-    temp_mass = system.mass[1:-1] + k1_mass * dt
-    temp_momentum = system.momentum[1:-1] + k1_momentum * dt
-    temp_energy = system.energy[1:-1] + k1_energy * dt
+    temp_mass = (
+        system.mass[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+        + k1_mass * dt
+    )
+    temp_momentum = (
+        system.momentum[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+        + k1_momentum * dt
+    )
+    temp_energy = (
+        system.energy[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+        + k1_energy * dt
+    )
 
     k2_mass, k2_momentum, k2_energy = compute_source_term(
         system.gamma,
         pre_factor,
-        temp_mass / system.volume[1:-1],
-        temp_momentum / system.volume[1:-1],
-        temp_energy / system.volume[1:-1],
+        temp_mass
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
+        temp_momentum
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
+        temp_energy
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
     )
 
     d_mass = 0.5 * (k1_mass + k2_mass) * dt
@@ -78,49 +106,85 @@ def rk2(system: System, dt: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
 
 def rk4(system: System, dt: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    pre_factor = -system.alpha / system.mid_points[1:-1] * system.volume[1:-1]
+    pre_factor = (
+        -system.alpha
+        / system.mid_points[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+        * system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+    )
     k1_mass, k1_momentum, k1_energy = compute_source_term(
         system.gamma,
         pre_factor,
-        system.density[1:-1],
-        system.momentum[1:-1] / system.volume[1:-1],
-        system.energy[1:-1] / system.volume[1:-1],
+        system.density[system.num_ghost_cells_side : -system.num_ghost_cells_side],
+        system.momentum[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
+        system.energy[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
     )
 
-    temp_mass = system.mass[1:-1] + k1_mass * (0.5 * dt)
-    temp_momentum = system.momentum[1:-1] + k1_momentum * (0.5 * dt)
-    temp_energy = system.energy[1:-1] + k1_energy * (0.5 * dt)
+    temp_mass = system.mass[
+        system.num_ghost_cells_side : -system.num_ghost_cells_side
+    ] + k1_mass * (0.5 * dt)
+    temp_momentum = system.momentum[
+        system.num_ghost_cells_side : -system.num_ghost_cells_side
+    ] + k1_momentum * (0.5 * dt)
+    temp_energy = system.energy[
+        system.num_ghost_cells_side : -system.num_ghost_cells_side
+    ] + k1_energy * (0.5 * dt)
 
     k2_mass, k2_momentum, k2_energy = compute_source_term(
         system.gamma,
         pre_factor,
-        temp_mass / system.volume[1:-1],
-        temp_momentum / system.volume[1:-1],
-        temp_energy / system.volume[1:-1],
+        temp_mass
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
+        temp_momentum
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
+        temp_energy
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
     )
 
-    temp_mass = system.mass[1:-1] + k2_mass * (0.5 * dt)
-    temp_momentum = system.momentum[1:-1] + k2_momentum * (0.5 * dt)
-    temp_energy = system.energy[1:-1] + k2_energy * (0.5 * dt)
+    temp_mass = system.mass[
+        system.num_ghost_cells_side : -system.num_ghost_cells_side
+    ] + k2_mass * (0.5 * dt)
+    temp_momentum = system.momentum[
+        system.num_ghost_cells_side : -system.num_ghost_cells_side
+    ] + k2_momentum * (0.5 * dt)
+    temp_energy = system.energy[
+        system.num_ghost_cells_side : -system.num_ghost_cells_side
+    ] + k2_energy * (0.5 * dt)
 
     k3_mass, k3_momentum, k3_energy = compute_source_term(
         system.gamma,
         pre_factor,
-        temp_mass / system.volume[1:-1],
-        temp_momentum / system.volume[1:-1],
-        temp_energy / system.volume[1:-1],
+        temp_mass
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
+        temp_momentum
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
+        temp_energy
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
     )
 
-    temp_mass = system.mass[1:-1] + k3_mass * dt
-    temp_momentum = system.momentum[1:-1] + k3_momentum * dt
-    temp_energy = system.energy[1:-1] + k3_energy * dt
+    temp_mass = (
+        system.mass[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+        + k3_mass * dt
+    )
+    temp_momentum = (
+        system.momentum[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+        + k3_momentum * dt
+    )
+    temp_energy = (
+        system.energy[system.num_ghost_cells_side : -system.num_ghost_cells_side]
+        + k3_energy * dt
+    )
 
     k4_mass, k4_momentum, k4_energy = compute_source_term(
         system.gamma,
         pre_factor,
-        temp_mass / system.volume[1:-1],
-        temp_momentum / system.volume[1:-1],
-        temp_energy / system.volume[1:-1],
+        temp_mass
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
+        temp_momentum
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
+        temp_energy
+        / system.volume[system.num_ghost_cells_side : -system.num_ghost_cells_side],
     )
 
     d_mass = (k1_mass + 2 * k2_mass + 2 * k3_mass + k4_mass) * dt / 6
