@@ -35,8 +35,8 @@ RHO_R = 0.125
 U_R = 0.0
 P_R = 0.1
 DISCONTINUITY_POS = 0.5
-LEFT_BOUNDARY_CONDITION = "reflective"
-RIGHT_BOUNDARY_CONDITION = "reflective"
+LEFT_BOUNDARY_CONDITION = "transmissive"
+RIGHT_BOUNDARY_CONDITION = "transmissive"
 
 
 def main() -> None:
@@ -98,7 +98,6 @@ def main() -> None:
     )
     axs[1].set_xlabel("Position")
     axs[1].set_ylabel("Velocity")
-    axs[1].set_ylim(-0.1, 1.2)
 
     if COORD_SYS == "cartesian_1d":
         axs[2].plot(x_sol, p_sol, "r-")
