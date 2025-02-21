@@ -135,8 +135,8 @@ def get_initial_system(num_cells: int, coord_sys: str) -> FiniteVolume1D.system.
             system.velocity[i] = U_R
             system.pressure[i] = P_R
 
-    system.convert_primitive_to_conserved()
     system.set_boundary_condition()
+    system.convert_primitive_to_conserved()
 
     return system
 
