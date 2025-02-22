@@ -10,6 +10,7 @@ Date: 2025-2-22
 
 import sys
 import timeit
+import warnings
 from pathlib import Path
 
 sys.path.append("../../")
@@ -23,7 +24,7 @@ import riemann_solvers
 
 RIEMANN_SOLVER = "hllc"
 COORD_SYS = "spherical_1d"  # "cartesian_1d", "cylindrical_1d", or "spherical_1d"
-NUM_TOTAL_CELLS = 500
+NUM_TOTAL_CELLS = 512
 NUM_GHOST_CELLS_SIDE = 1
 NUM_CELLS = NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
 SOLVER = "godunov_first_order"  # "godunov_first_order" or "random_choice"
@@ -54,9 +55,15 @@ def main() -> None:
         rng = FiniteVolume1D.random_choice.VanDerCorputSequenceGenerator()
 
         if RIEMANN_SOLVER != "exact":
-            print("Only exact Riemann solver is supported for random_choice solver.")
-            print("Switching to exact Riemann solver.")
+            msg = "Only exact Riemann solver is supported for random_choice solver. Switching to exact Riemann solver."
+            warnings.warn(msg)
             RIEMANN_SOLVER = "exact"
+
+        if cfl > 0.5:
+            msg = "The Courant number should be less than 0.5 for random_choice solver. Switching to 0.4."
+            warnings.warn(msg)
+            cfl = 0.4
+
 
     t = 0.0
     num_steps = 0
