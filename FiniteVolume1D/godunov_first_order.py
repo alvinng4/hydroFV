@@ -1,5 +1,4 @@
 from riemann_solvers import solve_system_flux
-
 from . import source_term
 from .system import System
 
@@ -36,13 +35,13 @@ def solving_step(system: System, dt: float, solver: str) -> None:
     d_rho_u = flux_momentum / dr[:-1] * dt
     d_energy_density = flux_energy / dr[:-1] * dt
 
-    system.mass[:-1] -= d_rho * system.volume[:-1]
-    system.momentum[:-1] -= d_rho_u * system.volume[:-1]
-    system.energy[:-1] -= d_energy_density * system.volume[:-1]
+    system.mass[1:-1] -= d_rho[1:] * system.volume[1:-1]
+    system.momentum[1:-1] -= d_rho_u[1:] * system.volume[1:-1]
+    system.energy[1:-1] -= d_energy_density[1:] * system.volume[1:-1]
 
-    system.mass[1:] += d_rho * system.volume[1:]
-    system.momentum[1:] += d_rho_u * system.volume[1:]
-    system.energy[1:] += d_energy_density * system.volume[1:]
+    system.mass[1:-1] += d_rho[:-1] * system.volume[1:-1]
+    system.momentum[1:-1] += d_rho_u[:-1] * system.volume[1:-1]
+    system.energy[1:-1] += d_energy_density[:-1] * system.volume[1:-1]
 
     system.convert_conserved_to_primitive()
     system.set_boundary_condition()

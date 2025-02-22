@@ -10,7 +10,7 @@ def add_geometry_source_term(
     dt: float,
 ) -> None:
     """Add the cylindrical / spherical geometry source term for the 1D euler equations."""
-    d_mass, d_momentum, d_energy = rk2(system, dt)
+    d_mass, d_momentum, d_energy = rk4(system, dt)
 
     system.mass[system.num_ghost_cells_side : -system.num_ghost_cells_side] += d_mass
     system.momentum[system.num_ghost_cells_side : -system.num_ghost_cells_side] += (

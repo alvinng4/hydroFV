@@ -68,8 +68,12 @@ class System:
         self.pressure = np.zeros(self.total_num_cells)
 
         for i in range(self.total_num_cells):
-            self.cell_left[i] = (i / self.total_num_cells) * (domain[1] - domain[0]) + domain[0]
-            self.cell_right[i] = (i + 1) / self.total_num_cells * (domain[1] - domain[0]) + domain[0]
+            self.cell_left[i] = (i / self.total_num_cells) * (
+                domain[1] - domain[0]
+            ) + domain[0]
+            self.cell_right[i] = (i + 1) / self.total_num_cells * (
+                domain[1] - domain[0]
+            ) + domain[0]
 
         self.compute_volume()
         self.compute_surface_area()
