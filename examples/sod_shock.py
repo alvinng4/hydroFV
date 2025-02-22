@@ -5,7 +5,7 @@ Usage:
     python sod_shock.py
 
 Author: Ching-Yin Ng
-Date: 2025-2-21
+Date: 2025-2-22
 """
 
 import sys
@@ -21,10 +21,11 @@ import FiniteVolume1D
 import riemann_solvers
 
 RIEMANN_SOLVER = "hllc"
-COORD_SYS = "cartesian_1d"
-NUM_TOTAL_CELLS = 256
+COORD_SYS = "spherical_1d"
+NUM_TOTAL_CELLS = 500
 NUM_GHOST_CELLS_SIDE = 1
 NUM_CELLS = NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
+SOLVER = "godunov_first_order" # "godunov_first_order" or "random_choice"
 
 ### Sod shock parameters ###
 GAMMA = 1.4
@@ -40,12 +41,21 @@ RIGHT_BOUNDARY_CONDITION = "transmissive"
 
 
 def main() -> None:
+    global RIEMANN_SOLVER
     assert COORD_SYS in ["cartesian_1d", "cylindrical_1d", "spherical_1d"]
 
     cfl = 0.9
-    tf = 0.2
+    tf = 0.25
 
     system = get_initial_system(NUM_CELLS, COORD_SYS)
+
+    if SOLVER == "random_choice":
+        rng = FiniteVolume1D.random_choice.VanDerCorputSequenceGenerator()
+
+        if RIEMANN_SOLVER != "exact":
+            print("Only exact Riemann solver is supported for random_choice solver.")
+            print("Switching to exact Riemann solver.")
+            RIEMANN_SOLVER = "exact"
 
     t = 0.0
     num_steps = 0
@@ -62,7 +72,10 @@ def main() -> None:
             if t + dt > tf:
                 dt = tf - t
 
-            FiniteVolume1D.godunov_first_order.solving_step(system, dt, RIEMANN_SOLVER)
+            if SOLVER == "godunov_first_order":
+                FiniteVolume1D.godunov_first_order.solving_step(system, dt, RIEMANN_SOLVER)
+            elif SOLVER == "random_choice":
+                FiniteVolume1D.random_choice.solving_step(system, dt, RIEMANN_SOLVER, rng)
 
             t += dt
             num_steps += 1
@@ -70,15 +83,13 @@ def main() -> None:
 
     end = timeit.default_timer()
     print(f"Done! Num steps: {num_steps}, Time: {end - start:.3f}s")
+    print()
 
     # Plot the reference solution and the actual solution
-    # Currently, only cartesian_1d is supported
-    if COORD_SYS == "cartesian_1d":
-        x_sol, rho_sol, u_sol, p_sol = get_reference_sol(tf)
+    x_sol, rho_sol, u_sol, p_sol = get_reference_sol(tf)
 
     _, axs = plt.subplots(1, 3, figsize=(14, 4))
-    if COORD_SYS == "cartesian_1d":
-        axs[0].plot(x_sol, rho_sol, "r-")
+    axs[0].plot(x_sol, rho_sol, "r-")
     axs[0].plot(
         system.mid_points[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
         system.density[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
@@ -88,8 +99,7 @@ def main() -> None:
     axs[0].set_xlabel("Position")
     axs[0].set_ylabel("Density")
 
-    if COORD_SYS == "cartesian_1d":
-        axs[1].plot(x_sol, u_sol, "r-")
+    axs[1].plot(x_sol, u_sol, "r-")
     axs[1].plot(
         system.mid_points[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
         system.velocity[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
@@ -99,8 +109,7 @@ def main() -> None:
     axs[1].set_xlabel("Position")
     axs[1].set_ylabel("Velocity")
 
-    if COORD_SYS == "cartesian_1d":
-        axs[2].plot(x_sol, p_sol, "r-")
+    axs[2].plot(x_sol, p_sol, "r-")
     axs[2].plot(
         system.mid_points[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
         system.pressure[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
@@ -161,6 +170,32 @@ def get_reference_sol(
     p_sol : np.ndarray
         Pressure solution.
     """
+    if COORD_SYS == "cartesian_1d":
+        return _get_cartesian_1d_reference_sol(tf)
+    else:
+        return _get_noncartesian_1d_reference_sol(tf)
+
+def _get_cartesian_1d_reference_sol(
+    tf: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Get the reference solution of the Sod shock tube problem for cartesian_1d.
+
+    Parameters
+    ----------
+    tf : float
+        Final time.
+
+    Returns
+    -------
+    x_sol : np.ndarray
+        Position solution.
+    rho_sol : np.ndarray
+        Density solution.
+    u_sol : np.ndarray
+        Velocity solution.
+    p_sol : np.ndarray
+        Pressure solution.
+    """
     x_sol = np.arange(0.0, 1.0, 0.001)
     sol = np.array(
         [
@@ -185,6 +220,57 @@ def get_reference_sol(
 
     return x_sol, rho_sol, u_sol, p_sol
 
+def _get_noncartesian_1d_reference_sol(
+    tf: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Get the reference solution of the Sod shock tube problem for cylindrical_1d or spherical_1d geometry.
+
+    Parameters
+    ----------
+    tf : float
+        Final time.
+
+    Returns
+    -------
+    x_sol : np.ndarray
+        Position solution.
+    rho_sol : np.ndarray
+        Density solution.
+    u_sol : np.ndarray
+        Velocity solution.
+    p_sol : np.ndarray
+        Pressure solution.
+    """
+    cfl = 0.4
+    system = get_initial_system(2560, COORD_SYS)
+
+    rng = FiniteVolume1D.random_choice.VanDerCorputSequenceGenerator()
+
+    t = 0.0
+    num_steps = 0
+    start = timeit.default_timer()
+    with rich.progress.Progress() as progress:
+        print("Obtaining reference solution (with RCM)...")
+        task = progress.add_task("", total=tf)
+        while t < tf:
+            if num_steps <= 50:
+                dt = FiniteVolume1D.utils.get_time_step(cfl * 0.2, system)
+            else:
+                dt = FiniteVolume1D.utils.get_time_step(cfl, system)
+
+            if t + dt > tf:
+                dt = tf - t
+
+            FiniteVolume1D.random_choice.solving_step(system, dt, "exact", rng)
+
+            t += dt
+            num_steps += 1
+            progress.update(task, completed=t)
+
+    end = timeit.default_timer()
+    print(f"Done! Num steps: {num_steps}, Time: {end - start:.3f}s")
+
+    return system.mid_points, system.density, system.velocity, system.pressure
 
 if __name__ == "__main__":
     main()
