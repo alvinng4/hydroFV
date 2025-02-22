@@ -28,7 +28,7 @@ NUM_TOTAL_CELLS = 512
 NUM_GHOST_CELLS_SIDE = 1
 NUM_CELLS = NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
 SOLVER = "godunov_first_order"  # "godunov_first_order" or "random_choice"
-IS_PLOT_REFERENCE_SOL = False
+IS_PLOT_REFERENCE_SOL = True
 
 CFL = 0.9
 TF = 0.2
@@ -100,6 +100,14 @@ def main() -> None:
     print()
 
     _, axs = plt.subplots(1, 3, figsize=(14, 4))
+
+    # Plot the reference solution and the actual solution
+    if IS_PLOT_REFERENCE_SOL:
+        x_sol, rho_sol, u_sol, p_sol = get_reference_sol(TF)
+        axs[0].plot(x_sol, rho_sol, "r-")
+        axs[1].plot(x_sol, u_sol, "r-")
+        axs[2].plot(x_sol, p_sol, "r-")
+
     axs[0].plot(
         system.mid_points[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
         system.density[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
@@ -126,13 +134,6 @@ def main() -> None:
     )
     axs[2].set_xlabel("Position")
     axs[2].set_ylabel("Pressure")
-
-    # Plot the reference solution and the actual solution
-    if IS_PLOT_REFERENCE_SOL:
-        x_sol, rho_sol, u_sol, p_sol = get_reference_sol(tf)
-        axs[0].plot(x_sol, rho_sol, "r-")
-        axs[1].plot(x_sol, u_sol, "r-")
-        axs[2].plot(x_sol, p_sol, "r-")
 
     plt.tight_layout()
     plt.show()
