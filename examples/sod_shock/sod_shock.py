@@ -28,6 +28,10 @@ NUM_TOTAL_CELLS = 512
 NUM_GHOST_CELLS_SIDE = 1
 NUM_CELLS = NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
 SOLVER = "godunov_first_order"  # "godunov_first_order" or "random_choice"
+IS_PLOT_REFERENCE_SOL = False
+
+CFL = 0.9
+TF = 0.2
 
 ### Sod shock parameters ###
 GAMMA = 1.4
@@ -40,14 +44,13 @@ P_R = 0.1
 DISCONTINUITY_POS = 0.5
 LEFT_BOUNDARY_CONDITION = "transmissive"
 RIGHT_BOUNDARY_CONDITION = "transmissive"
+DOMAIN = (0.0, 1.0)
 
 
 def main() -> None:
     global RIEMANN_SOLVER
+    global CFL
     assert COORD_SYS in ["cartesian_1d", "cylindrical_1d", "spherical_1d"]
-
-    cfl = 0.9
-    tf = 0.25
 
     system = get_initial_system(NUM_CELLS, COORD_SYS)
 
@@ -59,26 +62,25 @@ def main() -> None:
             warnings.warn(msg)
             RIEMANN_SOLVER = "exact"
 
-        if cfl > 0.5:
+        if CFL > 0.5:
             msg = "The Courant number should be less than 0.5 for random_choice solver. Switching to 0.4."
             warnings.warn(msg)
-            cfl = 0.4
-
+            CFL = 0.4
 
     t = 0.0
     num_steps = 0
     start = timeit.default_timer()
     with rich.progress.Progress() as progress:
         print("Simulation in progress...")
-        task = progress.add_task("", total=tf)
-        while t < tf:
+        task = progress.add_task("", total=TF)
+        while t < TF:
             if num_steps <= 50:
-                dt = FiniteVolume1D.utils.get_time_step(cfl * 0.2, system)
+                dt = FiniteVolume1D.utils.get_time_step(CFL * 0.2, system)
             else:
-                dt = FiniteVolume1D.utils.get_time_step(cfl, system)
+                dt = FiniteVolume1D.utils.get_time_step(CFL, system)
 
-            if t + dt > tf:
-                dt = tf - t
+            if t + dt > TF:
+                dt = TF - t
 
             if SOLVER == "godunov_first_order":
                 FiniteVolume1D.godunov_first_order.solving_step(
@@ -97,11 +99,7 @@ def main() -> None:
     print(f"Done! Num steps: {num_steps}, Time: {end - start:.3f}s")
     print()
 
-    # Plot the reference solution and the actual solution
-    x_sol, rho_sol, u_sol, p_sol = get_reference_sol(tf)
-
     _, axs = plt.subplots(1, 3, figsize=(14, 4))
-    axs[0].plot(x_sol, rho_sol, "r-")
     axs[0].plot(
         system.mid_points[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
         system.density[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
@@ -111,7 +109,6 @@ def main() -> None:
     axs[0].set_xlabel("Position")
     axs[0].set_ylabel("Density")
 
-    axs[1].plot(x_sol, u_sol, "r-")
     axs[1].plot(
         system.mid_points[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
         system.velocity[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
@@ -121,7 +118,6 @@ def main() -> None:
     axs[1].set_xlabel("Position")
     axs[1].set_ylabel("Velocity")
 
-    axs[2].plot(x_sol, p_sol, "r-")
     axs[2].plot(
         system.mid_points[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
         system.pressure[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
@@ -130,6 +126,13 @@ def main() -> None:
     )
     axs[2].set_xlabel("Position")
     axs[2].set_ylabel("Pressure")
+
+    # Plot the reference solution and the actual solution
+    if IS_PLOT_REFERENCE_SOL:
+        x_sol, rho_sol, u_sol, p_sol = get_reference_sol(tf)
+        axs[0].plot(x_sol, rho_sol, "r-")
+        axs[1].plot(x_sol, u_sol, "r-")
+        axs[2].plot(x_sol, p_sol, "r-")
 
     plt.tight_layout()
     plt.show()
@@ -140,7 +143,7 @@ def get_initial_system(num_cells: int, coord_sys: str) -> FiniteVolume1D.system.
         num_cells=num_cells,
         gamma=GAMMA,
         coord_sys=coord_sys,
-        domain=(0.0, 1.0),
+        domain=DOMAIN,
         num_ghost_cells_side=NUM_GHOST_CELLS_SIDE,
         left_boundary_condition=LEFT_BOUNDARY_CONDITION,
         right_boundary_condition=RIGHT_BOUNDARY_CONDITION,
@@ -185,7 +188,7 @@ def get_reference_sol(
     if COORD_SYS == "cartesian_1d":
         return _get_cartesian_1d_reference_sol(tf)
     else:
-        sol_path = Path(__file__).parent / f"sol_{COORD_SYS}.npz"
+        sol_path = Path(__file__).parent / f"sol_{COORD_SYS}_{tf}.npz"
         if sol_path.exists():
             data = np.load(sol_path)
             return (
