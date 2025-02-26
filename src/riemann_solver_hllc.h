@@ -1,0 +1,71 @@
+/**
+ * \file riemann_solver_hllc.h
+ * 
+ * \brief Header file for HLLC Riemann solver for 1D Euler equations.
+ * 
+ * \cite Toro, E. F., Riemann Solvers and Numerical Methods for Fluid Dynamics, 3rd ed. Springer., 2009.
+ * 
+ * \author Ching-Yin Ng
+ * \date 2025-2-26
+ */
+
+#ifndef RIEMANN_SOLVER_HLLC_H
+#define RIEMANN_SOLVER_HLLC_H
+
+#include "hydro.h"
+
+/**
+ * \brief Solve the Riemann problem for flux using the HLLC Riemann solver.
+ * 
+ * \param flux_mass Pointer to store the mass flux.
+ * \param flux_momentum Pointer to store the momentum flux.
+ * \param flux_energy Pointer to store the energy flux.
+ * \param gamma Adiabatic index.
+ * \param rho_L Density of the left state.
+ * \param u_L Velocity of the left state.
+ * \param p_L Pressure of the left state.
+ * \param rho_R Density of the right state.
+ * \param u_R Velocity of the right state.
+ * \param p_R Pressure of the right state.
+ * \param tol Tolerance for the pressure.
+ */
+void solve_flux_hllc(
+    real *restrict flux_mass,
+    real *restrict flux_momentum,
+    real *restrict flux_energy,
+    real gamma,
+    real rho_L,
+    real u_L,
+    real p_L,
+    real rho_R,
+    real u_R,
+    real p_R,
+    real tol
+);
+
+/**
+ * \brief Solve the Riemann problem for flux for the whole system using the HLLC Riemann solver
+ * 
+ * \param flux_mass Solution array to store the mass flux.
+ * \param flux_momentum Solution array to store the momentum flux.
+ * \param flux_energy Solution array to store the energy flux.
+ * \param gamma Adiabatic index.
+ * \param rho Density array.
+ * \param u Velocity array.
+ * \param p Pressure array.
+ * \param tol Tolerance for the pressure.
+ * \param size Number of cells.
+ */
+void solve_system_flux_hllc(
+    real *restrict flux_mass,
+    real *restrict flux_momentum,
+    real *restrict flux_energy,
+    real gamma,
+    const real *restrict rho,
+    const real *restrict u,
+    const real *restrict p,
+    const real tol,
+    const int size
+);
+
+#endif

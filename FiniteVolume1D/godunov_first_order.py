@@ -1,17 +1,26 @@
-from riemann_solvers import solve_system_flux
+import ctypes
+
+import numpy as np
+
 from . import source_term
 from .system import System
 
 
-def solving_step(system: System, dt: float, solver: str) -> None:
+def solving_step(
+    c_lib: ctypes.CDLL, system: System, dt: float, tol: float, solver: str
+) -> None:
     """Advance the system by one time step using Godunov's first-order scheme.
 
     Parameters
     ----------
+    c_lib : ctypes.CDLL
+        C dynamic-link library object
     system : System
         System object.
     dt : float
         Time step.
+    tol : float
+        Tolerance for the riemann solver.
     solver : str
         Riemann solver to use, either "exact" or "hllc".
 
@@ -20,13 +29,20 @@ def solving_step(system: System, dt: float, solver: str) -> None:
     It is assumed that the system has been initialized with ghost cells and
     the boundary conditions have been set.
     """
-    flux_mass, flux_momentum, flux_energy = solve_system_flux(
-        system.gamma,
-        system.density,
-        system.velocity,
-        system.pressure,
-        1,
-        solver,
+    flux_mass = np.zeros(system.total_num_cells - 1)
+    flux_momentum = np.zeros(system.total_num_cells - 1)
+    flux_energy = np.zeros(system.total_num_cells - 1)
+    c_lib.solve_system_flux(
+        flux_mass.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        flux_momentum.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        flux_energy.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        ctypes.c_double(system.gamma),
+        system.density.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        system.velocity.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        system.pressure.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        ctypes.c_double(tol),
+        ctypes.c_int(system.total_num_cells),
+        solver.encode("utf-8"),
     )
 
     # Flux exchange

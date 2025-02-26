@@ -1,4 +1,5 @@
-from riemann_solvers import solve
+import ctypes
+
 from . import source_term
 from .system import System
 
@@ -30,16 +31,25 @@ class VanDerCorputSequenceGenerator:
 
 
 def solving_step(
-    system: System, dt: float, solver: str, rng: VanDerCorputSequenceGenerator
+    c_lib: ctypes.CDLL,
+    system: System,
+    dt: float,
+    tol: float,
+    solver: str,
+    rng: VanDerCorputSequenceGenerator,
 ) -> None:
     """Advance the system by one time step using Godunov's first-order scheme.
 
     Parameters
     ----------
+    c_lib : ctypes.CDLL
+        C dynamic-link library object
     system : System
         System object.
     dt : float
         Time step.
+    tol : float
+        Tolerance for the riemann solver.
     solver : str
         Riemann solver to use, only "exact" is available.
 
@@ -71,18 +81,26 @@ def solving_step(
             p_R = pressure_copy[i + 1]
             speed = (theta - 1.0) * dx[i] / dt
 
-        system.density[i], system.velocity[i], system.pressure[i] = solve(
-            system.gamma,
-            rho_L,
-            u_L,
-            p_L,
-            rho_R,
-            u_R,
-            p_R,
-            1,
-            solver,
-            speed=speed,
+        rho_sol_i = ctypes.c_double(0.0)
+        u_sol_i = ctypes.c_double(0.0)
+        p_sol_i = ctypes.c_double(0.0)
+        c_lib.solve_exact(
+            ctypes.byref(rho_sol_i),
+            ctypes.byref(u_sol_i),
+            ctypes.byref(p_sol_i),
+            ctypes.c_double(system.gamma),
+            ctypes.c_double(rho_L),
+            ctypes.c_double(u_L),
+            ctypes.c_double(p_L),
+            ctypes.c_double(rho_R),
+            ctypes.c_double(u_R),
+            ctypes.c_double(p_R),
+            ctypes.c_double(tol),
+            ctypes.c_double(speed),
         )
+        system.density[i] = rho_sol_i.value
+        system.velocity[i] = u_sol_i.value
+        system.pressure[i] = p_sol_i.value
 
     system.set_boundary_condition()
     system.convert_primitive_to_conserved()
