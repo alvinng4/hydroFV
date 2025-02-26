@@ -14,9 +14,12 @@ References:
     1. Toro, E. F., "The Riemann Problem for the Euler Equations" in
        Riemann Solvers and Numerical Methods for Fluid Dynamics,
        3rd ed. Springer., 2009, pp. 115-162.
+    2. Press, W. H., et al., "Bracketing and Bisection" in Numerical
+       Recipes in C: The Art of Scientific Computing, 2nd ed.
+       Cambridge University Press, 1992, pp. 350-354.
 
 Author: Ching-Yin Ng
-Date: 2025-2-20
+Date: 2025-2-26
 """
 
 import math
@@ -269,29 +272,92 @@ class ExactRiemannSolver1D:
             gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, tol
         )
 
+        # For bisection method
+        p_upper_bisection = p_guess
+        f_upper_bisection = ExactRiemannSolver1D.riemann_f(
+            gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, p_upper_bisection
+        )
+        bracket_found = False
+
+        ### Newton-Raphson method ###
         count = 0
-        while True:
+        p_0 = p_guess
+        max_num_iter = 100
+        for _ in range(max_num_iter):
             f = ExactRiemannSolver1D.riemann_f(
-                gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, p_guess
+                gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, p_0
             )
             f_prime = ExactRiemannSolver1D.riemann_f_prime(
-                gamma, rho_L, p_L, a_L, rho_R, p_R, a_R, p_guess
+                gamma, rho_L, p_L, a_L, rho_R, p_R, a_R, p_0
             )
-            p = p_guess - f / f_prime
+            if not bracket_found and f * f_upper_bisection < 0.0:
+                bracket_found = True
+                f_lower_bisection = f
+                p_lower_bisection = p_0
 
+            p = p_0 - f / f_prime
+
+            # Failed to converge, switch to bisection method
             if p < 0.0:
-                raise ValueError("Negative pressure in the middle state!")
+                break
 
             if (abs(p - p_guess) / abs(0.5 * (p + p_guess))) < tol:
                 return p
 
-            p_guess = p
+            p_0 = p
+
+        ### Bisection method ###
+        # Find lower bound and upper bound
+        if not bracket_found:
+            p_lower_bisection = 0.0
+            f_lower_bisection = ExactRiemannSolver1D.riemann_f(
+                gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, p_lower_bisection
+            )
+            if f_lower_bisection * f_upper_bisection >= 0.0:
+                count = 0
+                p_upper_bisection *= 10.0
+                num_intervals = 100
+                dp = (p_upper_bisection - p_lower_bisection) / num_intervals
+                for i in range(num_intervals):
+                    _p_lower = p_lower_bisection + dp * i
+                    _p_upper = p_upper_bisection + dp * (i + 1)
+
+                    _f_lower = ExactRiemannSolver1D.riemann_f(
+                        gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, _p_lower
+                    )
+                    _f_upper = ExactRiemannSolver1D.riemann_f(
+                        gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, _p_upper
+                    )
+
+                    if _f_lower * _f_upper < 0.0:
+                        p_lower_bisection = _p_lower
+                        p_upper_bisection = _p_upper
+                        f_lower_bisection = _f_lower
+                        f_upper_bisection = _f_upper
+                        break
+
+                if _f_lower * _f_upper >= 0.0:
+                    raise ValueError("Bracket not found")
+
+        count = 0
+        while True:
+            p_mid = (p_upper_bisection + p_lower_bisection) / 2.0
+            if (p_upper_bisection - p_lower_bisection) < tol:
+                return p_mid
+            f_mid = ExactRiemannSolver1D.riemann_f(
+                gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, p_mid
+            )
+
+            if f_lower_bisection * f_mid < 0.0:
+                p_upper_bisection = p_mid
+            else:
+                p_lower_bisection = p_mid
 
             count += 1
 
-            if count > 1000:
+            if count >= 500:
                 warnings.warn(
-                    "Newton-Raphson method did not converge for 1000 iterations!"
+                    "Bisection method failed to convert within 500 iterations"
                 )
 
     @staticmethod
