@@ -5,9 +5,10 @@ Usage:
     python sod_shock.py
 
 Author: Ching-Yin Ng
-Date: 2025-2-22
+Date: 2025-2-26
 """
 
+import ctypes
 import sys
 import timeit
 import warnings
@@ -20,18 +21,18 @@ import numpy as np
 import rich.progress
 
 import FiniteVolume1D
-import riemann_solvers
 
-RIEMANN_SOLVER = "hllc"
+RIEMANN_SOLVER = "exact"
 COORD_SYS = "spherical_1d"  # "cartesian_1d", "cylindrical_1d", or "spherical_1d"
-NUM_TOTAL_CELLS = 512
+NUM_TOTAL_CELLS = 256
 NUM_GHOST_CELLS_SIDE = 1
 NUM_CELLS = NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
-SOLVER = "godunov_first_order"  # "godunov_first_order" or "random_choice"
+SOLVER = "random_choice"  # "godunov_first_order" or "random_choice"
 IS_PLOT_REFERENCE_SOL = True
 
 CFL = 0.9
 TF = 0.2
+TOL = 1e-6  # For the riemann solver
 
 ### Sod shock parameters ###
 GAMMA = 1.4
@@ -52,6 +53,7 @@ def main() -> None:
     global CFL
     assert COORD_SYS in ["cartesian_1d", "cylindrical_1d", "spherical_1d"]
 
+    c_lib = FiniteVolume1D.utils.load_c_lib()
     system = get_initial_system(NUM_CELLS, COORD_SYS)
 
     if SOLVER == "random_choice":
@@ -84,11 +86,11 @@ def main() -> None:
 
             if SOLVER == "godunov_first_order":
                 FiniteVolume1D.godunov_first_order.solving_step(
-                    system, dt, RIEMANN_SOLVER
+                    c_lib, system, dt, TOL, RIEMANN_SOLVER
                 )
             elif SOLVER == "random_choice":
                 FiniteVolume1D.random_choice.solving_step(
-                    system, dt, RIEMANN_SOLVER, rng
+                    c_lib, system, dt, TOL, RIEMANN_SOLVER, rng
                 )
 
             t += dt
@@ -103,7 +105,7 @@ def main() -> None:
 
     # Plot the reference solution and the actual solution
     if IS_PLOT_REFERENCE_SOL:
-        x_sol, rho_sol, u_sol, p_sol = get_reference_sol(TF)
+        x_sol, rho_sol, u_sol, p_sol = get_reference_sol(c_lib, TF)
         axs[0].plot(x_sol, rho_sol, "r-")
         axs[1].plot(x_sol, u_sol, "r-")
         axs[2].plot(x_sol, p_sol, "r-")
@@ -166,6 +168,7 @@ def get_initial_system(num_cells: int, coord_sys: str) -> FiniteVolume1D.system.
 
 
 def get_reference_sol(
+    c_lib: ctypes.CDLL,
     tf: float,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Get the reference solution of the Sod shock tube problem.
@@ -187,7 +190,7 @@ def get_reference_sol(
         Pressure solution.
     """
     if COORD_SYS == "cartesian_1d":
-        return _get_cartesian_1d_reference_sol(tf)
+        return _get_cartesian_1d_reference_sol(c_lib, tf)
     else:
         sol_path = Path(__file__).parent / f"sol_{COORD_SYS}_{tf}.npz"
         if sol_path.exists():
@@ -199,10 +202,11 @@ def get_reference_sol(
                 data["pressure"],
             )
         else:
-            return _get_noncartesian_1d_reference_sol(tf, sol_path)
+            return _get_noncartesian_1d_reference_sol(c_lib, tf, TOL, sol_path)
 
 
 def _get_cartesian_1d_reference_sol(
+    c_lib: ctypes.CDLL,
     tf: float,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Get the reference solution of the Sod shock tube problem for cartesian_1d.
@@ -224,39 +228,50 @@ def _get_cartesian_1d_reference_sol(
         Pressure solution.
     """
     x_sol = np.arange(0.0, 1.0, 0.001)
-    sol = np.array(
-        [
-            riemann_solvers.solve(
-                gamma=GAMMA,
-                rho_L=RHO_L,
-                u_L=U_L,
-                p_L=P_L,
-                rho_R=RHO_R,
-                u_R=U_R,
-                p_R=P_R,
-                speed=(x - DISCONTINUITY_POS) / tf,
-                dim=1,
-                solver="exact",
-            )
-            for x in x_sol
-        ]
-    )
-    rho_sol = sol[:, 0]
-    u_sol = sol[:, 1]
-    p_sol = sol[:, 2]
+    rho_sol = np.zeros_like(x_sol)
+    u_sol = np.zeros_like(x_sol)
+    p_sol = np.zeros_like(x_sol)
+
+    for i, x in enumerate(x_sol):
+        rho_sol_i = ctypes.c_double(0.0)
+        u_sol_i = ctypes.c_double(0.0)
+        p_sol_i = ctypes.c_double(0.0)
+        c_lib.solve_exact(
+            ctypes.byref(rho_sol_i),
+            ctypes.byref(u_sol_i),
+            ctypes.byref(p_sol_i),
+            ctypes.c_double(GAMMA),
+            ctypes.c_double(RHO_L),
+            ctypes.c_double(U_L),
+            ctypes.c_double(P_L),
+            ctypes.c_double(RHO_R),
+            ctypes.c_double(U_R),
+            ctypes.c_double(P_R),
+            ctypes.c_double(TOL),
+            ctypes.c_double((x - DISCONTINUITY_POS) / tf),
+        )
+        rho_sol[i] = rho_sol_i.value
+        u_sol[i] = u_sol_i.value
+        p_sol[i] = p_sol_i.value
 
     return x_sol, rho_sol, u_sol, p_sol
 
 
 def _get_noncartesian_1d_reference_sol(
-    tf: float, save_path: Path
+    c_lib: ctypes.CDLL, tf: float, tol: float, save_path: Path
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Get the reference solution of the Sod shock tube problem for cylindrical_1d or spherical_1d geometry.
 
     Parameters
     ----------
+    c_lib : ctypes.CDLL
+        C dynamic-link library object.
     tf : float
         Final time.
+    tol : float
+        Tolerance for the Riemann solver.
+    save_path : Path
+        Path to save the reference solution
 
     Returns
     -------
@@ -289,7 +304,9 @@ def _get_noncartesian_1d_reference_sol(
             if t + dt > tf:
                 dt = tf - t
 
-            FiniteVolume1D.random_choice.solving_step(system, dt, "exact", rng)
+            FiniteVolume1D.random_choice.solving_step(
+                c_lib, system, dt, tol, "exact", rng
+            )
 
             t += dt
             num_steps += 1
