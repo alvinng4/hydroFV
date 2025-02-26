@@ -183,6 +183,8 @@ def guess_p(
 
     Parameters
     ----------
+    gamma : float
+        Adiabatic index.
     rho_L : float
         Density of the left state.
     u_L : float
@@ -213,7 +215,7 @@ def guess_p(
     ppv = 0.5 * (p_L + p_R) - 0.125 * (u_R - u_L) * (rho_L + rho_R) * (a_L + a_R)
 
     # Select PVRS Riemann solver
-    if (p_max / p_min) <= 2.0 and p_min <= ppv and ppv <= p_max:
+    if (p_max / p_min) <= 2.0 and p_min <= ppv <= p_max:
         p_guess = ppv
 
     # Select Two-Rarefaction Riemann solver
@@ -397,7 +399,7 @@ def sample_for_left_vacuum(
         Pressure in the middle state.
     """
     ### Right state regime ###
-    if speed > u_R + a_R:
+    if speed >= u_R + a_R:
         rho = rho_R
         u = u_R
         p = p_R
@@ -479,10 +481,10 @@ def sample_vacuum_generation(
     S_star_R = 2.0 * a_R / (gamma - 1.0)
 
     # Left state
-    if speed < S_star_L:
+    if speed <= S_star_L:
         rho, u, p = sample_for_right_vacuum(gamma, rho_L, u_L, p_L, a_L, speed)
 
-    elif speed < S_star_R:
+    elif speed <= S_star_R:
         rho = 0.0
         u = 0.0
         p = 0.0

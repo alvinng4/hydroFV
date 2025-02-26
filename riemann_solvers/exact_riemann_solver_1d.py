@@ -280,7 +280,6 @@ class ExactRiemannSolver1D:
         bracket_found = False
 
         ### Newton-Raphson method ###
-        count = 0
         p_0 = p_guess
         max_num_iter = 100
         for _ in range(max_num_iter):
@@ -301,7 +300,7 @@ class ExactRiemannSolver1D:
             if p < 0.0:
                 break
 
-            if (abs(p - p_guess) / abs(0.5 * (p + p_guess))) < tol:
+            if (abs(p - p_0) / abs(0.5 * (p + p_0))) < tol:
                 return p
 
             p_0 = p
@@ -314,13 +313,12 @@ class ExactRiemannSolver1D:
                 gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, p_lower_bisection
             )
             if f_lower_bisection * f_upper_bisection >= 0.0:
-                count = 0
                 p_upper_bisection *= 10.0
                 num_intervals = 100
                 dp = (p_upper_bisection - p_lower_bisection) / num_intervals
                 for i in range(num_intervals):
                     _p_lower = p_lower_bisection + dp * i
-                    _p_upper = p_upper_bisection + dp * (i + 1)
+                    _p_upper = p_lower_bisection + dp * (i + 1)
 
                     _f_lower = ExactRiemannSolver1D.riemann_f(
                         gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, _p_lower
@@ -536,7 +534,7 @@ class ExactRiemannSolver1D:
 
         # if p <= p_X (rarefaction)
         else:
-            return (p / p_X) ** (-0.5 * (gamma + 1.0) / gamma) / (p_X * a_X)
+            return ((p / p_X) ** (-0.5 * (gamma + 1.0) / gamma)) / (p_X * a_X)
 
     @staticmethod
     def riemann_f(

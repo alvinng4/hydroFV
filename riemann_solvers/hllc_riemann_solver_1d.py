@@ -182,21 +182,21 @@ class HLLCRiemannSolver1D:
 
         ### Compute the fluxes ###
         if 0.0 <= S_L:
-            energy_density_L = (p_L / rho_L) / (gamma - 1.0) + 0.5 * u_L * u_L
+            energy_density_L = rho_L * ((p_L / rho_L) / (gamma - 1.0) + 0.5 * u_L * u_L)
             flux_mass_L = rho_L * u_L
             flux_momentum_L = rho_L * u_L * u_L + p_L
-            flux_energy_L = (rho_L * energy_density_L + p_L) * u_L
+            flux_energy_L = (energy_density_L + p_L) * u_L
             return flux_mass_L, flux_momentum_L, flux_energy_L
         elif S_L <= 0.0 <= S_star:
-            energy_density_L = (p_L / rho_L) / (gamma - 1.0) + 0.5 * u_L * u_L
+            energy_density_L = rho_L * ((p_L / rho_L) / (gamma - 1.0) + 0.5 * u_L * u_L)
             flux_mass_L = rho_L * u_L
             flux_momentum_L = rho_L * u_L * u_L + p_L
-            flux_energy_L = (rho_L * energy_density_L + p_L) * u_L
+            flux_energy_L = (energy_density_L + p_L) * u_L
 
             rho_star_L = rho_L * (S_L - u_L) / (S_L - S_star)
             momentum_star_L = rho_star_L * S_star
             energy_star_L = rho_star_L * (
-                energy_density_L
+                energy_density_L / rho_L
                 + (S_star - u_L) * (S_star + p_L / (rho_L * (S_L - u_L)))
             )
 
@@ -205,20 +205,20 @@ class HLLCRiemannSolver1D:
                 momentum_star_L - rho_L * u_L
             )
             flux_energy_star_L = flux_energy_L + S_L * (
-                energy_star_L - rho_L * energy_density_L
+                energy_star_L - energy_density_L
             )
 
             return flux_mass_star_L, flux_momentum_star_L, flux_energy_star_L
         elif S_star <= 0.0 <= S_R:
-            energy_density_R = (p_R / rho_R) / (gamma - 1.0) + 0.5 * u_R * u_R
+            energy_density_R = rho_R * ((p_R / rho_R) / (gamma - 1.0) + 0.5 * u_R * u_R)
             flux_mass_R = rho_R * u_R
             flux_momentum_R = rho_R * u_R * u_R + p_R
-            flux_energy_R = (rho_R * energy_density_R + p_R) * u_R
+            flux_energy_R = (energy_density_R + p_R) * u_R
 
             rho_star_R = rho_R * (S_R - u_R) / (S_R - S_star)
             momentum_star_R = rho_star_R * S_star
             energy_star_R = rho_star_R * (
-                energy_density_R
+                energy_density_R / rho_R
                 + (S_star - u_R) * (S_star + p_R / (rho_R * (S_R - u_R)))
             )
 
@@ -227,15 +227,15 @@ class HLLCRiemannSolver1D:
                 momentum_star_R - rho_R * u_R
             )
             flux_energy_star_R = flux_energy_R + S_R * (
-                energy_star_R - rho_R * energy_density_R
+                energy_star_R - energy_density_R
             )
 
             return flux_mass_star_R, flux_momentum_star_R, flux_energy_star_R
         elif S_R <= 0.0:
-            energy_density_R = (p_R / rho_R) / (gamma - 1.0) + 0.5 * u_R * u_R
+            energy_density_R = rho_R * ((p_R / rho_R) / (gamma - 1.0) + 0.5 * u_R * u_R)
             flux_mass_R = rho_R * u_R
             flux_momentum_R = rho_R * u_R * u_R + p_R
-            flux_energy_R = (rho_R * energy_density_R + p_R) * u_R
+            flux_energy_R = (energy_density_R + p_R) * u_R
             return flux_mass_R, flux_momentum_R, flux_energy_R
         else:
             raise ValueError("Invalid wave speeds!")
