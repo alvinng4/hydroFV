@@ -9,7 +9,7 @@ References:
        3rd ed. Springer., 2009.
 
 Author: Ching-Yin Ng
-Date: 2025-2-20
+Date: 2025-2-26
 """
 
 import math
@@ -19,6 +19,7 @@ from typing import Tuple
 
 import numpy as np
 
+from . import riemann_solver
 from . import utils
 
 
@@ -135,12 +136,6 @@ class HLLCRiemannSolver1D:
         if gamma <= 1.0:
             raise ValueError("The adiabatic index needs to be larger than 1!")
 
-        ### Handle vacuum ###
-        if rho_L <= 0.0 and rho_R <= 0.0:
-            return 0.0, 0.0, 0.0
-        elif rho_L <= 0.0 or rho_R <= 0.0:
-            raise NotImplementedError
-
         ### Compute the sound speeds ###
         if rho_L > 0.0:
             a_L = float(utils.get_sound_speed(gamma, rho_L, p_L))
@@ -156,8 +151,23 @@ class HLLCRiemannSolver1D:
             # Assuming isentropic-type EOS, p = p(rho), see Toro [1]
             a_R = 0.0
 
+        ### Check for vacuum or vacuum generation ###
+        # (1) If left or right state is vacuum, or
+        # (2) pressure positivity condition is met
+        if (rho_L <= 0.0 or rho_R <= 0.0) or (
+            ((2.0 / (gamma + 1.0)) * (a_L + a_R)) <= (u_R - u_L)
+        ):
+            rho, u, p = riemann_solver.solve_vacuum(
+                gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R
+            )
+            flux_mass = rho * u
+            rho_u_u = flux_mass * u
+            flux_momentum = rho_u_u + p
+            flux_energy = (p * (gamma / (gamma - 1.0)) + 0.5 * rho_u_u) * u
+            return flux_mass, flux_momentum, flux_energy
+
         ### Estimate the wave speeds ###
-        p_star = HLLCRiemannSolver1D.guess_p(
+        p_star = riemann_solver.guess_p(
             gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, tol
         )
         q_L = HLLCRiemannSolver1D.compute_q_L_or_R(gamma, p_L, p_star)
@@ -254,116 +264,3 @@ class HLLCRiemannSolver1D:
             return math.sqrt(
                 1.0 + (0.5 * (1.0 + 1.0 / gamma)) * (p_star / p_L_or_R - 1.0)
             )
-
-    @staticmethod
-    def riemann_A_L_or_R(gamma: float, rho_X: float) -> float:
-        """Riemann A_L or A_R function.
-
-        Parameters
-        ----------
-        gamma : float
-            Adiabatic index.
-        rho_X : float
-            Density of the left or right state.
-
-        Returns
-        -------
-        float
-            Value of the A_L or A_R function.
-        """
-        return 2.0 / ((gamma + 1.0) * rho_X)
-
-    @staticmethod
-    def riemann_B_L_or_R(gamma: float, p_X: float) -> float:
-        """Riemann B_L or B_R function.
-
-        Parameters
-        ----------
-        gamma : float
-            Adiabatic index.
-        p_X : float
-            Pressure of the left or right state.
-
-        Returns
-        -------
-        float
-            Value of the B_L or B_R function.
-        """
-        return ((gamma - 1.0) / (gamma + 1.0)) * p_X
-
-    @staticmethod
-    def guess_p(
-        gamma: float,
-        rho_L: float,
-        u_L: float,
-        p_L: float,
-        a_L: float,
-        rho_R: float,
-        u_R: float,
-        p_R: float,
-        a_R: float,
-        tol: float,
-    ) -> float:
-        """Get an initial guess for the pressure in the middle state.
-
-        Parameters
-        ----------
-        rho_L : float
-            Density of the left state.
-        u_L : float
-            Velocity of the left state.
-        p_L : float
-            Pressure of the left state.
-        a_L : float
-            Sound speed of the left state.
-        rho_R : float
-            Density of the right state.
-        u_R : float
-            Velocity of the right state.
-        p_R : float
-            Pressure of the right state.
-        a_R : float
-            Sound speed of the right state.
-        tol : float
-            Tolerance for the initial guess.
-
-        Returns
-        -------
-        p_guess : float
-           Initial guess for the pressure in the middle state.
-        """
-        p_min = min(p_L, p_R)
-        p_max = max(p_L, p_R)
-
-        ppv = 0.5 * (p_L + p_R) - 0.125 * (u_R - u_L) * (rho_L + rho_R) * (a_L + a_R)
-
-        # Select PVRS Riemann solver
-        if (p_max / p_min) <= 2.0 and p_min <= ppv and ppv <= p_max:
-            p_guess = ppv
-
-        # Select Two-Rarefaction Riemann solver
-        elif ppv < p_min:
-            gamma_minus_one = gamma - 1.0
-            gamma_minus_one_over_two_gamma = gamma_minus_one / (2.0 * gamma)
-            p_guess = (
-                (a_L + a_R - 0.5 * gamma_minus_one * (u_R - u_L))
-                / (
-                    a_L / (p_L**gamma_minus_one_over_two_gamma)
-                    + a_R / (p_R**gamma_minus_one_over_two_gamma)
-                )
-            ) ** (2.0 * gamma / gamma_minus_one)
-
-        # Select Two-Shock Riemann solver with PVRS as estimate
-        else:
-            A_L = HLLCRiemannSolver1D.riemann_A_L_or_R(gamma, rho_L)
-            B_L = HLLCRiemannSolver1D.riemann_B_L_or_R(gamma, p_L)
-            g_L = math.sqrt(A_L / (ppv + B_L))
-
-            A_R = HLLCRiemannSolver1D.riemann_A_L_or_R(gamma, rho_R)
-            B_R = HLLCRiemannSolver1D.riemann_B_L_or_R(gamma, p_R)
-            g_R = math.sqrt(A_R / (ppv + B_R))
-
-            p_guess = (g_L * p_L + g_R * p_R - (u_R - u_L)) / (g_L + g_R)
-
-        # Prevent negative value
-        return max(tol, p_guess)
