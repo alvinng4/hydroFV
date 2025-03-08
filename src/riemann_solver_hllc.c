@@ -6,7 +6,7 @@
  * \cite Toro, E. F., Riemann Solvers and Numerical Methods for Fluid Dynamics, 3rd ed. Springer., 2009.
  * 
  * \author Ching-Yin Ng
- * \date 2025-2-26
+ * \date 2025-03-08
  */
 
 #include <math.h>
@@ -39,18 +39,18 @@ IN_FILE real compute_q_L_or_R(real gamma, real p_X, real p_star)
     }
 }
 
-void solve_flux_hllc(
-    real *flux_mass,
-    real *flux_momentum,
-    real *flux_energy,
-    real gamma,
-    real rho_L,
-    real u_L,
-    real p_L,
-    real rho_R,
-    real u_R,
-    real p_R,
-    real tol
+ErrorStatus solve_flux_hllc(
+    real *__restrict flux_mass,
+    real *__restrict flux_momentum,
+    real *__restrict flux_energy,
+    const real gamma,
+    const real rho_L,
+    const real u_L,
+    const real p_L,
+    const real rho_R,
+    const real u_R,
+    const real p_R,
+    const real tol
 )
 {
     /* Compute the sound speeds */
@@ -115,7 +115,7 @@ void solve_flux_hllc(
         *flux_mass = sol_rho * sol_u;
         *flux_momentum = sol_rho * sol_u * sol_u + sol_p;
         *flux_energy = sol_u * (sol_energy_density + sol_p);
-        return;
+        return make_success_error_status();
     }
 
     /* Estimate the wave speeds */
@@ -139,7 +139,7 @@ void solve_flux_hllc(
         *flux_mass = rho_L * u_L;
         *flux_momentum = rho_L * u_L * u_L + p_L;
         *flux_energy = u_L * (energy_density_L + p_L);
-        return;
+        return make_success_error_status();
     }
     else if (S_L <= 0.0 && 0.0 <= S_star)
     {
@@ -160,7 +160,7 @@ void solve_flux_hllc(
         *flux_mass = flux_mass_L + S_L * (rho_star_L - rho_L);
         *flux_momentum = flux_momentum_L + S_L * (momentum_star_L - rho_L * u_L);
         *flux_energy = flux_energy_L + S_L * (energy_star_L - energy_density_L);
-        return;
+        return make_success_error_status();
     }
     else if (S_star <= 0.0 && 0.0 <= S_R)
     {
@@ -181,7 +181,7 @@ void solve_flux_hllc(
         *flux_mass = flux_mass_R + S_R * (rho_star_R - rho_R);
         *flux_momentum = flux_momentum_R + S_R * (momentum_star_R - rho_R * u_R);
         *flux_energy = flux_energy_R + S_R * (energy_star_R - energy_density_R);
-        return;
+        return make_success_error_status();
     }
     else if (S_R <= 0.0)
     {
@@ -191,41 +191,10 @@ void solve_flux_hllc(
         *flux_mass = rho_R * u_R;
         *flux_momentum = rho_R * u_R * u_R + p_R;
         *flux_energy = u_R * (energy_density_R + p_R);
-        return;
+        return make_success_error_status();
     }
     else
     {
-        fprintf(stderr, "Error: Invalid wave speeds.\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
-void solve_system_flux_hllc(
-    real *restrict flux_mass,
-    real *restrict flux_momentum,
-    real *restrict flux_energy,
-    real gamma,
-    const real *restrict rho,
-    const real *restrict u,
-    const real *restrict p,
-    const real tol,
-    const int size
-)
-{
-    for (int i = 0; i < (size - 1); i++)
-    {
-        solve_flux_hllc(
-            &flux_mass[i],
-            &flux_momentum[i],
-            &flux_energy[i],
-            gamma,
-            rho[i],
-            u[i],
-            p[i],
-            rho[i + 1],
-            u[i + 1],
-            p[i + 1],
-            tol
-        );
+        return WRAP_RAISE_ERROR(VALUE_ERROR, "Invalid wave speed for the HLLC riemann solver.");
     }
 }

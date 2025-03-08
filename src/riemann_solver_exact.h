@@ -6,7 +6,7 @@
  * \cite Toro, E. F., Riemann Solvers and Numerical Methods for Fluid Dynamics, 3rd ed. Springer., 2009.
  * 
  * \author Ching-Yin Ng
- * \date 2025-2-26
+ * \date 2025-03-08
  */
 
 #ifndef RIEMANN_SOLVER_EXACT_H
@@ -29,8 +29,12 @@
  * \param p_R Pressure of the right state.
  * \param tol Tolerance for the pressure.
  * \param speed Speed S = x / t for sampling at (x, t).
+ * \param verbose Verbosity level.
+ * 
+ * \retval SUCCESS if successful
+ * \retval error_code if error occurs
  */
-void solve_exact(
+ErrorStatus solve_exact(
     real *restrict sol_rho,
     real *restrict sol_u,
     real *restrict sol_p,
@@ -42,7 +46,8 @@ void solve_exact(
     const real u_R,
     const real p_R,
     const real tol,
-    const real speed
+    const real speed,
+    const int verbose
 );
 
 /**
@@ -60,8 +65,12 @@ void solve_exact(
  * \param p_R Pressure of the right state.
  * \param tol Tolerance for the pressure.
  * \param speed Speed S = x / t for sampling at (x, t).
+ * \param verbose Verbosity level.
+ * 
+ * \retval SUCCESS if successful
+ * \retval error_code if error occurs
  */
-void solve_flux_exact(
+ErrorStatus solve_flux_exact(
     real *restrict flux_mass,
     real *restrict flux_momentum,
     real *restrict flux_energy,
@@ -73,35 +82,8 @@ void solve_flux_exact(
     const real u_R,
     const real p_R,
     const real tol,
-    const real speed
-);
-
-/**
- * \brief Solve the Riemann problem for flux for the whole system using the Exact Riemann solver.
- * 
- * \param flux_mass Solution array to store the mass flux.
- * \param flux_momentum Solution array to store the momentum flux.
- * \param flux_energy Solution array to store the energy flux.
- * \param gamma Adiabatic index.
- * \param rho_L Density of the left state.
- * \param u_L Velocity of the left state.
- * \param p_L Pressure of the left state.
- * \param rho_R Density of the right state.
- * \param u_R Velocity of the right state.
- * \param p_R Pressure of the right state.
- * \param tol Tolerance for the pressure.
- * \param size Number of cells.
- */
-void solve_system_flux_exact(
-    real *restrict flux_mass,
-    real *restrict flux_momentum,
-    real *restrict flux_energy,
-    const real gamma,
-    const real *restrict rho,
-    const real *restrict u,
-    const real *restrict p,
-    const real tol,
-    const int size
+    const real speed,
+    const int verbose
 );
 
 #endif

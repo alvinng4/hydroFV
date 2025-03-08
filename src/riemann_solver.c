@@ -6,7 +6,7 @@
  * \cite Toro, E. F., Riemann Solvers and Numerical Methods for Fluid Dynamics, 3rd ed. Springer., 2009.
  * 
  * \author Ching-Yin Ng
- * \date 2025-2-26
+ * \date 2025-03-08
  */
 
 #include <math.h>
@@ -20,51 +20,76 @@
 #include "riemann_solver_hllc.h"
 
 
-void solve_system_flux(
-    real *restrict flux_mass,
-    real *restrict flux_momentum,
-    real *restrict flux_energy,
-    const real gamma,
-    const real *restrict rho,
-    const real *restrict u,
-    const real *restrict p,
-    const real tol,
-    const int size,
-    const char *restrict solver
+WIN32DLL_API ErrorStatus get_riemann_solver_flag(
+    IntegratorParam *__restrict integrator_param
 )
 {
-    if (strcmp(solver, "exact") == 0)
+    const char *riemann_solver = integrator_param->riemann_solver;
+    if (strcmp(riemann_solver, "riemann_solver_exact") == 0)
     {
-        solve_system_flux_exact(
-            flux_mass,
-            flux_momentum,
-            flux_energy,
-            gamma,
-            rho,
-            u,
-            p,
-            tol,
-            size
-        );
+        integrator_param->riemann_solver_flag_ = RIEMANN_SOLVER_EXACT;
+        return make_success_error_status();
     }
-    else if (strcmp(solver, "hllc") == 0)
+    else if (strcmp(riemann_solver, "riemann_solver_hllc") == 0)
     {
-        solve_system_flux_hllc(
-            flux_mass,
-            flux_momentum,
-            flux_energy,
-            gamma,
-            rho,
-            u,
-            p,
-            tol,
-            size
-        );
+        integrator_param->riemann_solver_flag_ = RIEMANN_SOLVER_HLLC;
+        return make_success_error_status();
     }
     else
     {
-        fprintf(stderr, "Error: Riemann solver not recognized.\n");
-        exit(EXIT_FAILURE);
+        return WRAP_RAISE_ERROR(VALUE_ERROR, "Riemann solver not recognized.");
+    }
+}
+
+ErrorStatus solve_flux(
+    IntegratorParam *__restrict integrator_param,
+    Settings *__restrict settings,
+    real *__restrict flux_mass,
+    real *__restrict flux_momentum,
+    real *__restrict flux_energy,
+    const real gamma,
+    const real rho_L,
+    const real u_L,
+    const real p_L,
+    const real rho_R,
+    const real u_R,
+    const real p_R
+)
+{
+    switch (integrator_param->riemann_solver_flag_)
+    {
+        case RIEMANN_SOLVER_EXACT:
+            return WRAP_TRACEBACK(solve_flux_exact(
+                flux_mass,
+                flux_momentum,
+                flux_energy,
+                gamma,
+                rho_L,
+                u_L,
+                p_L,
+                rho_R,
+                u_R,
+                p_R,
+                integrator_param->tol,
+                0.0,
+                settings->verbose
+            ));
+        case RIEMANN_SOLVER_HLLC:
+            return WRAP_TRACEBACK(solve_flux_hllc(
+                flux_mass,
+                flux_momentum,
+                flux_energy,
+                gamma,
+                rho_L,
+                u_L,
+                p_L,
+                rho_R,
+                u_R,
+                p_R,
+                integrator_param->tol
+            ));
+        default:
+            return WRAP_RAISE_ERROR(VALUE_ERROR, "Riemann solver flag not recognized.");
     }
 }
 

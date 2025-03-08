@@ -4,22 +4,27 @@
  * \brief Header file for the hydrodynamic module.
  * 
  * \author Ching-Yin Ng
- * \date 2025-2-26
+ * \date 2025-03-06
  */
 
 #ifndef HYDRO_H
 #define HYDRO_H
 
-// For exporting functions in Windows DLL as a dynamic-link library
-#ifdef WIN32DLL_EXPORTS
-    #define WIN32DLL_API __declspec(dllexport)
-#else
-    #define WIN32DLL_API 
-#endif
+/* Common definitions */
+#include "common.h"
 
-#define IN_FILE static
+/* Error handling */
+#include "error.h"
 
-typedef double real;
+/* Definitions related to the hydrodynamic system */
+#include "system.h"
 
+ErrorStatus launch_simulation(
+    System *system,
+    IntegratorParam *integrator_param,
+    StoringParam *storing_param,
+    Settings *settings,
+    SimulationParam *simulation_param
+);
 
 #endif

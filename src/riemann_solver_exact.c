@@ -7,16 +7,17 @@
  *       3rd ed. Springer., 2009.
  * \cite Press, W. H., et al., "Bracketing and Bisection" in Numerical Recipes 
  *       in C: The Art of Scientific Computing, 2nd ed.
-         Cambridge University Press, 1992, pp. 350-354.
+ *       Cambridge University Press, 1992, pp. 350-354.
  * 
  * \author Ching-Yin Ng
- * \date 2025-2-26
+ * \date 2025-03-08
  */
 
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "hydro.h"
 #include "riemann_solver.h"
@@ -122,6 +123,7 @@ IN_FILE real riemann_f_prime(
  * \brief Solve for the pressure at the star regime, using
  *        a hybrid of Newton-Raphson and bisection methods.
  * 
+ * \param p_star Pointer to the pressure at the star regime.
  * \param gamma Adiabatic index.
  * \param rho_L Density of the left state.
  * \param u_L Velocity of the left state.
@@ -132,8 +134,14 @@ IN_FILE real riemann_f_prime(
  * \param p_R Pressure of the right state.
  * \param a_R Sound speed of the right state.
  * \param tol Tolerance.
+ * \param verbose Verbosity level.
+ * 
+ * \retval SUCCESS if successful
+ * \retval ERROR_RIEMANN_SOLVER_EXACT_P_STAR_BISECTION_BRACKET_ROOT if failed to bracket the root
+ * \retval ERROR_RIEMANN_SOLVER_EXACT_P_STAR_NOT_CONVERGED if p_star did not converge after maximum iterations
  */
-IN_FILE real solve_p_star(
+IN_FILE ErrorStatus solve_p_star(
+    real *restrict p_star,
     const real gamma,
     const real rho_L,
     const real u_L,
@@ -143,7 +151,8 @@ IN_FILE real solve_p_star(
     const real u_R,
     const real p_R,
     const real a_R,
-    const real tol
+    const real tol,
+    const int verbose
 );
 
 /**
@@ -320,7 +329,7 @@ IN_FILE void sample_right_rarefaction_wave(
     const real speed
 );
 
-void solve_exact(
+ErrorStatus solve_exact(
     real *restrict sol_rho,
     real *restrict sol_u,
     real *restrict sol_p,
@@ -332,9 +341,12 @@ void solve_exact(
     const real u_R,
     const real p_R,
     const real tol,
-    const real speed
+    const real speed,
+    const int verbose
 )
 {
+    ErrorStatus error_status;
+
     /* Compute the sound speeds */
     real a_L;
     real a_R;
@@ -386,11 +398,13 @@ void solve_exact(
             a_R,
             speed
         );
-        return;
+        goto exit_success;
     }
-
+    
     /* Solve for p_star and u_star */
-    real p_star = solve_p_star(
+    real p_star;
+    error_status = WRAP_TRACEBACK(solve_p_star(
+        &p_star,
         gamma,
         rho_L,
         u_L,
@@ -400,8 +414,14 @@ void solve_exact(
         u_R,
         p_R,
         a_R,
-        tol
-    );
+        tol,
+        verbose
+    ));
+    if (error_status.return_code != SUCCESS)
+    {
+        goto err_solve_p_star;
+    }
+
     real u_star = 0.5 * (u_L + u_R) + 0.5 * (
         riemann_f_L_or_R(gamma, rho_R, p_R, a_R, p_star)
         - riemann_f_L_or_R(gamma, rho_L, p_L, a_L, p_star)
@@ -423,7 +443,6 @@ void solve_exact(
             p_star,
             speed
         );
-        return;
     }
     else
     {
@@ -440,11 +459,16 @@ void solve_exact(
             p_star,
             speed
         );
-        return;
     }
+
+exit_success:
+    return make_success_error_status();
+
+err_solve_p_star:
+    return error_status;
 }
 
-void solve_flux_exact(
+ErrorStatus solve_flux_exact(
     real *restrict flux_mass,
     real *restrict flux_momentum,
     real *restrict flux_energy,
@@ -456,13 +480,14 @@ void solve_flux_exact(
     const real u_R,
     const real p_R,
     const real tol,
-    const real speed
+    const real speed,
+    const int verbose
 )
 {
     real sol_rho;
     real sol_u;
     real sol_p;
-    solve_exact(
+    ErrorStatus error_status = WRAP_TRACEBACK(solve_exact(
         &sol_rho,
         &sol_u,
         &sol_p,
@@ -474,44 +499,14 @@ void solve_flux_exact(
         u_R,
         p_R,
         tol,
-        speed
-    );
+        speed,
+        verbose
+    ));
 
     *flux_mass = sol_rho * sol_u;
     *flux_momentum = sol_rho * sol_u * sol_u + sol_p;
     *flux_energy = (sol_p * (gamma / (gamma - 1.0)) + 0.5 * sol_rho * sol_u * sol_u) * sol_u;
-    return;
-}
- 
-void solve_system_flux_exact(
-    real *restrict flux_mass,
-    real *restrict flux_momentum,
-    real *restrict flux_energy,
-    const real gamma,
-    const real *restrict rho,
-    const real *restrict u,
-    const real *restrict p,
-    const real tol,
-    const int size
-)
-{
-    for (int i = 0; i < (size - 1); i++)
-    {
-        solve_flux_exact(
-            &flux_mass[i],
-            &flux_momentum[i],
-            &flux_energy[i],
-            gamma,
-            rho[i],
-            u[i],
-            p[i],
-            rho[i + 1],
-            u[i + 1],
-            p[i + 1],
-            tol,
-            0.0
-        );
-    }
+    return error_status;
 }
 
 IN_FILE real riemann_f_L_or_R(
@@ -606,7 +601,8 @@ IN_FILE real riemann_f_prime(
     );
 }
 
-IN_FILE real solve_p_star(
+IN_FILE ErrorStatus solve_p_star(
+    real *restrict p_star,
     const real gamma,
     const real rho_L,
     const real u_L,
@@ -616,21 +612,24 @@ IN_FILE real solve_p_star(
     const real u_R,
     const real p_R,
     const real a_R,
-    const real tol
+    const real tol,
+    const int verbose
 )
 {
+    ErrorStatus error_status;
+
     real p_guess = guess_p(
         gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, tol
     );
 
     // For bisection method
+    bool bracket_found = false;
     real p_upper_bisection = p_guess;
     real f_upper_bisection = riemann_f(
         gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, p_upper_bisection
     );
     real p_lower_bisection;
     real f_lower_bisection;
-    bool bracket_found = false;
 
     /* Newton-Raphson method */
     real p_0 = p_guess;
@@ -650,7 +649,7 @@ IN_FILE real solve_p_star(
         }
 
         real p_1 = p_0 - f / f_prime;
-        
+
         /* Failed to converge, switch to bisection method */
         if (p_1 < 0.0)
         {
@@ -659,7 +658,8 @@ IN_FILE real solve_p_star(
 
         if (2.0 * fabs(p_1 - p_0) / (p_1 + p_0) < tol)
         {
-            return p_1;
+            *p_star = p_1;
+            goto exit_success;
         }
 
         p_0 = p_1;
@@ -698,12 +698,12 @@ IN_FILE real solve_p_star(
                     break;
                 }
             }
-
+            
+            // Failed to bracket the root
             if (f_lower_bisection * f_upper_bisection >= 0.0)
             {
-                // Failed to bracket the root
-                fprintf(stderr, "Failed to bracket the root.\n");
-                exit(EXIT_FAILURE);
+                error_status = WRAP_RAISE_ERROR(FAILURE, "Failed to bracket the root for bisection method.");
+                goto err_bisection_bracket_root;
             }
         }
     }
@@ -714,7 +714,8 @@ IN_FILE real solve_p_star(
         real p_mid = 0.5 * (p_lower_bisection + p_upper_bisection);
         if (p_upper_bisection - p_lower_bisection < tol)
         {
-            return p_mid;
+            *p_star = p_mid;
+            break;
         }
         real f_mid = riemann_f(
             gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, p_mid
@@ -732,16 +733,33 @@ IN_FILE real solve_p_star(
         }
 
         count++;
-        if (count % 500 == 0)
+        if (count % 500 == 0 && verbose > 0)
         {
-            fprintf(stderr, "Warning: Bisection method did not converge in %d iterations.\n", count);
+            const size_t buffer_size = strlen(
+                "Bisection method did not converge after  iterations for exact riemann solver."
+            ) + 256;
+            char buffer[buffer_size];
+            snprintf(buffer, buffer_size, "Bisection method did not converge after %d iterations for exact riemann solver.", count);
+            WRAP_RAISE_WARNING(buffer);
         }
         if (count > BISECTION_MAX_ITER)
         {
-            fprintf(stderr, "Error: Bisection method did not converge in %d iterations.\n", count);
-            exit(EXIT_FAILURE);
+            const size_t buffer_size = strlen(
+                "Bisection method did not converge after  iterations for exact riemann solver."
+            ) + 256;
+            char buffer[buffer_size];
+            snprintf(buffer, buffer_size, "Bisection method did not converge after %d iterations for exact riemann solver.", count);
+            error_status = WRAP_RAISE_ERROR(FAILURE, buffer);
+            goto err_converge;
         }
     }
+
+exit_success:
+    return make_success_error_status();
+
+err_converge:
+err_bisection_bracket_root:
+    return error_status;
 }
 
 IN_FILE void sample_left_state(

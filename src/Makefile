@@ -1,23 +1,8 @@
 CFLAGS = -O3 -std=c99 -Wall -Wextra -Wpedantic
-LDFLAGS = -shared
-LIBS = -lm
-SRCS = utils.c riemann_solver.c riemann_solver_hllc.c riemann_solver_exact.c
+LIBS = -lm -lhdf5
+SRCS = error.c hydro.c integrator_godunov_first_order_1d.c integrator_random_choice_1d.c integrator.c progress_bar.c riemann_solver_exact.c riemann_solver_hllc.c riemann_solver.c source_term.c system.c utils.c
 OBJS = $(SRCS:.c=.o)
-
-ifeq ($(OS),Windows_NT)
-    TARGET = c_lib.dll
-else
-	UNAME_S := $(shell uname -s)
-    ifeq ($(UNAME_S), Linux)
-        TARGET = c_lib.so
-        CFLAGS += -fPIC
-        CUDA_FLAGS += -fPIC
-    else ifeq ($(UNAME_S), Darwin)
-        TARGET = c_lib.dylib
-        CFLAGS += -fPIC
-        CUDA_FLAGS += -fPIC
-    endif
-endif
+TARGET = libhydro.a
 
 .PHONY: all clean
 
@@ -26,7 +11,7 @@ all:
 	@$(MAKE) $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
+	ar rcs $@ $^
 
 %.o: %.c common.h
 	$(CC) $(CFLAGS) -c $< -o $@
