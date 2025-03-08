@@ -3,32 +3,30 @@
 
 #include "hydro.h"
 
-#define RIEMANN_SOLVER "riemann_solver_exact" // "riemann_solver_exact" or "riemann_solver_hllc"
+#define RIEMANN_SOLVER "riemann_solver_hllc" // "riemann_solver_exact" or "riemann_solver_hllc"
 #define COORD_SYS "spherical_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
-#define NUM_TOTAL_CALLS 5120
+#define NUM_TOTAL_CALLS 256
 #define NUM_GHOST_CELLS_SIDE 1
 #define NUM_CELLS NUM_TOTAL_CALLS - 2 * NUM_GHOST_CELLS_SIDE
-#define INTEGRATOR "random_choice_1d" // "godunov_first_order_1d" or "random_choice_1d"
+#define INTEGRATOR "godunov_first_order_1d" // "godunov_first_order_1d" or "random_choice_1d"
 
 #define CFL 0.4
 #define INITIAL_CFL_SHRINK_FACTOR 0.2
 #define NUM_STEPS_SHRINK 50
-#define TF 0.2
+#define TF 1.0
 #define TOL 1e-6 // For the riemann solver
 
-/* Sod shock parameters */
+/* Sedov Blast parameters */
+#define NUM_EXPLOSION_CELLS 1
+
 #define GAMMA 1.4
-#define RHO_L 1.0
-#define U_L 0.0
-#define P_L 1.0
-#define RHO_R 0.125
-#define U_R 0.0
-#define P_R 0.1
-#define DISCONTINUITY_POS 0.5
-#define LEFT_BOUNDARY_CONDITION "transmissive"
+#define RHO_0 1.0
+#define U_0 0.0
+#define P_0 1e-5
+#define LEFT_BOUNDARY_CONDITION "reflective"
 #define RIGHT_BOUNDARY_CONDITION "transmissive"
 #define DOMAIN_MIN 0.0
-#define DOMAIN_MAX 1.0
+#define DOMAIN_MAX 1.2
 
 int main(void)
 {
@@ -51,23 +49,41 @@ int main(void)
         goto error;
     }
 
+    /* Initial condition */
+    double E_0;
+    if (system.coord_sys_flag_ == COORD_SYS_CARTESIAN_1D)
+    {
+        E_0 = 0.0673185 / NUM_EXPLOSION_CELLS;
+    }
+    else if (system.coord_sys_flag_ == COORD_SYS_CYLINDRICAL_1D)
+    {
+        E_0 = 0.0673185 / NUM_EXPLOSION_CELLS;
+    }
+    else if (system.coord_sys_flag_ == COORD_SYS_SPHERICAL_1D)
+    {
+        E_0 = 0.0673185 / NUM_EXPLOSION_CELLS;
+    }
+    else
+    {
+        error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Invalid coordinate system");
+        goto error;
+    }
+
     const int total_num_cells = system.num_cells_x + 2 * system.num_ghost_cells_side;
     for (int i = 0; i < total_num_cells; i++)
     {
-        if (system.mid_points_x_[i] < DISCONTINUITY_POS)
-        {
-            system.density_[i] = RHO_L;
-            system.velocity_[i] = U_L;
-            system.pressure_[i] = P_L;
-        }
-        else
-        {
-            system.density_[i] = RHO_R;
-            system.velocity_[i] = U_R;
-            system.pressure_[i] = P_R;
-        }
+        system.density_[i] = RHO_0;
+        system.velocity_[i] = U_0;
+        system.pressure_[i] = P_0;
     }
     convert_primitive_to_conserved(&system);
+
+    for (int i = NUM_GHOST_CELLS_SIDE; i < (NUM_GHOST_CELLS_SIDE + NUM_EXPLOSION_CELLS); i++)
+    {
+        system.energy_[i] = E_0;
+    }
+    convert_conserved_to_primitive(&system);
+    set_boundary_condition(&system);
 
     IntegratorParam integrator_param = {
         .integrator = INTEGRATOR,
@@ -83,7 +99,7 @@ int main(void)
     Settings settings = {
         .verbose = 1,
         .no_progress_bar = false,
-        .progress_bar_update_freq = 10
+        .progress_bar_update_freq = 50
     };
 
     SimulationParam simulation_param = {
@@ -107,7 +123,7 @@ int main(void)
     }
     printf("Done!\n");
 
-    FILE *file = fopen("sod_shock_1d.csv", "w");
+    FILE *file = fopen("sedov_blast_1d.csv", "w");
     fprintf(file, "mid_point,density,velocity,pressure\n");
     for (int i = NUM_GHOST_CELLS_SIDE; i < (NUM_GHOST_CELLS_SIDE + NUM_CELLS); i++)
     {

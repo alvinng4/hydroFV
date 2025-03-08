@@ -12,168 +12,57 @@ Author: Ching-Yin Ng
 Date: 2025-2-27
 """
 
-import sys
-import timeit
-import warnings
 from pathlib import Path
-
-sys.path.append("../")
 
 import matplotlib.pyplot as plt
 import numpy as np
-import rich.progress
+import polars as pl
 
-import FiniteVolume1D
-
-RIEMANN_SOLVER = "hllc"
-COORD_SYS = "cylindrical_1d"  # "cartesian_1d", "cylindrical_1d", or "spherical_1d"
-NUM_TOTAL_CELLS = 512
-NUM_GHOST_CELLS_SIDE = 1
-NUM_CELLS = NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
-SOLVER = "godunov_first_order"  # "godunov_first_order" or "random_choice"
+COORD_SYS = "spherical_1d"  # "cartesian_1d", "cylindrical_1d", or "spherical_1d"
 IS_PLOT_REFERENCE_SOL = True
 
-CFL = 0.4
-TF = 1.0
-TOL = 1e-8  # For the riemann solver
+RESULT_PATH = Path(__file__).parent / "sedov_blast_1d.csv"
 
 ### Sedov blast wave parameters ###
 NUM_EXPLOSION_CELLS = 1
 
-GAMMA = 1.4
+DOMAIN = (0.0, 1.2)
 RHO_0 = 1.0
 U_0 = 0.0
 P_0 = 1e-5
-if COORD_SYS == "cartesian_1d":
-    E_0 = 0.0673185 / NUM_EXPLOSION_CELLS
-elif COORD_SYS == "cylindrical_1d":
-    E_0 = 0.311357 / NUM_EXPLOSION_CELLS
-elif COORD_SYS == "spherical_1d":
-    E_0 = 0.851072 / NUM_EXPLOSION_CELLS
-LEFT_BOUNDARY_CONDITION = "reflective"
-RIGHT_BOUNDARY_CONDITION = "reflective"
-DOMAIN = (0.0, 1.2)
 
 
 def main() -> None:
-    global RIEMANN_SOLVER
-    global CFL
-    assert COORD_SYS in ["cartesian_1d", "cylindrical_1d", "spherical_1d"]
+    result_df = pl.read_csv(RESULT_PATH)
 
-    c_lib = FiniteVolume1D.utils.load_c_lib()
-    system = get_initial_system(NUM_CELLS, COORD_SYS)
+    mid_points = result_df["mid_point"].to_numpy()
+    density = result_df["density"].to_numpy()
+    velocity = result_df["velocity"].to_numpy()
+    pressure = result_df["pressure"].to_numpy()
 
-    if SOLVER == "random_choice":
-        rng = FiniteVolume1D.random_choice.VanDerCorputSequenceGenerator()
-
-        if RIEMANN_SOLVER != "exact":
-            msg = "Only exact Riemann solver is supported for random_choice solver. Switching to exact Riemann solver."
-            warnings.warn(msg)
-            RIEMANN_SOLVER = "exact"
-
-        if CFL > 0.5:
-            msg = "The Courant number should be less than 0.5 for random_choice solver. Switching to 0.4."
-            warnings.warn(msg)
-            CFL = 0.4
-
-    t = 0.0
-    num_steps = 0
-    start = timeit.default_timer()
-    with rich.progress.Progress() as progress:
-        print("Simulation in progress...")
-        task = progress.add_task("", total=TF)
-        while t < TF:
-            if num_steps <= 50:
-                dt = FiniteVolume1D.utils.get_time_step(CFL * 0.2, system)
-            else:
-                dt = FiniteVolume1D.utils.get_time_step(CFL, system)
-
-            if t + dt > TF:
-                dt = TF - t
-
-            if SOLVER == "godunov_first_order":
-                FiniteVolume1D.godunov_first_order.solving_step(
-                    c_lib, system, dt, TOL, RIEMANN_SOLVER
-                )
-            elif SOLVER == "random_choice":
-                FiniteVolume1D.random_choice.solving_step(
-                    c_lib, system, dt, TOL, RIEMANN_SOLVER, rng
-                )
-
-            t += dt
-            num_steps += 1
-            progress.update(task, completed=t)
-
-    end = timeit.default_timer()
-    print(f"Done! Num steps: {num_steps}, Time: {end - start:.3f}s")
-    print()
-
-    _, axs = plt.subplots(2, 2, figsize=(8, 8))
+    _, axs = plt.subplots(1, 3, figsize=(14, 4))
 
     # Plot the reference solution and the actual solution
     if IS_PLOT_REFERENCE_SOL:
         x_sol, rho_sol, u_sol, p_sol = get_reference_sol()
-        axs[0, 0].plot(x_sol, rho_sol, "r-")
-        axs[0, 1].plot(x_sol, u_sol, "r-")
-        axs[1, 0].plot(x_sol, p_sol, "r-")
+        axs[0].plot(x_sol, rho_sol, "r-")
+        axs[1].plot(x_sol, u_sol, "r-")
+        axs[2].plot(x_sol, p_sol, "r-")
 
-    index_slice = slice(NUM_GHOST_CELLS_SIDE, NUM_TOTAL_CELLS - NUM_GHOST_CELLS_SIDE)
+    axs[0].plot(mid_points, density, "k.", markersize=1)
+    axs[0].set_xlabel("Position")
+    axs[0].set_ylabel("Density")
 
-    axs[0, 0].plot(
-        system.mid_points[index_slice], system.density[index_slice], "k.", markersize=1
-    )
-    axs[0, 0].set_xlabel("Position")
-    axs[0, 0].set_ylabel("Density")
+    axs[1].plot(mid_points, velocity, "k.", markersize=1)
+    axs[1].set_xlabel("Position")
+    axs[1].set_ylabel("Velocity")
 
-    axs[0, 1].plot(
-        system.mid_points[index_slice], system.velocity[index_slice], "k.", markersize=1
-    )
-    axs[0, 1].set_xlabel("Position")
-    axs[0, 1].set_ylabel("Velocity")
-
-    axs[1, 0].plot(
-        system.mid_points[index_slice], system.pressure[index_slice], "k.", markersize=1
-    )
-    axs[1, 0].set_xlabel("Position")
-    axs[1, 0].set_ylabel("Pressure")
-
-    # internal_energy = system.energy - (0.5 * system.density * system.velocity ** 2) * system.volume
-    # axs[1, 1].plot(system.mid_points[index_slice], internal_energy[index_slice], "k.", markersize=2)
-    # axs[1, 1].set_xlabel("Position")
-    # axs[1, 1].set_ylabel("Internal energy")
+    axs[2].plot(mid_points, pressure, "k.", markersize=1)
+    axs[2].set_xlabel("Position")
+    axs[2].set_ylabel("Pressure")
 
     plt.tight_layout()
     plt.show()
-
-
-def get_initial_system(num_cells: int, coord_sys: str) -> FiniteVolume1D.system.System:
-    system = FiniteVolume1D.system.System(
-        num_cells=num_cells,
-        gamma=GAMMA,
-        coord_sys=coord_sys,
-        domain=DOMAIN,
-        num_ghost_cells_side=NUM_GHOST_CELLS_SIDE,
-        left_boundary_condition=LEFT_BOUNDARY_CONDITION,
-        right_boundary_condition=RIGHT_BOUNDARY_CONDITION,
-    )
-    system.density.fill(RHO_0)
-    system.velocity.fill(U_0)
-    system.pressure.fill(P_0)
-
-    # nu = system.alpha + 1.0
-    # delta_r = (1.0 / num_cells) * NUM_EXPLOSION_CELLS
-    # for i in range(NUM_GHOST_CELLS_SIDE, NUM_GHOST_CELLS_SIDE + NUM_EXPLOSION_CELLS):
-    #     system.pressure[i] = (3.0 * (GAMMA - 1.0) * EPS) / ((nu + 1.0) * np.pi * delta_r ** nu)
-
-    system.set_boundary_condition()
-    system.convert_primitive_to_conserved()
-    system.energy[
-        NUM_GHOST_CELLS_SIDE : (NUM_GHOST_CELLS_SIDE + NUM_EXPLOSION_CELLS)
-    ] = E_0
-    system.convert_conserved_to_primitive()
-    system.set_boundary_condition()
-
-    return system
 
 
 def get_reference_sol() -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:

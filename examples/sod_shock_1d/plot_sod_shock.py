@@ -14,33 +14,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import polars as pl
 
-RIEMANN_SOLVER = "hllc"
 COORD_SYS = "cartesian_1d"  # "cartesian_1d", "cylindrical_1d", or "spherical_1d"
-NUM_TOTAL_CELLS = 200
-NUM_GHOST_CELLS_SIDE = 1
-NUM_CELLS = NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
-SOLVER = "godunov_first_order"  # "godunov_first_order" or "random_choice"
 IS_PLOT_REFERENCE_SOL = True
 
 RESULT_PATH = Path(__file__).parent / "sod_shock_1d.csv"
-SOL_PATH = Path(__file__).parent / "sol_cartesian_1d_0.2.npz" # "sol_cartesian_1d_0.2.npz", "sol_cylindrical_1d_0.2.npz" or "sol_spherical_1d_0.2.npz"
 
-CFL = 0.9
-TF = 0.2
-TOL = 1e-6  # For the riemann solver
-
-### Sod shock parameters ###
-GAMMA = 1.4
-RHO_L = 1.0
-U_L = 0.0
-P_L = 1.0
-RHO_R = 0.125
-U_R = 0.0
-P_R = 0.1
-DISCONTINUITY_POS = 0.5
-LEFT_BOUNDARY_CONDITION = "transmissive"
-RIGHT_BOUNDARY_CONDITION = "transmissive"
-DOMAIN = (0.0, 1.0)
+if COORD_SYS == "cartesian_1d":
+    SOL_PATH = Path(__file__).parent / "sol_cartesian_1d_0.2.npz"
+elif COORD_SYS == "cylindrical_1d":
+    SOL_PATH = Path(__file__).parent / "sol_cylindrical_1d_0.2.npz"
+elif COORD_SYS == "spherical_1d":
+    SOL_PATH = Path(__file__).parent / "sol_spherical_1d_0.2.npz"
 
 
 def main() -> None:
@@ -61,8 +45,8 @@ def main() -> None:
         axs[2].plot(x_sol, p_sol, "r-")
 
     axs[0].plot(
-        mid_points[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
-        density[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
+        mid_points,
+        density,
         "k.",
         markersize=2,
     )
@@ -70,8 +54,8 @@ def main() -> None:
     axs[0].set_ylabel("Density")
 
     axs[1].plot(
-        mid_points[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
-        velocity[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
+        mid_points,
+        velocity,
         "k.",
         markersize=2,
     )
@@ -79,8 +63,8 @@ def main() -> None:
     axs[1].set_ylabel("Velocity")
 
     axs[2].plot(
-        mid_points[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
-        pressure[NUM_GHOST_CELLS_SIDE:-NUM_GHOST_CELLS_SIDE],
+        mid_points,
+        pressure,
         "k.",
         markersize=2,
     )
@@ -89,6 +73,7 @@ def main() -> None:
 
     plt.tight_layout()
     plt.show()
+
 
 if __name__ == "__main__":
     main()
