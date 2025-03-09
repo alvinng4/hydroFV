@@ -57,10 +57,14 @@ typedef struct System
     real dy_;
     real dz_;
     real *density_;
-    real *velocity_;
+    real *velocity_x_;
+    real *velocity_y_;
+    real *velocity_z_;
     real *pressure_;
     real *mass_;
-    real *momentum_;
+    real *momentum_x_;
+    real *momentum_y_;
+    real *momentum_z_;
     real *energy_;
     real *mid_points_x_;
     real *mid_points_y_;
@@ -74,7 +78,7 @@ typedef struct System
  * 
  * \return The system struct.
  */
-System get_new_system_struct();
+System get_new_system_struct(void);
 
 /**
  * \brief Initialize the hidden variables for the system struct.

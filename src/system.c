@@ -16,7 +16,7 @@
 #include "error.h"
 #include "system.h"
 
-WIN32DLL_API System get_new_system_struct()
+WIN32DLL_API System get_new_system_struct(void)
 {
     System system = {
         .coord_sys = NULL,
@@ -49,10 +49,14 @@ WIN32DLL_API System get_new_system_struct()
         .dy_ = -1.0,
         .dz_ = -1.0,
         .density_ = NULL,
-        .velocity_ = NULL,
+        .velocity_x_ = NULL,
+        .velocity_y_ = NULL,
+        .velocity_z_ = NULL,
         .pressure_ = NULL,
         .mass_ = NULL,
-        .momentum_ = NULL,
+        .momentum_x_ = NULL,
+        .momentum_y_ = NULL,
+        .momentum_z_ = NULL,
         .energy_ = NULL,
         .mid_points_x_ = NULL,
         .mid_points_y_ = NULL,
@@ -85,9 +89,17 @@ IN_FILE ErrorStatus check_init_system_input(const System *__restrict system)
     {
         return WRAP_RAISE_ERROR(VALUE_ERROR, "Density array pointer (system->density_) is not NULL.");
     }
-    if (system->velocity_)
+    if (system->velocity_x_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Velocity array pointer (system->velocity_) is not NULL.");
+        return WRAP_RAISE_ERROR(VALUE_ERROR, "Velocity (x-component) array pointer (system->velocity_x_) is not NULL.");
+    }
+    if (system->velocity_y_)
+    {
+        return WRAP_RAISE_ERROR(VALUE_ERROR, "Velocity (y-component) array pointer (system->velocity_y_) is not NULL.");
+    }
+    if (system->velocity_z_)
+    {
+        return WRAP_RAISE_ERROR(VALUE_ERROR, "Velocity (z-component) array pointer (system->velocity_z_) is not NULL.");
     }
     if (system->pressure_)
     {
@@ -97,9 +109,17 @@ IN_FILE ErrorStatus check_init_system_input(const System *__restrict system)
     {
         return WRAP_RAISE_ERROR(VALUE_ERROR, "Mass array pointer (system->mass_) is not NULL.");
     }
-    if (system->momentum_)
+    if (system->momentum_x_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Momentum array pointer (system->momentum_) is not NULL.");
+        return WRAP_RAISE_ERROR(VALUE_ERROR, "Momentum (x-component) array pointer (system->momentum_x_) is not NULL.");
+    }
+    if (system->momentum_y_)
+    {
+        return WRAP_RAISE_ERROR(VALUE_ERROR, "Momentum (y-component) array pointer (system->momentum_y_) is not NULL.");
+    }
+    if (system->momentum_z_)
+    {
+        return WRAP_RAISE_ERROR(VALUE_ERROR, "Momentum (z-component) array pointer (system->momentum_z_) is not NULL.");
     }
     if (system->energy_)
     {
@@ -627,7 +647,7 @@ IN_FILE ErrorStatus initialize_volume(System *__restrict system)
             {
                 for (int j = 0; j < total_num_cells_y; j++)
                 {
-                    system->volume_[i * total_num_cells_y + j] = volume;
+                    system->volume_[j * total_num_cells_x + i] = volume;
                 }
             }
             return make_success_error_status();
@@ -645,7 +665,7 @@ IN_FILE ErrorStatus initialize_volume(System *__restrict system)
                     for (int k = 0; k < total_num_cells_z; k++)
                     {
                         system->volume_[
-                            i * total_num_cells_y * total_num_cells_z + j * total_num_cells_z + k
+                            k * total_num_cells_x * total_num_cells_y + j * total_num_cells_y + i
                         ] = volume;
                     }
                 }
@@ -686,13 +706,11 @@ ErrorStatus system_init(System *__restrict system)
 
     /* Calculate total number of cells */
     int total_num_cells;
-    int dim;
 
     switch (system->coord_sys_flag_)
     {
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
             total_num_cells = system->num_cells_x + 2 * system->num_ghost_cells_side;
-            dim = 1;
             break;
         case COORD_SYS_CARTESIAN_2D:
             total_num_cells = (
@@ -700,7 +718,6 @@ ErrorStatus system_init(System *__restrict system)
             ) * (
                 system->num_cells_y + 2 * system->num_ghost_cells_side
             );
-            dim = 2;
             break;
         case COORD_SYS_CARTESIAN_3D:
             total_num_cells = (
@@ -710,7 +727,6 @@ ErrorStatus system_init(System *__restrict system)
             ) * (
                 system->num_cells_z + 2 * system->num_ghost_cells_side
             );
-            dim = 3;
             break;
         default:
             error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Coordinate system flag not recognized.");
@@ -719,18 +735,15 @@ ErrorStatus system_init(System *__restrict system)
 
     /* Allocate memory */
     system->density_ = calloc(total_num_cells, sizeof(real));
-    system->velocity_ = calloc(total_num_cells * dim, sizeof(real));
     system->pressure_ = calloc(total_num_cells, sizeof(real));
     system->mass_ = calloc(total_num_cells, sizeof(real));
-    system->momentum_ = calloc(total_num_cells * dim, sizeof(real));
     system->energy_ = calloc(total_num_cells, sizeof(real));
     system->volume_ = malloc(total_num_cells * sizeof(real));
 
-    if (!system->density_
-        || !system->velocity_
+    if (
+        !system->density_
         || !system->pressure_
         || !system->mass_
-        || !system->momentum_
         || !system->energy_
         || !system->volume_
     )
@@ -745,10 +758,12 @@ ErrorStatus system_init(System *__restrict system)
         {
             const int total_num_cells_z = system->num_cells_z + 2 * system->num_ghost_cells_side;
             system->mid_points_z_ = malloc(total_num_cells_z * sizeof(real));
-            if (!system->mid_points_z_)
+            system->velocity_z_ = calloc(total_num_cells, sizeof(real));
+            system->momentum_z_ = calloc(total_num_cells, sizeof(real));
+            if (!system->mid_points_z_ || !system->velocity_z_ || !system->momentum_z_)
             {
                 error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
-                goto err_init_memory_alloc_mid_points_z;
+                goto err_init_memory_alloc_z;
             }
         }
             /* FALL THROUGH */
@@ -756,10 +771,12 @@ ErrorStatus system_init(System *__restrict system)
         {
             const int total_num_cells_y = system->num_cells_y + 2 * system->num_ghost_cells_side;
             system->mid_points_y_ = malloc(total_num_cells_y * sizeof(real));
-            if (!system->mid_points_y_)
+            system->velocity_y_ = calloc(total_num_cells, sizeof(real));
+            system->momentum_y_ = calloc(total_num_cells, sizeof(real));
+            if (!system->mid_points_y_ || !system->velocity_y_ || !system->momentum_y_)
             {
                 error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
-                goto err_init_memory_alloc_mid_points_y;
+                goto err_init_memory_alloc_y;
             }
         }
             /* FALL THROUGH */
@@ -767,10 +784,12 @@ ErrorStatus system_init(System *__restrict system)
         {
             const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
             system->mid_points_x_ = malloc(total_num_cells_x * sizeof(real));
-            if (!system->mid_points_x_)
+            system->velocity_x_ = calloc(total_num_cells, sizeof(real));
+            system->momentum_x_ = calloc(total_num_cells, sizeof(real));
+            if (!system->mid_points_x_ || !system->velocity_x_ || !system->momentum_x_)
             {
                 error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
-                goto err_init_memory_alloc_mid_points_x;
+                goto err_init_memory_alloc_x;
             }
         }
             break;
@@ -799,19 +818,23 @@ ErrorStatus system_init(System *__restrict system)
     return make_success_error_status();
 
 err_init_sys_attr:
-err_init_memory_alloc_mid_points_z:
+err_init_memory_alloc_z:
     free(system->mid_points_z_);
-err_init_memory_alloc_mid_points_y:
+    free(system->velocity_z_);
+    free(system->momentum_z_);
+err_init_memory_alloc_y:
     free(system->mid_points_y_);
-err_init_memory_alloc_mid_points_x:
+    free(system->velocity_y_);
+    free(system->momentum_y_);
+err_init_memory_alloc_x:
     free(system->mid_points_x_);
+    free(system->velocity_x_);
+    free(system->momentum_x_);
 err_unknown_coord_sys_flag_mid_points_malloc:
 err_init_memory_alloc:
     free(system->density_);
-    free(system->velocity_);
     free(system->pressure_);
     free(system->mass_);
-    free(system->momentum_);
     free(system->energy_);
     free(system->mid_points_x_);
     free(system->volume_);
@@ -825,10 +848,14 @@ err_coord_sys_flag:
 void free_system_memory(System *__restrict system)
 {
     free(system->density_);
-    free(system->velocity_);
+    free(system->velocity_x_);
+    free(system->velocity_y_);
+    free(system->velocity_z_);
     free(system->pressure_);
     free(system->mass_);
-    free(system->momentum_);
+    free(system->momentum_x_);
+    free(system->momentum_y_);
+    free(system->momentum_z_);
     free(system->energy_);
     free(system->mid_points_x_);
     free(system->mid_points_y_);
@@ -841,7 +868,7 @@ IN_FILE ErrorStatus set_boundary_condition_1d(System *__restrict system)
     ErrorStatus error_status;
 
     real *__restrict density = system->density_;
-    real *__restrict velocity = system->velocity_;
+    real *__restrict velocity_x = system->velocity_x_;
     real *__restrict pressure = system->pressure_;
     const int num_ghost_cells_side = system->num_ghost_cells_side;
 
@@ -853,7 +880,7 @@ IN_FILE ErrorStatus set_boundary_condition_1d(System *__restrict system)
             for (int i = 0; i < num_ghost_cells_side; i++)
             {
                 density[num_ghost_cells_side - 1 - i] = density[num_ghost_cells_side + i];
-                velocity[num_ghost_cells_side - 1 - i] = -velocity[num_ghost_cells_side + i];
+                velocity_x[num_ghost_cells_side - 1 - i] = -velocity_x[num_ghost_cells_side + i];
                 pressure[num_ghost_cells_side - 1 - i] = pressure[num_ghost_cells_side + i];
             }
             break;
@@ -861,7 +888,7 @@ IN_FILE ErrorStatus set_boundary_condition_1d(System *__restrict system)
             for (int i = 0; i < num_ghost_cells_side; i++)
             {
                 density[num_ghost_cells_side - 1 - i] = density[num_ghost_cells_side + i];
-                velocity[num_ghost_cells_side - 1 - i] = velocity[num_ghost_cells_side + i];
+                velocity_x[num_ghost_cells_side - 1 - i] = velocity_x[num_ghost_cells_side + i];
                 pressure[num_ghost_cells_side - 1 - i] = pressure[num_ghost_cells_side + i];
             }
             break;
@@ -881,7 +908,7 @@ IN_FILE ErrorStatus set_boundary_condition_1d(System *__restrict system)
             for (int i = 0; i < num_ghost_cells_side; i++)
             {
                 density[num_ghost_cells_side + system->num_cells_x + i] = density[num_ghost_cells_side + system->num_cells_x - 1 - i];
-                velocity[num_ghost_cells_side + system->num_cells_x + i] = -velocity[num_ghost_cells_side + system->num_cells_x - 1 - i];
+                velocity_x[num_ghost_cells_side + system->num_cells_x + i] = -velocity_x[num_ghost_cells_side + system->num_cells_x - 1 - i];
                 pressure[num_ghost_cells_side + system->num_cells_x + i] = pressure[num_ghost_cells_side + system->num_cells_x - 1 - i];
             }
             break;
@@ -889,7 +916,7 @@ IN_FILE ErrorStatus set_boundary_condition_1d(System *__restrict system)
             for (int i = 0; i < num_ghost_cells_side; i++)
             {
                 density[num_ghost_cells_side + system->num_cells_x + i] = density[num_ghost_cells_side + system->num_cells_x - 1 - i];
-                velocity[num_ghost_cells_side + system->num_cells_x + i] = velocity[num_ghost_cells_side + system->num_cells_x - 1 - i];
+                velocity_x[num_ghost_cells_side + system->num_cells_x + i] = velocity_x[num_ghost_cells_side + system->num_cells_x - 1 - i];
                 pressure[num_ghost_cells_side + system->num_cells_x + i] = pressure[num_ghost_cells_side + system->num_cells_x - 1 - i];
             }
             break;
@@ -897,11 +924,11 @@ IN_FILE ErrorStatus set_boundary_condition_1d(System *__restrict system)
             for (int i = 0; i < num_ghost_cells_side; i++)
             {
                 density[num_ghost_cells_side + system->num_cells_x + i] = density[num_ghost_cells_side + i];
-                velocity[num_ghost_cells_side + system->num_cells_x + i] = velocity[num_ghost_cells_side + i];
+                velocity_x[num_ghost_cells_side + system->num_cells_x + i] = velocity_x[num_ghost_cells_side + i];
                 pressure[num_ghost_cells_side + system->num_cells_x + i] = pressure[num_ghost_cells_side + i];
 
                 density[num_ghost_cells_side - 1 - i] = density[num_ghost_cells_side + system->num_cells_x - 1 - i];
-                velocity[num_ghost_cells_side - 1 - i] = velocity[num_ghost_cells_side + system->num_cells_x - 1 - i];
+                velocity_x[num_ghost_cells_side - 1 - i] = velocity_x[num_ghost_cells_side + system->num_cells_x - 1 - i];
                 pressure[num_ghost_cells_side - 1 - i] = pressure[num_ghost_cells_side + system->num_cells_x - 1 - i];
             }
             break;
@@ -918,8 +945,193 @@ err_unknown_boundary_condition_flag:
 
 IN_FILE ErrorStatus set_boundary_condition_cartesian_2d(System *__restrict system)
 {
-    (void) system;
-    return WRAP_RAISE_ERROR(NOT_IMPLEMENTED_ERROR, "");
+    ErrorStatus error_status;
+
+    real *__restrict density = system->density_;
+    real *__restrict velocity_x = system->velocity_x_;
+    real *__restrict velocity_y = system->velocity_y_;
+    real *__restrict pressure = system->pressure_;
+    const int num_ghost_cells_side = system->num_ghost_cells_side;
+    const int num_cells_x = system->num_cells_x;
+    const int num_cells_y = system->num_cells_y;
+    const int total_num_cells_x = num_cells_x + 2 * num_ghost_cells_side;
+
+    switch (system->boundary_condition_flag_x_min_)
+    {
+        case BOUNDARY_CONDITION_NONE:
+            break;
+        case BOUNDARY_CONDITION_REFLECTIVE:
+            for (int i = 0; i < num_ghost_cells_side; i++)
+            {
+                for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
+                {
+                    density[j * total_num_cells_x + (num_ghost_cells_side - 1 - i)] = density[j * total_num_cells_x + (num_ghost_cells_side + i)];
+                    velocity_x[j * total_num_cells_x + (num_ghost_cells_side - 1 - i)] = -velocity_x[j * total_num_cells_x + (num_ghost_cells_side + i)];
+                    velocity_y[j * total_num_cells_x + (num_ghost_cells_side - 1 - i)] = velocity_y[j * total_num_cells_x + (num_ghost_cells_side + i)];
+                    pressure[j * total_num_cells_x + (num_ghost_cells_side - 1 - i)] = pressure[j * total_num_cells_x + (num_ghost_cells_side + i)];
+                }
+            }
+            break;
+        case BOUNDARY_CONDITION_TRANSMISSIVE:
+            for (int i = 0; i < num_ghost_cells_side; i++)
+            {
+                for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
+                {
+                    density[j * total_num_cells_x + (num_ghost_cells_side - 1 - i)] = density[j * total_num_cells_x + (num_ghost_cells_side + i)];
+                    velocity_x[j * total_num_cells_x + (num_ghost_cells_side - 1 - i)] = velocity_x[j * total_num_cells_x + (num_ghost_cells_side + i)];
+                    velocity_y[j * total_num_cells_x + (num_ghost_cells_side - 1 - i)] = velocity_y[j * total_num_cells_x + (num_ghost_cells_side + i)];
+                    pressure[j * total_num_cells_x + (num_ghost_cells_side - 1 - i)] = pressure[j * total_num_cells_x + (num_ghost_cells_side + i)];
+                }
+            }
+            break;
+        case BOUNDARY_CONDITION_PERIODIC:
+            /* To be processed together with in x_max */
+            break;
+        default:
+            error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Boundary condition flag not recognized for x_min.");
+            goto err_unknown_boundary_condition_flag;
+    }
+
+    switch (system->boundary_condition_flag_x_max_)
+    {
+        case BOUNDARY_CONDITION_NONE:
+            break;
+        case BOUNDARY_CONDITION_REFLECTIVE:
+            for (int i = 0; i < num_ghost_cells_side; i++)
+            {
+                for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
+                {
+                    density[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x + i)] = density[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x - 1 - i)];
+                    velocity_x[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x + i)] = -velocity_x[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x - 1 - i)];
+                    velocity_y[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x + i)] = velocity_y[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x - 1 - i)];
+                    pressure[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x + i)] = pressure[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x - 1 - i)];
+                }
+            }
+            break;
+        case BOUNDARY_CONDITION_TRANSMISSIVE:
+            for (int i = 0; i < num_ghost_cells_side; i++)
+            {
+                for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
+                {
+                    density[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x + i)] = density[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x - 1 - i)];
+                    velocity_x[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x + i)] = velocity_x[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x - 1 - i)];
+                    velocity_y[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x + i)] = velocity_y[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x - 1 - i)];
+                    pressure[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x + i)] = pressure[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x - 1 - i)];
+                }
+            }
+            break;
+        case BOUNDARY_CONDITION_PERIODIC:
+            for (int i = 0; i < num_ghost_cells_side; i++)
+            {
+                for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
+                {
+                    density[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x + i)] = density[j * total_num_cells_x + (num_ghost_cells_side + i)];
+                    velocity_x[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x + i)] = velocity_x[j * total_num_cells_x + (num_ghost_cells_side + i)];
+                    velocity_y[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x + i)] = velocity_y[j * total_num_cells_x + (num_ghost_cells_side + i)];
+                    pressure[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x + i)] = pressure[j * total_num_cells_x + (num_ghost_cells_side + i)];
+
+                    density[j * total_num_cells_x + (num_ghost_cells_side - 1 - i)] = density[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x - 1 - i)];
+                    velocity_x[j * total_num_cells_x + (num_ghost_cells_side - 1 - i)] = velocity_x[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x - 1 - i)];
+                    velocity_y[j * total_num_cells_x + (num_ghost_cells_side - 1 - i)] = velocity_y[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x - 1 - i)];
+                    pressure[j * total_num_cells_x + (num_ghost_cells_side - 1 - i)] = pressure[j * total_num_cells_x + (num_ghost_cells_side + num_cells_x - 1 - i)];
+                }
+            }
+            break;
+        default:
+            error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Boundary condition flag not recognized for x_max.");
+            goto err_unknown_boundary_condition_flag;
+    }
+
+    switch (system->boundary_condition_flag_y_min_)
+    {
+        case BOUNDARY_CONDITION_NONE:
+            break;
+        case BOUNDARY_CONDITION_REFLECTIVE:
+            for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x); i++)
+            {
+                for (int j = 0; j < num_ghost_cells_side; j++)
+                {
+                    density[(num_ghost_cells_side - 1 - j) * total_num_cells_x + i] = density[(num_ghost_cells_side + j) * total_num_cells_x + i];
+                    velocity_x[(num_ghost_cells_side - 1 - j) * total_num_cells_x + i] = velocity_x[(num_ghost_cells_side + j) * total_num_cells_x + i];
+                    velocity_y[(num_ghost_cells_side - 1 - j) * total_num_cells_x + i] = -velocity_y[(num_ghost_cells_side + j) * total_num_cells_x + i];
+                    pressure[(num_ghost_cells_side - 1 - j) * total_num_cells_x + i] = pressure[(num_ghost_cells_side + j) * total_num_cells_x + i];
+                }
+            }
+            break;
+        case BOUNDARY_CONDITION_TRANSMISSIVE:
+            for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x); i++)
+            {
+                for (int j = 0; j < num_ghost_cells_side; j++)
+                {
+                    density[(num_ghost_cells_side - 1 - j) * total_num_cells_x + i] = density[(num_ghost_cells_side + j) * total_num_cells_x + i];
+                    velocity_x[(num_ghost_cells_side - 1 - j) * total_num_cells_x + i] = velocity_x[(num_ghost_cells_side + j) * total_num_cells_x + i];
+                    velocity_y[(num_ghost_cells_side - 1 - j) * total_num_cells_x + i] = velocity_y[(num_ghost_cells_side + j) * total_num_cells_x + i];
+                    pressure[(num_ghost_cells_side - 1 - j) * total_num_cells_x + i] = pressure[(num_ghost_cells_side + j) * total_num_cells_x + i];
+                }
+            }
+            break;
+        case BOUNDARY_CONDITION_PERIODIC:
+            /* To be processed together with in y_max */
+            break;
+        default:
+            error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Boundary condition flag not recognized for y_min.");
+            goto err_unknown_boundary_condition_flag;
+    }
+
+    switch (system->boundary_condition_flag_y_max_)
+    {
+        case BOUNDARY_CONDITION_NONE:
+            break;
+        case BOUNDARY_CONDITION_REFLECTIVE:
+            for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x); i++)
+            {
+                for (int j = 0; j < num_ghost_cells_side; j++)
+                {
+                    density[(num_ghost_cells_side + num_cells_y + j) * total_num_cells_x + i] = density[(num_ghost_cells_side + num_cells_y - 1 - j) * total_num_cells_x + i];
+                    velocity_x[(num_ghost_cells_side + num_cells_y + j) * total_num_cells_x + i] = velocity_x[(num_ghost_cells_side + num_cells_y - 1 - j) * total_num_cells_x + i];
+                    velocity_y[(num_ghost_cells_side + num_cells_y + j) * total_num_cells_x + i] = -velocity_y[(num_ghost_cells_side + num_cells_y - 1 - j) * total_num_cells_x + i];
+                    pressure[(num_ghost_cells_side + num_cells_y + j) * total_num_cells_x + i] = pressure[(num_ghost_cells_side + num_cells_y - 1 - j) * total_num_cells_x + i];
+                }
+            }
+            break;
+        case BOUNDARY_CONDITION_TRANSMISSIVE:
+            for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x); i++)
+            {
+                for (int j = 0; j < num_ghost_cells_side; j++)
+                {
+                    density[(num_ghost_cells_side + num_cells_y + j) * total_num_cells_x + i] = density[(num_ghost_cells_side + num_cells_y - 1 - j) * total_num_cells_x + i];
+                    velocity_x[(num_ghost_cells_side + num_cells_y + j) * total_num_cells_x + i] = velocity_x[(num_ghost_cells_side + num_cells_y - 1 - j) * total_num_cells_x + i];
+                    velocity_y[(num_ghost_cells_side + num_cells_y + j) * total_num_cells_x + i] = velocity_y[(num_ghost_cells_side + num_cells_y - 1 - j) * total_num_cells_x + i];
+                    pressure[(num_ghost_cells_side + num_cells_y + j) * total_num_cells_x + i] = pressure[(num_ghost_cells_side + num_cells_y - 1 - j) * total_num_cells_x + i];
+                }
+            }
+            break;
+        case BOUNDARY_CONDITION_PERIODIC:
+            for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x); i++)
+            {
+                for (int j = 0; j < num_ghost_cells_side; j++)
+                {
+                    density[(num_ghost_cells_side + num_cells_y + j) * total_num_cells_x + i] = density[(num_ghost_cells_side + j) * total_num_cells_x + i];
+                    velocity_x[(num_ghost_cells_side + num_cells_y + j) * total_num_cells_x + i] = velocity_x[(num_ghost_cells_side + j) * total_num_cells_x + i];
+                    velocity_y[(num_ghost_cells_side + num_cells_y + j) * total_num_cells_x + i] = velocity_y[(num_ghost_cells_side + j) * total_num_cells_x + i];
+                    pressure[(num_ghost_cells_side + num_cells_y + j) * total_num_cells_x + i] = pressure[(num_ghost_cells_side + j) * total_num_cells_x + i];
+
+                    density[(num_ghost_cells_side - 1 - j) * total_num_cells_x + i] = density[(num_ghost_cells_side + num_cells_y - 1 - j) * total_num_cells_x + i];
+                    velocity_x[(num_ghost_cells_side - 1 - j) * total_num_cells_x + i] = velocity_x[(num_ghost_cells_side + num_cells_y - 1 - j) * total_num_cells_x + i];
+                    velocity_y[(num_ghost_cells_side - 1 - j) * total_num_cells_x + i] = velocity_y[(num_ghost_cells_side + num_cells_y - 1 - j) * total_num_cells_x + i];
+                    pressure[(num_ghost_cells_side - 1 - j) * total_num_cells_x + i] = pressure[(num_ghost_cells_side + num_cells_y - 1 - j) * total_num_cells_x + i];
+                }
+            }
+            break;
+        default:
+            error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Boundary condition flag not recognized for y_max.");
+            goto err_unknown_boundary_condition_flag;
+    }
+
+    return make_success_error_status();
+
+err_unknown_boundary_condition_flag:
+    return error_status;
 }
 
 IN_FILE ErrorStatus set_boundary_condition_cartesian_3d(System *__restrict system)
@@ -949,10 +1161,14 @@ ErrorStatus convert_conserved_to_primitive(System *__restrict system)
     const real gamma = system->gamma;
     const real *__restrict volume = system->volume_;
     const real *__restrict mass = system->mass_;
-    const real *__restrict momentum = system->momentum_;
+    const real *__restrict momentum_x = system->momentum_x_;
+    const real *__restrict momentum_y = system->momentum_y_;
+    // const real *__restrict momentum_z = system->momentum_z_;
     const real *__restrict energy = system->energy_;
     real *__restrict density = system->density_;
-    real *__restrict velocity = system->velocity_;
+    real *__restrict velocity_x = system->velocity_x_;
+    real *__restrict velocity_y = system->velocity_y_;
+    // real *__restrict velocity_z = system->velocity_z_;
     real *__restrict pressure = system->pressure_;
 
     switch(system->coord_sys_flag_)
@@ -961,17 +1177,38 @@ ErrorStatus convert_conserved_to_primitive(System *__restrict system)
             for (int i = num_ghost_cells_side; i < (system->num_cells_x + num_ghost_cells_side); i++)
             {
                 const real mass_i = mass[i];
-                const real momentum_i = momentum[i];
+                const real momentum_x_i = momentum_x[i];
                 const real energy_i = energy[i];
                 const real volume_i = volume[i];
                 density[i] = mass_i / volume_i;
-                velocity[i] = momentum_i / mass_i;
-                pressure[i] = (gamma - 1.0) * (energy_i - 0.5 * mass_i * velocity[i] * velocity[i]) / volume_i;
+                velocity_x[i] = momentum_x_i / mass_i;
+                pressure[i] = (gamma - 1.0) * (energy_i - 0.5 * mass_i * velocity_x[i] * velocity_x[i]) / volume_i;
             }
             break;
         case COORD_SYS_CARTESIAN_2D:
+            for (int i = num_ghost_cells_side; i < (system->num_cells_x + num_ghost_cells_side); i++)
+            {
+                for (int j = num_ghost_cells_side; j < (system->num_cells_y + num_ghost_cells_side); j++)
+                {
+                    const int index = j * (system->num_cells_x + 2 * num_ghost_cells_side) + i;
+                    const real mass_ij = mass[index];
+                    const real momentum_x_ij = momentum_x[index];
+                    const real momentum_y_ij = momentum_y[index];
+                    const real energy_ij = energy[index];
+                    const real volume_ij = volume[index];
+                    density[index] = mass_ij / volume_ij;
+                    velocity_x[index] = momentum_x_ij / mass_ij;
+                    velocity_y[index] = momentum_y_ij / mass_ij;
+                    pressure[index] = (gamma - 1.0) * (
+                        energy_ij - 0.5 * mass_ij * (
+                            velocity_x[index] * velocity_x[index] + velocity_y[index] * velocity_y[index]
+                        )
+                    ) / volume_ij;
+                }
+            }
             break;
         case COORD_SYS_CARTESIAN_3D:
+            return WRAP_RAISE_ERROR(NOT_IMPLEMENTED_ERROR, "");
             break;
         default:
             return WRAP_RAISE_ERROR(VALUE_ERROR, "Coordinate system flag not recognized.");
@@ -986,10 +1223,14 @@ ErrorStatus convert_primitive_to_conserved(System *__restrict system)
     const real gamma = system->gamma;
     const real *__restrict volume = system->volume_;
     const real *__restrict density = system->density_;
-    const real *__restrict velocity = system->velocity_;
+    const real *__restrict velocity_x = system->velocity_x_;
+    const real *__restrict velocity_y = system->velocity_y_;
+    // const real *__restrict velocity_z = system->velocity_z_;
     const real *__restrict pressure = system->pressure_;
     real *__restrict mass = system->mass_;
-    real *__restrict momentum = system->momentum_;
+    real *__restrict momentum_x = system->momentum_x_;
+    real *__restrict momentum_y = system->momentum_y_;
+    // real *__restrict momentum_z = system->momentum_z_;
     real *__restrict energy = system->energy_;
 
     switch(system->coord_sys_flag_)
@@ -998,19 +1239,40 @@ ErrorStatus convert_primitive_to_conserved(System *__restrict system)
             for (int i = num_ghost_cells_side; i < (system->num_cells_x + num_ghost_cells_side); i++)
             {
                 const real density_i = density[i];
-                const real velocity_i = velocity[i];
+                const real velocity_x_i = velocity_x[i];
                 const real pressure_i = pressure[i];
                 const real volume_i = volume[i];
                 mass[i] = density_i * volume_i;
-                momentum[i] = mass[i] * velocity_i;
+                momentum_x[i] = mass[i] * velocity_x_i;
                 energy[i] = volume[i] * (
-                    0.5 * density_i * velocity_i * velocity_i + pressure_i / (gamma - 1.0)
+                    0.5 * density_i * velocity_x_i * velocity_x_i + pressure_i / (gamma - 1.0)
                 );
             }
             break;
         case COORD_SYS_CARTESIAN_2D:
+            for (int i = num_ghost_cells_side; i < (system->num_cells_x + num_ghost_cells_side); i++)
+            {
+                for (int j = num_ghost_cells_side; j < (system->num_cells_y + num_ghost_cells_side); j++)
+                {
+                    const int index = j * (system->num_cells_x + 2 * num_ghost_cells_side) + i;
+                    const real density_ij = density[index];
+                    const real velocity_x_ij = velocity_x[index];
+                    const real velocity_y_ij = velocity_y[index];
+                    const real pressure_ij = pressure[index];
+                    const real volume_ij = volume[index];
+                    mass[index] = density_ij * volume_ij;
+                    momentum_x[index] = mass[index] * velocity_x_ij;
+                    momentum_y[index] = mass[index] * velocity_y_ij;
+                    energy[index] = volume_ij * (
+                        0.5 * density_ij * (
+                            velocity_x_ij * velocity_x_ij + velocity_y_ij * velocity_y_ij
+                        ) + pressure_ij / (gamma - 1.0)
+                    );
+                }
+            }
             break;
         case COORD_SYS_CARTESIAN_3D:
+            return WRAP_RAISE_ERROR(NOT_IMPLEMENTED_ERROR, "");
             break;
         default:
             return WRAP_RAISE_ERROR(VALUE_ERROR, "Coordinate system flag not recognized.");

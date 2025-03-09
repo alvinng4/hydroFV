@@ -24,7 +24,7 @@ real get_time_step_1d(
     const real gamma = system->gamma;
     const real *__restrict density = system->density_;
     const real *__restrict pressure = system->pressure_;
-    const real *__restrict velocity = system->velocity_;
+    const real *__restrict velocity = system->velocity_x_;
     const int num_cells = system->num_cells_x;
     const int num_ghost_cells_side = system->num_ghost_cells_side;
     const real dx = system->dx_;

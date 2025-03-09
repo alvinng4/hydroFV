@@ -261,19 +261,19 @@ WIN32DLL_API void print_and_free_traceback(ErrorStatus *__restrict error_status)
     switch (error_status->traceback_code_)
     {
         case TRACEBACK_SUCCESS:
-            fprintf(stderr, error_status->traceback);
+            fputs(error_status->traceback, stderr);
             free(error_status->traceback);
             break;
         case TRACEBACK_MALLOC_FAILED:
-            fprintf(stderr, "Something went wrong. Failed to allocate memory for traceback.\n");
+            fputs("Something went wrong. Failed to allocate memory for traceback.\n", stderr);
             break;
         case TRACEBACK_TRUNCATED:
-            fprintf(stderr, error_status->traceback);
-            fprintf(stderr, "\nWarning: Something went wrong. Traceback was truncated.\n");
+            fputs(error_status->traceback, stderr);
+            fputs("\nWarning: Something went wrong. Traceback was truncated.\n", stderr);
             free(error_status->traceback);
             break;
         case TRACEBACK_SNPRINTF_FAILED:
-            fprintf(stderr, "Something went wrong. Failed to write to traceback.\n");
+            fputs("Something went wrong. Failed to write to traceback.\n", stderr);
             break;
     }
 }

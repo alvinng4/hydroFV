@@ -5,7 +5,7 @@
 
 #define RIEMANN_SOLVER "riemann_solver_exact" // "riemann_solver_exact" or "riemann_solver_hllc"
 #define COORD_SYS "cartesian_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
-#define NUM_TOTAL_CALLS 5120
+#define NUM_TOTAL_CALLS 1024
 #define NUM_GHOST_CELLS_SIDE 1
 #define NUM_CELLS NUM_TOTAL_CALLS - 2 * NUM_GHOST_CELLS_SIDE
 #define INTEGRATOR "random_choice_1d" // "godunov_first_order_1d" or "random_choice_1d"
@@ -47,13 +47,13 @@ IN_FILE ErrorStatus get_initial_system(System *__restrict system)
         if (system->mid_points_x_[i] < DISCONTINUITY_POS)
         {
             system->density_[i] = RHO_L;
-            system->velocity_[i] = U_L;
+            system->velocity_x_[i] = U_L;
             system->pressure_[i] = P_L;
         }
         else
         {
             system->density_[i] = RHO_R;
-            system->velocity_[i] = U_R;
+            system->velocity_x_[i] = U_R;
             system->pressure_[i] = P_R;
         }
     }
@@ -131,14 +131,14 @@ int main(void)
 
     FILE *file = fopen("sod_shock_1d.csv", "w");
     fprintf(file, "mid_point,density,velocity,pressure\n");
-    for (int i = NUM_GHOST_CELLS_SIDE; i < (NUM_GHOST_CELLS_SIDE + NUM_CELLS); i++)
+    for (int i = system.num_ghost_cells_side; i < (system.num_ghost_cells_side + system.num_cells_x); i++)
     {
         fprintf(
             file,
             "%f,%f,%f,%f\n",
             system.mid_points_x_[i],
             system.density_[i],
-            system.velocity_[i],
+            system.velocity_x_[i],
             system.pressure_[i]
         );
     }

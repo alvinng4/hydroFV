@@ -96,7 +96,7 @@ WIN32DLL_API ErrorStatus random_choice_1d(
 
     const real gamma = system->gamma;
     real *__restrict density = system->density_;
-    real *__restrict velocity = system->velocity_;
+    real *__restrict velocity_x = system->velocity_x_;
     real *__restrict pressure = system->pressure_;
     const real dx = system->dx_;
     const int num_cells = system->num_cells_x;
@@ -117,9 +117,9 @@ WIN32DLL_API ErrorStatus random_choice_1d(
 
     /* Allocate memory */
     real *restrict temp_density = malloc(num_total_cells * sizeof(real));
-    real *restrict temp_velocity = malloc(num_total_cells * sizeof(real));
+    real *restrict temp_velocity_x = malloc(num_total_cells * sizeof(real));
     real *restrict temp_pressure = malloc(num_total_cells * sizeof(real));
-    if (!temp_density || !temp_velocity || !temp_pressure)
+    if (!temp_density || !temp_velocity_x || !temp_pressure)
     {
         error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
         goto err_memory;
@@ -158,7 +158,7 @@ WIN32DLL_API ErrorStatus random_choice_1d(
         /* Update step */
         real theta = get_van_der_corput_sequence(count + 1);
         memcpy(temp_density, density, num_total_cells * sizeof(real));
-        memcpy(temp_velocity, velocity, num_total_cells * sizeof(real));
+        memcpy(temp_velocity_x, velocity_x, num_total_cells * sizeof(real));
         memcpy(temp_pressure, pressure, num_total_cells * sizeof(real));
         for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_interfaces); i++)
         {
@@ -172,27 +172,27 @@ WIN32DLL_API ErrorStatus random_choice_1d(
             if (theta <= 0.5)
             {
                 rho_L = temp_density[i - 1];
-                u_L = temp_velocity[i - 1];
+                u_L = temp_velocity_x[i - 1];
                 p_L = temp_pressure[i - 1];
                 rho_R = temp_density[i];
-                u_R = temp_velocity[i];
+                u_R = temp_velocity_x[i];
                 p_R = temp_pressure[i];
                 speed = theta * dx / dt;
             }
             else
             {
                 rho_L = temp_density[i];
-                u_L = temp_velocity[i];
+                u_L = temp_velocity_x[i];
                 p_L = temp_pressure[i];
                 rho_R = temp_density[i + 1];
-                u_R = temp_velocity[i + 1];
+                u_R = temp_velocity_x[i + 1];
                 p_R = temp_pressure[i + 1];
                 speed = (theta - 1.0) * dx / dt;
             }
 
             error_status = WRAP_TRACEBACK(solve_exact(
                 &density[i],
-                &velocity[i],
+                &velocity_x[i],
                 &pressure[i],
                 gamma,
                 rho_L,
@@ -211,15 +211,16 @@ WIN32DLL_API ErrorStatus random_choice_1d(
             }
         }
 
-        error_status = WRAP_TRACEBACK(convert_conserved_to_primitive(system));
-        if (error_status.return_code != SUCCESS)
-        {
-            goto err_convert_conserved_to_primitive;
-        }
         error_status = WRAP_TRACEBACK(set_boundary_condition(system));
         if (error_status.return_code != SUCCESS)
         {
             goto err_set_boundary_condition;
+        }
+
+        error_status = WRAP_TRACEBACK(convert_primitive_to_conserved(system));
+        if (error_status.return_code != SUCCESS)
+        {
+            goto err_convert_conserved_to_primitive;
         }
 
         t += dt;
@@ -246,7 +247,7 @@ WIN32DLL_API ErrorStatus random_choice_1d(
     }
 
     free(temp_density);
-    free(temp_velocity);
+    free(temp_velocity_x);
     free(temp_pressure);
 
     return make_success_error_status();
@@ -258,7 +259,7 @@ err_dt_zero:
 err_solve_flux:
 err_memory:
     free(temp_density);
-    free(temp_velocity);
+    free(temp_velocity_x);
     free(temp_pressure);
 err_riemann_solver:
 err_coord_sys:

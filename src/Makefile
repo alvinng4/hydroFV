@@ -1,4 +1,4 @@
-CFLAGS = -O3 -std=c99 -Wall -Wextra -Wpedantic
+CFLAGS = -O3 -std=c99 -Wall -Wextra -Wpedantic -Wuninitialized
 LIBS = -lm -lhdf5
 SRCS = error.c hydro.c integrator_godunov_first_order.c integrator_random_choice_1d.c integrator.c progress_bar.c riemann_solver_exact.c riemann_solver_hllc.c riemann_solver.c source_term.c system.c utils.c
 OBJS = $(SRCS:.c=.o)

@@ -698,7 +698,7 @@ IN_FILE ErrorStatus solve_p_star(
                     break;
                 }
             }
-            
+
             // Failed to bracket the root
             if (f_lower_bisection * f_upper_bisection >= 0.0)
             {

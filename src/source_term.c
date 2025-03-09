@@ -74,7 +74,7 @@ ErrorStatus add_geometry_source_term(
     const real *__restrict volume = system->volume_;
     const real *__restrict density = system->density_;
     real *__restrict mass = system->mass_;
-    real *__restrict momentum = system->momentum_;
+    real *__restrict momentum = system->momentum_x_;
     real *__restrict energy = system->energy_;
 
     /* Compute the source term with RK4 */
