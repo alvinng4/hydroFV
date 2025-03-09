@@ -13,7 +13,8 @@
 #include "hydro.h"
 
 #define INTEGRATOR_GODUNOV_FIRST_ORDER_1D 1
-#define INTEGRATOR_RANDOM_CHOICE_1D 2
+#define INTEGRATOR_GODUNOV_FIRST_ORDER_2D 2
+#define INTEGRATOR_RANDOM_CHOICE_1D 4
 
 /**
  * \brief Get the integrator flag from the integrator name.
@@ -43,6 +44,14 @@ ErrorStatus integrator_launch_simulation(
 );
 
 ErrorStatus godunov_first_order_1d(
+    System *__restrict system,
+    IntegratorParam *__restrict integrator_param,
+    StoringParam *__restrict storing_param,
+    Settings *__restrict settings,
+    SimulationParam *__restrict simulation_param
+);
+
+ErrorStatus godunov_first_order_2d(
     System *__restrict system,
     IntegratorParam *__restrict integrator_param,
     StoringParam *__restrict storing_param,

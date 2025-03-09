@@ -52,7 +52,7 @@ ErrorStatus get_riemann_solver_flag(IntegratorParam *__restrict integrator_param
  * \retval SUCCESS If success
  * \retval error_code If error occurs
  */
-ErrorStatus solve_flux(
+ErrorStatus solve_flux_1d(
     IntegratorParam *__restrict integrator_param,
     Settings *__restrict settings,
     real *__restrict flux_mass,
@@ -64,6 +64,24 @@ ErrorStatus solve_flux(
     const real p_L,
     const real rho_R,
     const real u_R,
+    const real p_R
+);
+
+ErrorStatus solve_flux_2d(
+    IntegratorParam *__restrict integrator_param,
+    Settings *__restrict settings,
+    real *__restrict flux_mass,
+    real *__restrict flux_momentum_x,
+    real *__restrict flux_momentum_y,
+    real *__restrict flux_energy,
+    const real gamma,
+    const real rho_L,
+    const real u_L,
+    const real v_L,
+    const real p_L,
+    const real rho_R,
+    const real u_R,
+    const real v_R,
     const real p_R
 );
 
@@ -133,10 +151,10 @@ real guess_p(
  * \param a_R Sound speed of the right state.
  * \param speed Speed S = x / t for sampling at (x, t).
  */
-void solve_vacuum(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
+void solve_vacuum_1d(
+    real *__restrict sol_rho,
+    real *__restrict sol_u,
+    real *__restrict sol_p,
     const real gamma,
     const real rho_L,
     const real u_L,
@@ -149,7 +167,24 @@ void solve_vacuum(
     const real speed
 );
 
-
+void solve_vacuum_2d(
+    real *__restrict sol_rho,
+    real *__restrict sol_u,
+    real *__restrict sol_v,
+    real *__restrict sol_p,
+    const real gamma,
+    const real rho_L,
+    const real u_L,
+    const real v_L,
+    const real p_L,
+    const real a_L,
+    const real rho_R,
+    const real u_R,
+    const real v_R,
+    const real p_R,
+    const real a_R,
+    const real speed
+);
 
 
 #endif

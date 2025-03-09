@@ -69,6 +69,9 @@ typedef struct System
     real *mid_points_x_;
     real *mid_points_y_;
     real *mid_points_z_;
+    real *surface_area_x_;
+    real *surface_area_y_;
+    real *surface_area_z_;
     real *volume_;
 } System;
 

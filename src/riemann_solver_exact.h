@@ -34,7 +34,7 @@
  * \retval SUCCESS if successful
  * \retval error_code if error occurs
  */
-ErrorStatus solve_exact(
+ErrorStatus solve_exact_1d(
     real *restrict sol_rho,
     real *restrict sol_u,
     real *restrict sol_p,
@@ -70,7 +70,7 @@ ErrorStatus solve_exact(
  * \retval SUCCESS if successful
  * \retval error_code if error occurs
  */
-ErrorStatus solve_flux_exact(
+ErrorStatus solve_flux_exact_1d(
     real *restrict flux_mass,
     real *restrict flux_momentum,
     real *restrict flux_energy,

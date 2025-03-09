@@ -329,7 +329,7 @@ IN_FILE void sample_right_rarefaction_wave(
     const real speed
 );
 
-ErrorStatus solve_exact(
+ErrorStatus solve_exact_1d(
     real *restrict sol_rho,
     real *restrict sol_u,
     real *restrict sol_p,
@@ -383,7 +383,7 @@ ErrorStatus solve_exact(
         ((a_L + a_R) * 2.0 / (gamma + 1.0)) <= (u_R - u_L)
     )
     {
-        solve_vacuum(
+        solve_vacuum_1d(
             sol_rho,
             sol_u,
             sol_p,
@@ -468,7 +468,7 @@ err_solve_p_star:
     return error_status;
 }
 
-ErrorStatus solve_flux_exact(
+ErrorStatus solve_flux_exact_1d(
     real *restrict flux_mass,
     real *restrict flux_momentum,
     real *restrict flux_energy,
@@ -487,7 +487,7 @@ ErrorStatus solve_flux_exact(
     real sol_rho;
     real sol_u;
     real sol_p;
-    ErrorStatus error_status = WRAP_TRACEBACK(solve_exact(
+    ErrorStatus error_status = WRAP_TRACEBACK(solve_exact_1d(
         &sol_rho,
         &sol_u,
         &sol_p,

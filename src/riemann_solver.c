@@ -41,7 +41,7 @@ WIN32DLL_API ErrorStatus get_riemann_solver_flag(
     }
 }
 
-ErrorStatus solve_flux(
+ErrorStatus solve_flux_1d(
     IntegratorParam *__restrict integrator_param,
     Settings *__restrict settings,
     real *__restrict flux_mass,
@@ -59,7 +59,7 @@ ErrorStatus solve_flux(
     switch (integrator_param->riemann_solver_flag_)
     {
         case RIEMANN_SOLVER_EXACT:
-            return WRAP_TRACEBACK(solve_flux_exact(
+            return WRAP_TRACEBACK(solve_flux_exact_1d(
                 flux_mass,
                 flux_momentum,
                 flux_energy,
@@ -75,7 +75,7 @@ ErrorStatus solve_flux(
                 settings->verbose
             ));
         case RIEMANN_SOLVER_HLLC:
-            return WRAP_TRACEBACK(solve_flux_hllc(
+            return WRAP_TRACEBACK(solve_flux_hllc_1d(
                 flux_mass,
                 flux_momentum,
                 flux_energy,
@@ -85,6 +85,51 @@ ErrorStatus solve_flux(
                 p_L,
                 rho_R,
                 u_R,
+                p_R,
+                integrator_param->tol
+            ));
+        default:
+            return WRAP_RAISE_ERROR(VALUE_ERROR, "Riemann solver flag not recognized.");
+    }
+}
+
+ErrorStatus solve_flux_2d(
+    IntegratorParam *__restrict integrator_param,
+    Settings *__restrict settings,
+    real *__restrict flux_mass,
+    real *__restrict flux_momentum_x,
+    real *__restrict flux_momentum_y,
+    real *__restrict flux_energy,
+    const real gamma,
+    const real rho_L,
+    const real u_L,
+    const real v_L,
+    const real p_L,
+    const real rho_R,
+    const real u_R,
+    const real v_R,
+    const real p_R
+)
+{
+    (void) settings;
+    switch (integrator_param->riemann_solver_flag_)
+    {
+        case RIEMANN_SOLVER_EXACT:
+            return WRAP_RAISE_ERROR(VALUE_ERROR, "Only HLLC Riemann solver is available for cartesian 2D.");
+        case RIEMANN_SOLVER_HLLC:
+            return WRAP_TRACEBACK(solve_flux_hllc_2d(
+                flux_mass,
+                flux_momentum_x,
+                flux_momentum_y,
+                flux_energy,
+                gamma,
+                rho_L,
+                u_L,
+                v_L,
+                p_L,
+                rho_R,
+                u_R,
+                v_R,
                 p_R,
                 integrator_param->tol
             ));
@@ -188,16 +233,16 @@ real guess_p(
  * \param a_L Sound speed of the left state.
  * \param speed Speed S = x / t for sampling at (x, t).
  */
-IN_FILE void sample_for_right_vacuum(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    real gamma,
-    real rho_L,
-    real u_L,
-    real p_L,
-    real a_L,
-    real speed
+IN_FILE void sample_for_right_vacuum_1d(
+    real *__restrict sol_rho,
+    real *__restrict sol_u,
+    real *__restrict sol_p,
+    const real gamma,
+    const real rho_L,
+    const real u_L,
+    const real p_L,
+    const real a_L,
+    const real speed
 )
 {
     /* Left state regime */
@@ -224,13 +269,16 @@ IN_FILE void sample_for_right_vacuum(
         *sol_rho = rho_L * temp;
         *sol_u = (a_L + 0.5 * (gamma - 1.0) * u_L + speed) * 2.0 / (gamma + 1.0);
         *sol_p = p_L * pow(temp, gamma);
-        return;
     }
-    
+
     /* Vacuum regime */
-    *sol_rho = 0.0;
-    *sol_u = 0.0;
-    *sol_p = 0.0;
+    else
+    {
+        *sol_rho = 0.0;
+        *sol_u = 0.0;
+        *sol_p = 0.0;
+    }
+
     return;
 }
 
@@ -247,16 +295,16 @@ IN_FILE void sample_for_right_vacuum(
  * \param a_R Sound speed of the right state.
  * \param speed Speed S = x / t for sampling at (x, t).
  */
-IN_FILE void sample_for_left_vacuum(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    real gamma,
-    real rho_R,
-    real u_R,
-    real p_R,
-    real a_R,
-    real speed
+IN_FILE void sample_for_left_vacuum_1d(
+    real *__restrict sol_rho,
+    real *__restrict sol_u,
+    real *__restrict sol_p,
+    const real gamma,
+    const real rho_R,
+    const real u_R,
+    const real p_R,
+    const real a_R,
+    const real speed
 )
 {
     /* Right state regime */
@@ -283,16 +331,17 @@ IN_FILE void sample_for_left_vacuum(
         *sol_rho = rho_R * temp;
         *sol_u = (-a_R + 0.5 * (gamma - 1.0) * u_R + speed) * 2.0 / (gamma + 1.0);
         *sol_p = p_R * pow(temp, gamma);
-        return;
     }
+
     /* Vacuum regime */
     else
     {
         *sol_rho = 0.0;
         *sol_u = 0.0;
         *sol_p = 0.0;
-        return;
     }
+
+    return;
 }
 
 /**
@@ -312,20 +361,20 @@ IN_FILE void sample_for_left_vacuum(
  * \param a_R Sound speed of the right state.
  * \param speed Speed S = x / t for sampling at (x, t).
  */
-IN_FILE void sample_vacuum_generation(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    real gamma,
-    real rho_L,
-    real u_L,
-    real p_L,
-    real a_L,
-    real rho_R,
-    real u_R,
-    real p_R,
-    real a_R,
-    real speed
+IN_FILE void sample_vacuum_generation_1d(
+    real *__restrict sol_rho,
+    real *__restrict sol_u,
+    real *__restrict sol_p,
+    const real gamma,
+    const real rho_L,
+    const real u_L,
+    const real p_L,
+    const real a_L,
+    const real rho_R,
+    const real u_R,
+    const real p_R,
+    const real a_R,
+    const real speed
 )
 {
     // Speed of the left and right rarefaction waves   
@@ -335,13 +384,13 @@ IN_FILE void sample_vacuum_generation(
     /* Left state regime */
     if (speed <= S_star_L)
     {
-        sample_for_right_vacuum(sol_rho, sol_u, sol_p, gamma, rho_L, u_L, p_L, a_L, speed);
+        sample_for_right_vacuum_1d(sol_rho, sol_u, sol_p, gamma, rho_L, u_L, p_L, a_L, speed);
         return;
     }
     /* Right state regime */
     else if (S_star_R <= speed)
     {
-        sample_for_left_vacuum(sol_rho, sol_u, sol_p, gamma, rho_R, u_R, p_R, a_R, speed);
+        sample_for_left_vacuum_1d(sol_rho, sol_u, sol_p, gamma, rho_R, u_R, p_R, a_R, speed);
         return;
     }
     /* Vacuum regime */
@@ -354,10 +403,10 @@ IN_FILE void sample_vacuum_generation(
     }
 }
 
-void solve_vacuum(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
+WIN32DLL_API void solve_vacuum_1d(
+    real *__restrict sol_rho,
+    real *__restrict sol_u,
+    real *__restrict sol_p,
     const real gamma,
     const real rho_L,
     const real u_L,
@@ -382,21 +431,21 @@ void solve_vacuum(
     /* Right state is vacuum */
     else if (rho_L <= 0.0)
     {
-        sample_for_right_vacuum(sol_rho, sol_u, sol_p, gamma, rho_L, u_L, p_L, a_L, speed);
+        sample_for_right_vacuum_1d(sol_rho, sol_u, sol_p, gamma, rho_L, u_L, p_L, a_L, speed);
         return;
     }
 
     /* Left state is vacuum */
     else if (rho_R <= 0.0)
     {
-        sample_for_left_vacuum(sol_rho, sol_u, sol_p, gamma, rho_R, u_R, p_R, a_R, speed);
+        sample_for_left_vacuum_1d(sol_rho, sol_u, sol_p, gamma, rho_R, u_R, p_R, a_R, speed);
         return;
     }
 
     /* Vacuum generation */
     else
     {
-        sample_vacuum_generation(
+        sample_vacuum_generation_1d(
             sol_rho,
             sol_u,
             sol_p,
@@ -407,6 +456,271 @@ void solve_vacuum(
             a_L,
             rho_R,
             u_R,
+            p_R,
+            a_R,
+            speed
+        );
+        return;
+    }
+}
+
+/**
+ * \brief Sample the riemann problem solution for the right vacuum regime.
+ * 
+ * \param sol_rho Pointer to the density solution.
+ * \param sol_u Pointer to the velocity solution.
+ * \param sol_p Pointer to the pressure solution.
+ * \param gamma Adiabatic index.
+ * \param rho_L Density of the left state.
+ * \param u_L Velocity of the left state.
+ * \param p_L Pressure of the left state.
+ * \param a_L Sound speed of the left state.
+ * \param speed Speed S = x / t for sampling at (x, t).
+ */
+IN_FILE void sample_for_right_vacuum_2d(
+    real *__restrict sol_rho,
+    real *__restrict sol_u,
+    real *__restrict sol_v,
+    real *__restrict sol_p,
+    const real gamma,
+    const real rho_L,
+    const real u_L,
+    const real v_L,
+    const real p_L,
+    const real a_L,
+    const real speed
+)
+{
+    /* Left state regime */
+    if (speed <= (u_L - a_L))
+    {
+        *sol_rho = rho_L;
+        *sol_u = u_L;
+        *sol_v = v_L;
+        *sol_p = p_L;
+        return;
+    }
+
+    // Speed of the front
+    real S_star_L = u_L + 2.0 * a_L / (gamma - 1.0);
+    
+    /* Rarefaction wave regime */
+    if (speed < S_star_L)
+    {
+        real temp = (
+            2.0 / (gamma + 1.0)
+            + (u_L - speed) * (gamma - 1.0) / ((gamma + 1.0) * a_L)
+        );
+        temp = pow(temp, 2.0 / (gamma - 1.0));
+
+        *sol_rho = rho_L * temp;
+        *sol_u = (a_L + 0.5 * (gamma - 1.0) * u_L + speed) * 2.0 / (gamma + 1.0);
+        *sol_v = v_L;
+        *sol_p = p_L * pow(temp, gamma);
+    }
+
+    /* Vacuum regime */
+    else
+    {
+        *sol_rho = 0.0;
+        *sol_u = 0.0;
+        *sol_v = 0.0;
+        *sol_p = 0.0;
+    }
+
+    return;
+}
+
+/**
+ * \brief Sample the riemann problem solution for the left vacuum regime.
+ * 
+ * \param sol_rho Pointer to the density solution.
+ * \param sol_u Pointer to the velocity solution.
+ * \param sol_p Pointer to the pressure solution.
+ * \param gamma Adiabatic index.
+ * \param rho_R Density of the right state.
+ * \param u_R Velocity of the right state.
+ * \param p_R Pressure of the right state.
+ * \param a_R Sound speed of the right state.
+ * \param speed Speed S = x / t for sampling at (x, t).
+ */
+IN_FILE void sample_for_left_vacuum_2d(
+    real *__restrict sol_rho,
+    real *__restrict sol_u,
+    real *__restrict sol_v,
+    real *__restrict sol_p,
+    const real gamma,
+    const real rho_R,
+    const real u_R,
+    const real v_R,
+    const real p_R,
+    const real a_R,
+    const real speed
+)
+{
+    /* Right state regime */
+    if (speed >= (u_R + a_R))
+    {
+        *sol_rho = rho_R;
+        *sol_u = u_R;
+        *sol_v = v_R;
+        *sol_p = p_R;
+        return;
+    }
+
+    // Speed of the front
+    real S_star_R = u_R - 2.0 * a_R / (gamma - 1.0);
+    
+    /* Rarefaction wave regime */
+    if (speed > S_star_R)
+    {
+        real temp = (
+            2.0 / (gamma + 1.0)
+            - (u_R - speed) * (gamma - 1.0) / ((gamma + 1.0) * a_R)
+        );
+        temp = pow(temp, 2.0 / (gamma - 1.0));
+
+        *sol_rho = rho_R * temp;
+        *sol_u = (-a_R + 0.5 * (gamma - 1.0) * u_R + speed) * 2.0 / (gamma + 1.0);
+        *sol_v = v_R;
+        *sol_p = p_R * pow(temp, gamma);
+    }
+
+    /* Vacuum regime */
+    else
+    {
+        *sol_rho = 0.0;
+        *sol_u = 0.0;
+        *sol_v = 0.0;
+        *sol_p = 0.0;
+    }
+
+    return;
+}
+
+/**
+ * \brief Sample the riemann problem solution for vacuum generation.
+ * 
+ * \param sol_rho Pointer to the density solution.
+ * \param sol_u Pointer to the velocity solution.
+ * \param sol_p Pointer to the pressure solution.
+ * \param gamma Adiabatic index.
+ * \param rho_L Density of the left state.
+ * \param u_L Velocity of the left state.
+ * \param p_L Pressure of the left state.
+ * \param a_L Sound speed of the left state.
+ * \param rho_R Density of the right state.
+ * \param u_R Velocity of the right state.
+ * \param p_R Pressure of the right state.
+ * \param a_R Sound speed of the right state.
+ * \param speed Speed S = x / t for sampling at (x, t).
+ */
+IN_FILE void sample_vacuum_generation_2d(
+    real *__restrict sol_rho,
+    real *__restrict sol_u,
+    real *__restrict sol_v,
+    real *__restrict sol_p,
+    const real gamma,
+    const real rho_L,
+    const real u_L,
+    const real v_L,
+    const real p_L,
+    const real a_L,
+    const real rho_R,
+    const real u_R,
+    const real v_R,
+    const real p_R,
+    const real a_R,
+    const real speed
+)
+{
+    // Speed of the left and right rarefaction waves   
+    real S_star_L = 2.0 * a_L / (gamma - 1.0);
+    real S_star_R = 2.0 * a_R / (gamma - 1.0);
+
+    /* Left state regime */
+    if (speed <= S_star_L)
+    {
+        sample_for_right_vacuum_2d(sol_rho, sol_u, sol_v, sol_p, gamma, rho_L, u_L, v_L, p_L, a_L, speed);
+        return;
+    }
+    /* Right state regime */
+    else if (S_star_R <= speed)
+    {
+        sample_for_left_vacuum_2d(sol_rho, sol_u, sol_v, sol_p, gamma, rho_R, u_R, v_R, p_R, a_R, speed);
+        return;
+    }
+    /* Vacuum regime */
+    else
+    {
+        *sol_rho = 0.0;
+        *sol_u = 0.0;
+        *sol_v = 0.0;
+        *sol_p = 0.0;
+        return;
+    }
+}
+
+WIN32DLL_API void solve_vacuum_2d(
+    real *__restrict sol_rho,
+    real *__restrict sol_u,
+    real *__restrict sol_v,
+    real *__restrict sol_p,
+    const real gamma,
+    const real rho_L,
+    const real u_L,
+    const real v_L,
+    const real p_L,
+    const real a_L,
+    const real rho_R,
+    const real u_R,
+    const real v_R,
+    const real p_R,
+    const real a_R,
+    const real speed
+)
+{
+    /* If both states are vacuum, then the solution is also vacuum */
+    if (rho_L <= 0.0 && rho_R <= 0.0)
+    {
+        *sol_rho = 0.0;
+        *sol_u = 0.0;
+        *sol_v = 0.0;
+        *sol_p = 0.0;
+        return;
+    }
+
+    /* Right state is vacuum */
+    else if (rho_L <= 0.0)
+    {
+        sample_for_right_vacuum_2d(sol_rho, sol_u, sol_v, sol_p, gamma, rho_L, u_L, v_L, p_L, a_L, speed);
+        return;
+    }
+
+    /* Left state is vacuum */
+    else if (rho_R <= 0.0)
+    {
+        sample_for_left_vacuum_2d(sol_rho, sol_u, sol_v, sol_p, gamma, rho_R, u_R, v_R, p_R, a_R, speed);
+        return;
+    }
+
+    /* Vacuum generation */
+    else
+    {
+        sample_vacuum_generation_2d(
+            sol_rho,
+            sol_u,
+            sol_v,
+            sol_p,
+            gamma,
+            rho_L,
+            u_L,
+            v_L,
+            p_L,
+            a_L,
+            rho_R,
+            u_R,
+            v_R,
             p_R,
             a_R,
             speed

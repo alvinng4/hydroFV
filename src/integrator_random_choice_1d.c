@@ -55,14 +55,29 @@ WIN32DLL_API ErrorStatus random_choice_1d(
         && system->coord_sys_flag_ != COORD_SYS_SPHERICAL_1D
     )
     {
-        error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Wrong coordinate system, expected 1D.");
+        size_t error_message_size = strlen(
+            "Wrong coordinate system. Supported coordinate system: \"cartesian_1d\", \"cylindrical_1d\" and \"spherical_1d\", got: \"\""
+        ) + strlen(system->coord_sys) + 1;
+        char *__restrict error_message = malloc(error_message_size * sizeof(char));
+        if (!error_message)
+        {
+            error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation for error message failed.");
+            goto err_coord_sys;
+        }
+        snprintf(
+            error_message,
+            error_message_size,
+            "Wrong coordinate system. Supported coordinate system: \"cartesian_1d\", \"cylindrical_1d\" and \"spherical_1d\", got: \"%s\"",
+            system->coord_sys
+        );
+        error_status = WRAP_RAISE_ERROR(VALUE_ERROR, error_message);
         goto err_coord_sys;
     }
 
     if (integrator_param->riemann_solver_flag_ != RIEMANN_SOLVER_EXACT)
     {
         size_t error_message_size = strlen(
-            "Wrong Riemann solver for random choice method 1D. Supported Riemann solver: \"riemann_solver_exact\", got: "
+            "Wrong Riemann solver for random choice method 1D. Supported Riemann solver: \"riemann_solver_exact\", got: \"\""
         ) + strlen(integrator_param->riemann_solver) + 1;
         char *__restrict error_message = malloc(error_message_size * sizeof(char));
         if (!error_message)
@@ -73,7 +88,7 @@ WIN32DLL_API ErrorStatus random_choice_1d(
         snprintf(
             error_message,
             error_message_size,
-            "Wrong Riemann solver for random choice method 1D. Supported Riemann solver: \"riemann_solver_exact\", got: %s",
+            "Wrong Riemann solver for random choice method 1D. Supported Riemann solver: \"riemann_solver_exact\", got: \"%s\"",
             integrator_param->riemann_solver
         );
         error_status = WRAP_RAISE_ERROR(VALUE_ERROR, error_message);
@@ -190,7 +205,7 @@ WIN32DLL_API ErrorStatus random_choice_1d(
                 speed = (theta - 1.0) * dx / dt;
             }
 
-            error_status = WRAP_TRACEBACK(solve_exact(
+            error_status = WRAP_TRACEBACK(solve_exact_1d(
                 &density[i],
                 &velocity_x[i],
                 &pressure[i],
@@ -231,7 +246,7 @@ WIN32DLL_API ErrorStatus random_choice_1d(
             error_status = WRAP_TRACEBACK(add_geometry_source_term(system, dt));
             if (error_status.return_code != SUCCESS)
             {
-                goto err_compute_source_term;
+                goto err_compute_geometry_source_term;
             }
         }
 
@@ -252,11 +267,15 @@ WIN32DLL_API ErrorStatus random_choice_1d(
 
     return make_success_error_status();
 
-err_compute_source_term:
 err_set_boundary_condition:
 err_convert_conserved_to_primitive:
-err_dt_zero:
+err_compute_geometry_source_term:
 err_solve_flux:
+err_dt_zero:
+    if (!no_progress_bar)
+    {
+        update_progress_bar(&progress_bar_param, t, true);
+    }
 err_memory:
     free(temp_density);
     free(temp_velocity_x);

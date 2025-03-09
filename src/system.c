@@ -61,6 +61,9 @@ WIN32DLL_API System get_new_system_struct(void)
         .mid_points_x_ = NULL,
         .mid_points_y_ = NULL,
         .mid_points_z_ = NULL,
+        .surface_area_x_ = NULL,
+        .surface_area_y_ = NULL,
+        .surface_area_z_ = NULL,
         .volume_ = NULL
     };
 
@@ -136,6 +139,18 @@ IN_FILE ErrorStatus check_init_system_input(const System *__restrict system)
     if (system->mid_points_z_)
     {
         return WRAP_RAISE_ERROR(VALUE_ERROR, "Mid points z array pointer (system->mid_points_z_) is not NULL.");
+    }
+    if (system->surface_area_x_)
+    {
+        return WRAP_RAISE_ERROR(VALUE_ERROR, "Surface area x array pointer (system->surface_area_x_) is not NULL.");
+    }
+    if (system->surface_area_y_)
+    {
+        return WRAP_RAISE_ERROR(VALUE_ERROR, "Surface area y array pointer (system->surface_area_y_) is not NULL.");
+    }
+    if (system->surface_area_z_)
+    {
+        return WRAP_RAISE_ERROR(VALUE_ERROR, "Surface area z array pointer (system->surface_area_z_) is not NULL.");
     }
     if (system->volume_)
     {
@@ -598,6 +613,86 @@ IN_FILE ErrorStatus initialize_mid_points(System *__restrict system)
     return make_success_error_status();
 }
 
+IN_FILE ErrorStatus initialize_surface_area(System *__restrict system)
+{
+    switch (system->coord_sys_flag_)
+    {
+        case COORD_SYS_CARTESIAN_1D:
+        {
+            const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
+            for (int i = 0; i < (total_num_cells_x + 1); i++)
+            {
+                system->surface_area_x_[i] = 1.0;
+            }
+            return make_success_error_status();
+        }
+        case COORD_SYS_CYLINDRICAL_1D: 
+        {
+            const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
+            const real dx = system->dx_;
+            for (int i = 1; i < (total_num_cells_x + 1); i++)
+            {
+                const real r = system->x_min + i * dx;
+                system->surface_area_x_[i] = 2.0 * M_PI * r;
+            }
+            return make_success_error_status();
+        }
+        case COORD_SYS_SPHERICAL_1D:
+        {
+            const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
+            const real dx = system->dx_;
+            for (int i = 0; i < (total_num_cells_x + 1); i++)
+            {
+                const real r = system->x_min + i * dx;
+                system->surface_area_x_[i] = 4.0 * M_PI * r * r;
+            }
+            return make_success_error_status();
+        }
+        case COORD_SYS_CARTESIAN_2D:
+        {
+            const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
+            const int total_num_cells_y = system->num_cells_y + 2 * system->num_ghost_cells_side;
+            const real area_x = system->dy_;
+            const real area_y = system->dx_;
+            for (int i = 0; i < total_num_cells_x; i++)
+            {
+                system->surface_area_x_[i] = area_x;
+            }
+            for (int j = 0; j < total_num_cells_y; j++)
+            {
+                system->surface_area_y_[j] = area_y;
+            }
+            return make_success_error_status();
+        }
+        case COORD_SYS_CARTESIAN_3D:
+        {
+            const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
+            const int total_num_cells_y = system->num_cells_y + 2 * system->num_ghost_cells_side;
+            const int total_num_cells_z = system->num_cells_z + 2 * system->num_ghost_cells_side;
+            const real area_x = system->dy_ * system->dz_;
+            const real area_y = system->dx_ * system->dz_;
+            const real area_z = system->dx_ * system->dy_;
+            for (int i = 0; i < total_num_cells_x; i++)
+            {
+                system->surface_area_x_[i] = area_x;
+            }
+            for (int i = 0; i < total_num_cells_y; i++)
+            {
+                system->surface_area_y_[i] = area_y;
+            }
+            for (int i = 0; i < total_num_cells_z; i++)
+            {
+                system->surface_area_z_[i] = area_z;
+            }
+            return make_success_error_status();
+        }
+        default:
+        {
+            return WRAP_RAISE_ERROR(VALUE_ERROR, "Coordinate system flag not recognized.");
+        }
+    }
+}
+
 IN_FILE ErrorStatus initialize_volume(System *__restrict system)
 {
     switch (system->coord_sys_flag_)
@@ -616,11 +711,10 @@ IN_FILE ErrorStatus initialize_volume(System *__restrict system)
         {
             const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
             const real dx = system->dx_;
-            system->volume_[0] = M_PI * dx * dx;
-            for (int i = 1; i < total_num_cells_x; i++)
+            for (int i = 0; i < total_num_cells_x; i++)
             {
-                const real r_min = system->x_min + (i - 1) * dx;
-                const real r_max = system->x_min + i * dx;
+                const real r_min = system->x_min + i * dx;
+                const real r_max = system->x_min + (i + 1) * dx;
                 system->volume_[i] = M_PI * (r_max * r_max - r_min * r_min);
             }
             return make_success_error_status();
@@ -629,11 +723,10 @@ IN_FILE ErrorStatus initialize_volume(System *__restrict system)
         {
             const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
             const real dx = system->dx_;
-            system->volume_[0] = (4.0 / 3.0) * M_PI * dx * dx * dx;
-            for (int i = 1; i < total_num_cells_x; i++)
+            for (int i = 0; i < total_num_cells_x; i++)
             {
-                const real r_min = system->x_min + (i - 1) * dx;
-                const real r_max = system->x_min + i * dx;
+                const real r_min = system->x_min + i * dx;
+                const real r_max = system->x_min + (i + 1) * dx;
                 system->volume_[i] = (4.0 / 3.0) * M_PI * (r_max * r_max * r_max - r_min * r_min * r_min);
             }
             return make_success_error_status();
@@ -758,9 +851,10 @@ ErrorStatus system_init(System *__restrict system)
         {
             const int total_num_cells_z = system->num_cells_z + 2 * system->num_ghost_cells_side;
             system->mid_points_z_ = malloc(total_num_cells_z * sizeof(real));
+            system->surface_area_z_ = malloc((total_num_cells_z + 1) * sizeof(real));
             system->velocity_z_ = calloc(total_num_cells, sizeof(real));
             system->momentum_z_ = calloc(total_num_cells, sizeof(real));
-            if (!system->mid_points_z_ || !system->velocity_z_ || !system->momentum_z_)
+            if (!system->mid_points_z_ || !system->surface_area_z_ || !system->velocity_z_ || !system->momentum_z_)
             {
                 error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
                 goto err_init_memory_alloc_z;
@@ -771,9 +865,10 @@ ErrorStatus system_init(System *__restrict system)
         {
             const int total_num_cells_y = system->num_cells_y + 2 * system->num_ghost_cells_side;
             system->mid_points_y_ = malloc(total_num_cells_y * sizeof(real));
+            system->surface_area_y_ = malloc((total_num_cells_y + 1) * sizeof(real));
             system->velocity_y_ = calloc(total_num_cells, sizeof(real));
             system->momentum_y_ = calloc(total_num_cells, sizeof(real));
-            if (!system->mid_points_y_ || !system->velocity_y_ || !system->momentum_y_)
+            if (!system->mid_points_y_ || !system->surface_area_y_ || !system->velocity_y_ || !system->momentum_y_)
             {
                 error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
                 goto err_init_memory_alloc_y;
@@ -784,9 +879,10 @@ ErrorStatus system_init(System *__restrict system)
         {
             const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
             system->mid_points_x_ = malloc(total_num_cells_x * sizeof(real));
+            system->surface_area_x_ = malloc((total_num_cells_x + 1) * sizeof(real));
             system->velocity_x_ = calloc(total_num_cells, sizeof(real));
             system->momentum_x_ = calloc(total_num_cells, sizeof(real));
-            if (!system->mid_points_x_ || !system->velocity_x_ || !system->momentum_x_)
+            if (!system->mid_points_x_ || !system->surface_area_x_ || !system->velocity_x_ || !system->momentum_x_)
             {
                 error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
                 goto err_init_memory_alloc_x;
@@ -795,7 +891,7 @@ ErrorStatus system_init(System *__restrict system)
             break;
         default:
             error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Coordinate system flag not recognized.");
-            goto err_unknown_coord_sys_flag_mid_points_malloc;
+            goto err_unknown_coord_sys_flag_malloc;
     }
 
     /* Initialize system attributes */
@@ -805,6 +901,11 @@ ErrorStatus system_init(System *__restrict system)
         goto err_init_sys_attr;
     }
     error_status = WRAP_TRACEBACK(initialize_mid_points(system));
+    if (error_status.return_code != SUCCESS)
+    {
+        goto err_init_sys_attr;
+    }
+    error_status = WRAP_TRACEBACK(initialize_surface_area(system));
     if (error_status.return_code != SUCCESS)
     {
         goto err_init_sys_attr;
@@ -820,23 +921,25 @@ ErrorStatus system_init(System *__restrict system)
 err_init_sys_attr:
 err_init_memory_alloc_z:
     free(system->mid_points_z_);
+    free(system->surface_area_z_);
     free(system->velocity_z_);
     free(system->momentum_z_);
 err_init_memory_alloc_y:
     free(system->mid_points_y_);
+    free(system->surface_area_y_);
     free(system->velocity_y_);
     free(system->momentum_y_);
 err_init_memory_alloc_x:
     free(system->mid_points_x_);
+    free(system->surface_area_x_);
     free(system->velocity_x_);
     free(system->momentum_x_);
-err_unknown_coord_sys_flag_mid_points_malloc:
+err_unknown_coord_sys_flag_malloc:
 err_init_memory_alloc:
     free(system->density_);
     free(system->pressure_);
     free(system->mass_);
     free(system->energy_);
-    free(system->mid_points_x_);
     free(system->volume_);
 err_unknown_coord_sys_flag_total_num_cells:
 err_boundary_condition_flag:
@@ -860,6 +963,9 @@ void free_system_memory(System *__restrict system)
     free(system->mid_points_x_);
     free(system->mid_points_y_);
     free(system->mid_points_z_);
+    free(system->surface_area_x_);
+    free(system->surface_area_y_);
+    free(system->surface_area_z_);
     free(system->volume_);
 }
 
@@ -1174,7 +1280,7 @@ ErrorStatus convert_conserved_to_primitive(System *__restrict system)
     switch(system->coord_sys_flag_)
     {
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
-            for (int i = num_ghost_cells_side; i < (system->num_cells_x + num_ghost_cells_side); i++)
+            for (int i = 0; i < (system->num_cells_x + 2 * num_ghost_cells_side); i++)
             {
                 const real mass_i = mass[i];
                 const real momentum_x_i = momentum_x[i];
@@ -1186,9 +1292,9 @@ ErrorStatus convert_conserved_to_primitive(System *__restrict system)
             }
             break;
         case COORD_SYS_CARTESIAN_2D:
-            for (int i = num_ghost_cells_side; i < (system->num_cells_x + num_ghost_cells_side); i++)
+            for (int i = 0; i < (system->num_cells_x + 2 * num_ghost_cells_side); i++)
             {
-                for (int j = num_ghost_cells_side; j < (system->num_cells_y + num_ghost_cells_side); j++)
+                for (int j = 0; j < (system->num_cells_y + 2 * num_ghost_cells_side); j++)
                 {
                     const int index = j * (system->num_cells_x + 2 * num_ghost_cells_side) + i;
                     const real mass_ij = mass[index];
@@ -1236,7 +1342,7 @@ ErrorStatus convert_primitive_to_conserved(System *__restrict system)
     switch(system->coord_sys_flag_)
     {
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
-            for (int i = num_ghost_cells_side; i < (system->num_cells_x + num_ghost_cells_side); i++)
+            for (int i = 0; i < (system->num_cells_x + 2 * num_ghost_cells_side); i++)
             {
                 const real density_i = density[i];
                 const real velocity_x_i = velocity_x[i];
@@ -1250,9 +1356,9 @@ ErrorStatus convert_primitive_to_conserved(System *__restrict system)
             }
             break;
         case COORD_SYS_CARTESIAN_2D:
-            for (int i = num_ghost_cells_side; i < (system->num_cells_x + num_ghost_cells_side); i++)
+            for (int i = 0; i < (system->num_cells_x + 2 * num_ghost_cells_side); i++)
             {
-                for (int j = num_ghost_cells_side; j < (system->num_cells_y + num_ghost_cells_side); j++)
+                for (int j = 0; j < (system->num_cells_y + 2 * num_ghost_cells_side); j++)
                 {
                     const int index = j * (system->num_cells_x + 2 * num_ghost_cells_side) + i;
                     const real density_ij = density[index];

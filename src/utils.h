@@ -42,4 +42,22 @@ real get_time_step_1d(
     const real cfl
 );
 
+/**
+ * \brief Get the time step for 2D system based on the CFL condition.
+ * 
+ * Calculate dt = cfl * min{dx / S_max_x, dy / S_max_y}, where 
+ * S_max_x = max{|u| + a} and S_max_y = max{|v| + a}. Note
+ * that this can lead to an underestimate of S_max. It is advised to 
+ * use a much smaller cfl for the initial steps until the flow has developed.
+ * 
+ * \param system System object.
+ * \param cfl CFL number.
+ * 
+ * \retval Time step dt.
+ */
+real get_time_step_2d(
+    const System *__restrict system,
+    const real cfl
+);
+
 #endif
