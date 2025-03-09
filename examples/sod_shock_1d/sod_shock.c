@@ -4,7 +4,7 @@
 #include "hydro.h"
 
 #define RIEMANN_SOLVER "riemann_solver_exact" // "riemann_solver_exact" or "riemann_solver_hllc"
-#define COORD_SYS "spherical_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
+#define COORD_SYS "cartesian_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
 #define NUM_TOTAL_CALLS 5120
 #define NUM_GHOST_CELLS_SIDE 1
 #define NUM_CELLS NUM_TOTAL_CALLS - 2 * NUM_GHOST_CELLS_SIDE
@@ -30,20 +30,50 @@
 #define DOMAIN_MIN 0.0
 #define DOMAIN_MAX 1.0
 
+IN_FILE ErrorStatus get_initial_system(System *__restrict system)
+{
+    if (
+        system->coord_sys_flag_ == COORD_SYS_CARTESIAN_2D
+        || system->coord_sys_flag_ == COORD_SYS_CARTESIAN_3D
+    )
+    {
+        return WRAP_RAISE_ERROR(VALUE_ERROR, "Invalid coordinate system, Expected 1D.");
+    }
+
+    const int total_num_cells = system->num_cells_x + 2 * system->num_ghost_cells_side;
+    for (int i = 0; i < total_num_cells; i++)
+    {
+        if (system->mid_points_x_[i] < DISCONTINUITY_POS)
+        {
+            system->density_[i] = RHO_L;
+            system->velocity_[i] = U_L;
+            system->pressure_[i] = P_L;
+        }
+        else
+        {
+            system->density_[i] = RHO_R;
+            system->velocity_[i] = U_R;
+            system->pressure_[i] = P_R;
+        }
+    }
+    convert_primitive_to_conserved(system);
+
+    return make_success_error_status();
+}
+
 int main(void)
 {
     ErrorStatus error_status;
 
-    System system = {
-        .coord_sys = COORD_SYS,
-        .boundary_condition_x_min = LEFT_BOUNDARY_CONDITION,
-        .boundary_condition_x_max = RIGHT_BOUNDARY_CONDITION,
-        .gamma = GAMMA,
-        .x_min = DOMAIN_MIN,
-        .x_max = DOMAIN_MAX,
-        .num_cells_x = NUM_CELLS,
-        .num_ghost_cells_side = NUM_GHOST_CELLS_SIDE
-    };
+    System system = get_new_system_struct();
+    system.coord_sys = COORD_SYS;
+    system.boundary_condition_x_min = LEFT_BOUNDARY_CONDITION;
+    system.boundary_condition_x_max = RIGHT_BOUNDARY_CONDITION;
+    system.gamma = GAMMA;
+    system.x_min = DOMAIN_MIN;
+    system.x_max = DOMAIN_MAX;
+    system.num_cells_x = NUM_CELLS;
+    system.num_ghost_cells_side = NUM_GHOST_CELLS_SIDE;
 
     error_status = WRAP_TRACEBACK(system_init(&system));
     if (error_status.return_code != SUCCESS)
@@ -51,23 +81,11 @@ int main(void)
         goto error;
     }
 
-    const int total_num_cells = system.num_cells_x + 2 * system.num_ghost_cells_side;
-    for (int i = 0; i < total_num_cells; i++)
+    error_status = WRAP_TRACEBACK(get_initial_system(&system));
+    if (error_status.return_code != SUCCESS)
     {
-        if (system.mid_points_x_[i] < DISCONTINUITY_POS)
-        {
-            system.density_[i] = RHO_L;
-            system.velocity_[i] = U_L;
-            system.pressure_[i] = P_L;
-        }
-        else
-        {
-            system.density_[i] = RHO_R;
-            system.velocity_[i] = U_R;
-            system.pressure_[i] = P_R;
-        }
+        goto error;
     }
-    convert_primitive_to_conserved(&system);
 
     IntegratorParam integrator_param = {
         .integrator = INTEGRATOR,
@@ -82,8 +100,7 @@ int main(void)
 
     Settings settings = {
         .verbose = 1,
-        .no_progress_bar = false,
-        .progress_bar_update_freq = 10
+        .no_progress_bar = false
     };
 
     SimulationParam simulation_param = {

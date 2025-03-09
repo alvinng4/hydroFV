@@ -70,6 +70,13 @@ typedef struct System
 
 
 /**
+ * \brief Get a new system struct.
+ * 
+ * \return The system struct.
+ */
+System get_new_system_struct();
+
+/**
  * \brief Initialize the hidden variables for the system struct.
  * 
  * \param system The system struct.

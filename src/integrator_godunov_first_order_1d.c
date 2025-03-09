@@ -62,7 +62,6 @@ WIN32DLL_API ErrorStatus godunov_first_order_1d(
     const int num_steps_shrink = integrator_param->num_steps_shrink;
 
     const bool no_progress_bar = settings->no_progress_bar;
-    const int progress_bar_update_freq = settings->progress_bar_update_freq;
 
     const real tf = simulation_param->tf;
 

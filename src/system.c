@@ -8,12 +8,60 @@
  */
 
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "common.h"
 #include "error.h"
 #include "system.h"
+
+WIN32DLL_API System get_new_system_struct()
+{
+    System system = {
+        .coord_sys = NULL,
+        .boundary_condition_x_min = NULL,
+        .boundary_condition_x_max = NULL,
+        .boundary_condition_y_min = NULL,
+        .boundary_condition_y_max = NULL,
+        .boundary_condition_z_min = NULL,
+        .boundary_condition_z_max = NULL,
+        .gamma = -1.0,
+        .x_min = -1.0,
+        .x_max = -1.0,
+        .y_min = -1.0,
+        .y_max = -1.0,
+        .z_min = -1.0,
+        .z_max = -1.0,
+        .num_cells_x = -1,
+        .num_cells_y = -1,
+        .num_cells_z = -1,
+        .num_ghost_cells_side = -1,
+
+        .coord_sys_flag_ = -1,
+        .boundary_condition_flag_x_min_ = -1,
+        .boundary_condition_flag_x_max_ = -1,
+        .boundary_condition_flag_y_min_ = -1,
+        .boundary_condition_flag_y_max_ = -1,
+        .boundary_condition_flag_z_min_ = -1,
+        .boundary_condition_flag_z_max_ = -1,
+        .dx_ = -1.0,
+        .dy_ = -1.0,
+        .dz_ = -1.0,
+        .density_ = NULL,
+        .velocity_ = NULL,
+        .pressure_ = NULL,
+        .mass_ = NULL,
+        .momentum_ = NULL,
+        .energy_ = NULL,
+        .mid_points_x_ = NULL,
+        .mid_points_y_ = NULL,
+        .mid_points_z_ = NULL,
+        .volume_ = NULL
+    };
+
+    return system;
+}
 
 IN_FILE ErrorStatus get_coord_sys_flag(
     System *__restrict system
@@ -90,6 +138,12 @@ IN_FILE ErrorStatus get_boundary_condition_flag(System *__restrict system)
     {
         /* z-direction */
         case COORD_SYS_CARTESIAN_3D:
+            if (!boundary_condition_z_min || !boundary_condition_z_max)
+            {
+                error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Boundary condition for z_min or z_max is NULL.");
+                goto err_null_boundary_condition;
+            }
+
             if (strcmp(boundary_condition_z_min, "none") == 0)
             {
                 system->boundary_condition_flag_z_min_ = BOUNDARY_CONDITION_NONE;
@@ -138,6 +192,12 @@ IN_FILE ErrorStatus get_boundary_condition_flag(System *__restrict system)
 
         /* y-direction */
         case COORD_SYS_CARTESIAN_2D:
+            if (!boundary_condition_y_min || !boundary_condition_y_max)
+            {
+                error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Boundary condition for y_min or y_max is NULL.");
+                goto err_null_boundary_condition;
+            }
+
             if (strcmp(boundary_condition_y_min, "none") == 0)
             {
                 system->boundary_condition_flag_y_min_ = BOUNDARY_CONDITION_NONE;
@@ -186,6 +246,12 @@ IN_FILE ErrorStatus get_boundary_condition_flag(System *__restrict system)
 
         /* x-direction */
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
+            if (!boundary_condition_x_min || !boundary_condition_x_max)
+            {
+                error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Boundary condition for x_min or x_max is NULL.");
+                goto err_null_boundary_condition;
+            }
+
             if (strcmp(boundary_condition_x_min, "none") == 0)
             {
                 system->boundary_condition_flag_x_min_ = BOUNDARY_CONDITION_NONE;
@@ -298,6 +364,7 @@ IN_FILE ErrorStatus get_boundary_condition_flag(System *__restrict system)
 err_periodic_boundary_condition_mismatch:
 err_unknown_coord_sys_flag:
 err_unknown_boundary_condition:
+err_null_boundary_condition:
     return error_status;
 }
 
@@ -475,6 +542,53 @@ ErrorStatus system_init(System *__restrict system)
     int total_num_cells;
     int dim;
 
+    // Check if the number of cells is positive
+    if (system->num_ghost_cells_side < 0)
+    {
+        size_t error_message_size = strlen("Number of ghost cells must be non-negative. Got: ") + 1 + 128;
+        char error_message[error_message_size];
+        snprintf(error_message, error_message_size, "Number of ghost cells must be non-negative. Got: %d", system->num_ghost_cells_side);
+        error_status = WRAP_RAISE_ERROR(VALUE_ERROR, error_message);
+        goto err_ghost_cells_negative;
+    }
+
+    switch (system->coord_sys_flag_)
+    {
+        case COORD_SYS_CARTESIAN_3D:
+            if (system->num_cells_z < 1)
+            {
+                size_t error_message_size = strlen("Number of cells in z-direction must be positive. Got: ") + 1 + 128;
+                char error_message[error_message_size];
+                snprintf(error_message, error_message_size, "Number of cells in z-direction must be positive. Got: %d", system->num_cells_z);
+                error_status = WRAP_RAISE_ERROR(VALUE_ERROR, error_message);
+                goto err_wrong_initial_num_cells;
+            }
+            /* FALL THROUGH */
+        case COORD_SYS_CARTESIAN_2D:
+            if (system->num_cells_y < 1)
+            {
+                size_t error_message_size = strlen("Number of cells in y-direction must be positive. Got: ") + 1 + 128;
+                char error_message[error_message_size];
+                snprintf(error_message, error_message_size, "Number of cells in y-direction must be positive. Got: %d", system->num_cells_y);
+                error_status = WRAP_RAISE_ERROR(VALUE_ERROR, error_message);
+                goto err_wrong_initial_num_cells;
+            }
+            /* FALL THROUGH */
+        case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
+            if (system->num_cells_x < 1)
+            {
+                size_t error_message_size = strlen("Number of cells in x-direction must be positive. Got: ") + 1 + 128;
+                char error_message[error_message_size];
+                snprintf(error_message, error_message_size, "Number of cells in x-direction must be positive. Got: %d", system->num_cells_x);
+                error_status = WRAP_RAISE_ERROR(VALUE_ERROR, error_message);
+                goto err_wrong_initial_num_cells;
+            }
+            break;
+        default:
+            error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Coordinate system flag not recognized.");
+            goto err_coord_sys_flag_initial_num_cells;
+    }
+
     switch (system->coord_sys_flag_)
     {
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
@@ -588,6 +702,9 @@ err_init_memory_alloc:
     free(system->mid_points_x_);
     free(system->volume_);
 err_unknown_coord_sys_flag_total_num_cells:
+err_coord_sys_flag_initial_num_cells:
+err_wrong_initial_num_cells:
+err_ghost_cells_negative:
 err_boundary_condition_flag:
 err_coord_sys_flag:
     return error_status;

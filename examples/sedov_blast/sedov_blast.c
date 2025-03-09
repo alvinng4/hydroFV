@@ -32,16 +32,15 @@ int main(void)
 {
     ErrorStatus error_status;
 
-    System system = {
-        .coord_sys = COORD_SYS,
-        .boundary_condition_x_min = LEFT_BOUNDARY_CONDITION,
-        .boundary_condition_x_max = RIGHT_BOUNDARY_CONDITION,
-        .gamma = GAMMA,
-        .x_min = DOMAIN_MIN,
-        .x_max = DOMAIN_MAX,
-        .num_cells_x = NUM_CELLS,
-        .num_ghost_cells_side = NUM_GHOST_CELLS_SIDE
-    };
+    System system = get_new_system_struct();
+    system.coord_sys = COORD_SYS;
+    system.boundary_condition_x_min = LEFT_BOUNDARY_CONDITION;
+    system.boundary_condition_x_max = RIGHT_BOUNDARY_CONDITION;
+    system.gamma = GAMMA;
+    system.x_min = DOMAIN_MIN;
+    system.x_max = DOMAIN_MAX;
+    system.num_cells_x = NUM_CELLS;
+    system.num_ghost_cells_side = NUM_GHOST_CELLS_SIDE;
 
     error_status = WRAP_TRACEBACK(system_init(&system));
     if (error_status.return_code != SUCCESS)
