@@ -32,6 +32,7 @@
 
 IN_FILE ErrorStatus get_initial_system(System *__restrict system)
 {
+    ErrorStatus error_status;
     if (
         system->coord_sys_flag_ == COORD_SYS_CARTESIAN_2D
         || system->coord_sys_flag_ == COORD_SYS_CARTESIAN_3D
@@ -56,7 +57,11 @@ IN_FILE ErrorStatus get_initial_system(System *__restrict system)
             system->pressure_[i] = P_R;
         }
     }
-    convert_primitive_to_conserved(system);
+    error_status = WRAP_TRACEBACK(convert_primitive_to_conserved(system));
+    if (error_status.return_code != SUCCESS)
+    {
+        return error_status;
+    }
 
     return make_success_error_status();
 }

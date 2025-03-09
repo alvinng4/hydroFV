@@ -95,10 +95,6 @@ WIN32DLL_API ErrorStatus random_choice_1d(
     }
 
     const real gamma = system->gamma;
-    real *__restrict mass = system->mass_;
-    real *__restrict momentum = system->momentum_;
-    real *__restrict energy = system->energy_;
-    real *__restrict volume = system->volume_;
     real *__restrict density = system->density_;
     real *__restrict velocity = system->velocity_;
     real *__restrict pressure = system->pressure_;
@@ -215,8 +211,16 @@ WIN32DLL_API ErrorStatus random_choice_1d(
             }
         }
 
-        set_boundary_condition(system);
-        convert_primitive_to_conserved(system);
+        error_status = WRAP_TRACEBACK(convert_conserved_to_primitive(system));
+        if (error_status.return_code != SUCCESS)
+        {
+            goto err_convert_conserved_to_primitive;
+        }
+        error_status = WRAP_TRACEBACK(set_boundary_condition(system));
+        if (error_status.return_code != SUCCESS)
+        {
+            goto err_set_boundary_condition;
+        }
 
         t += dt;
         count++;
@@ -248,6 +252,8 @@ WIN32DLL_API ErrorStatus random_choice_1d(
     return make_success_error_status();
 
 err_compute_source_term:
+err_set_boundary_condition:
+err_convert_conserved_to_primitive:
 err_dt_zero:
 err_solve_flux:
 err_memory:

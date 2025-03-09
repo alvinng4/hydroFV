@@ -75,14 +75,26 @@ int main(void)
         system.velocity_[i] = U_0;
         system.pressure_[i] = P_0;
     }
-    convert_primitive_to_conserved(&system);
+    error_status = WRAP_TRACEBACK(convert_primitive_to_conserved(&system));
+    if (error_status.return_code != SUCCESS)
+    {
+        goto error;
+    }
 
     for (int i = NUM_GHOST_CELLS_SIDE; i < (NUM_GHOST_CELLS_SIDE + NUM_EXPLOSION_CELLS); i++)
     {
         system.energy_[i] = E_0;
     }
-    convert_conserved_to_primitive(&system);
-    set_boundary_condition(&system);
+    error_status = WRAP_TRACEBACK(convert_conserved_to_primitive(&system));
+    if (error_status.return_code != SUCCESS)
+    {
+        goto error;
+    }
+    error_status = WRAP_TRACEBACK(set_boundary_condition(&system));
+    if (error_status.return_code != SUCCESS)
+    {
+        goto error;
+    }
 
     IntegratorParam integrator_param = {
         .integrator = INTEGRATOR,

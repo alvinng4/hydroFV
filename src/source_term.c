@@ -157,11 +157,21 @@ ErrorStatus add_geometry_source_term(
         energy[i] += dt * (k1_energy + 2.0 * k2_energy + 2.0 * k3_energy + k4_energy) / 6.0;
     }
 
-    convert_conserved_to_primitive(system);
-    set_boundary_condition(system);
+    error_status = WRAP_TRACEBACK(convert_conserved_to_primitive(system));
+    if (error_status.return_code != SUCCESS)
+    {
+        goto err_convert_conserved_to_primitive;
+    }
+    error_status = WRAP_TRACEBACK(set_boundary_condition(system));
+    if (error_status.return_code != SUCCESS)
+    {
+        goto err_set_boundary_condition;
+    }
 
     return make_success_error_status();
 
+err_set_boundary_condition:
+err_convert_conserved_to_primitive:
 error_coord_sys:
     return error_status;
 }
