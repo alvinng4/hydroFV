@@ -231,7 +231,7 @@ WIN32DLL_API ErrorStatus random_choice_1d(
             }
         }
 
-        if (!no_progress_bar && (count % progress_bar_update_freq == 0))
+        if (!no_progress_bar)
         {
             update_progress_bar(&progress_bar_param, t, false);
         }

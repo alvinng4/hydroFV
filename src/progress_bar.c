@@ -13,6 +13,7 @@
 #include "progress_bar.h"
 
 #define PROGRESS_BAR_LENGTH 40
+#define MIN_PRINT_INTERVAL_SECOND 0.1
 
 #define BULLET "\u2022"
 #define BAR "\u2501"
@@ -204,6 +205,8 @@ WIN32DLL_API ProgressBarParam start_progress_bar(double total)
     progress_bar_param.current = 0.0;
     progress_bar_param.total = total;
 
+    progress_bar_param.time_last_print = progress_bar_param.start;
+
     progress_bar_param.last_five_progress_percent[0] = 0.0;
     progress_bar_param.time_last_five_update[0] = 0.0;
     progress_bar_param.at_least_four_count = 0;
@@ -261,6 +264,7 @@ WIN32DLL_API void update_progress_bar(
     bool is_end
 )
 {
+    const double current_time = get_current_time();
     if (current > progress_bar_param->current)
     {
         progress_bar_param->current = current;    
@@ -272,7 +276,7 @@ WIN32DLL_API void update_progress_bar(
         percent = 1.0;
     }
 
-    const double diff_now_start = get_current_time() - progress_bar_param->start;
+    const double diff_now_start = current_time - progress_bar_param->start;
 
     if (progress_bar_param->at_least_four_count < 4)
     {
@@ -295,8 +299,14 @@ WIN32DLL_API void update_progress_bar(
         progress_bar_param->time_last_five_update[4] = diff_now_start;
     }
     
-    if (!is_end)
+    if (is_end)
     {
+        print_progress_bar(progress_bar_param, percent, 0.0, true);
+    }
+    else if (current_time - progress_bar_param->time_last_print >= MIN_PRINT_INTERVAL_SECOND)
+    {
+        progress_bar_param->time_last_print = current_time;
+
         if (progress_bar_param->at_least_four_count < 4)
         {
             print_progress_bar(progress_bar_param, percent, -1.0, false);
@@ -307,8 +317,6 @@ WIN32DLL_API void update_progress_bar(
             print_progress_bar(progress_bar_param, percent, estimated_time_remaining, false);
         }
     }
-    else
-    {
-        print_progress_bar(progress_bar_param, percent, 0.0, true);
-    }
+
+    fflush(stdout);
 }

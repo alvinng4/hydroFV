@@ -58,7 +58,6 @@ typedef struct Settings
 {
     int verbose;
     bool no_progress_bar;
-    int progress_bar_update_freq;
 } Settings;
 
 typedef struct SimulationParam

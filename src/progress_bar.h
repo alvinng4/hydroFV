@@ -4,9 +4,10 @@
 #include <time.h>
 
 
-typedef struct
+typedef struct ProgressBarParam
 {
     double start;
+    double time_last_print;
     double time_last_five_update[5];
     double last_five_progress_percent[5];
     int at_least_four_count;
