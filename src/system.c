@@ -724,7 +724,6 @@ ErrorStatus system_init(System *__restrict system)
     system->mass_ = calloc(total_num_cells, sizeof(real));
     system->momentum_ = calloc(total_num_cells * dim, sizeof(real));
     system->energy_ = calloc(total_num_cells, sizeof(real));
-    system->mid_points_x_ = malloc(total_num_cells * sizeof(real));
     system->volume_ = malloc(total_num_cells * sizeof(real));
 
     if (!system->density_
@@ -733,7 +732,6 @@ ErrorStatus system_init(System *__restrict system)
         || !system->mass_
         || !system->momentum_
         || !system->energy_
-        || !system->mid_points_x_
         || !system->volume_
     )
     {
@@ -744,22 +742,37 @@ ErrorStatus system_init(System *__restrict system)
     switch (system->coord_sys_flag_)
     {
         case COORD_SYS_CARTESIAN_3D:
-            system->mid_points_z_ = malloc(total_num_cells * sizeof(real));
+        {
+            const int total_num_cells_z = system->num_cells_z + 2 * system->num_ghost_cells_side;
+            system->mid_points_z_ = malloc(total_num_cells_z * sizeof(real));
             if (!system->mid_points_z_)
             {
                 error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
                 goto err_init_memory_alloc_mid_points_z;
             }
+        }
             /* FALL THROUGH */
         case COORD_SYS_CARTESIAN_2D:
-            system->mid_points_y_ = malloc(total_num_cells * sizeof(real));
+        {
+            const int total_num_cells_y = system->num_cells_y + 2 * system->num_ghost_cells_side;
+            system->mid_points_y_ = malloc(total_num_cells_y * sizeof(real));
             if (!system->mid_points_y_)
             {
                 error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
                 goto err_init_memory_alloc_mid_points_y;
             }
-            break;
+        }
+            /* FALL THROUGH */
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
+        {
+            const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
+            system->mid_points_x_ = malloc(total_num_cells_x * sizeof(real));
+            if (!system->mid_points_x_)
+            {
+                error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
+                goto err_init_memory_alloc_mid_points_x;
+            }
+        }
             break;
         default:
             error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Coordinate system flag not recognized.");
@@ -786,10 +799,12 @@ ErrorStatus system_init(System *__restrict system)
     return make_success_error_status();
 
 err_init_sys_attr:
-err_init_memory_alloc_mid_points_y:
-    free(system->mid_points_y_);
 err_init_memory_alloc_mid_points_z:
     free(system->mid_points_z_);
+err_init_memory_alloc_mid_points_y:
+    free(system->mid_points_y_);
+err_init_memory_alloc_mid_points_x:
+    free(system->mid_points_x_);
 err_unknown_coord_sys_flag_mid_points_malloc:
 err_init_memory_alloc:
     free(system->density_);
