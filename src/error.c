@@ -1,10 +1,10 @@
 /**
  * \file error.c
  * 
- * \brief Error handling functions for the hydrodynamics simulation
+ * \brief Exception handling functions for the hydrodynamics simulation
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-08
+ * \date 2025-03-11
  */
 
 #include <stdio.h>
@@ -14,13 +14,15 @@
 #include "hydro.h"
 
 #define RESET "\033[0m"
+#define BRIGHT_RED "\033[1;31m"
+#define DIM_RED "\033[5;31;40m"
+#define YELLOW_BOLD "\033[1;33m"
 #define CYAN_REGULAR "\033[0;36m"
 #define PURPLE_REGULAR "\033[0;35m"
-#define PURPLE_REGULAR_BOLD "\033[1;95m"
 #define PURPLE_BRIGHT "\033[0;95m"
 #define PURPLE_BRIGHT_BOLD "\033[1;95m"
 
-WIN32DLL_API ErrorStatus make_success_error_status(void)
+ErrorStatus make_success_error_status(void)
 {
     ErrorStatus error_status = {
         .return_code = SUCCESS,
@@ -30,7 +32,7 @@ WIN32DLL_API ErrorStatus make_success_error_status(void)
     return error_status;
 }
 
-WIN32DLL_API void raise_warning(
+void raise_warning(
     const char *__restrict warning_msg,
     const char *__restrict warning_file,
     const int warning_line,
@@ -39,7 +41,9 @@ WIN32DLL_API void raise_warning(
 {
     fprintf(
         stderr,
-        "Warning (in %s\"%s\"%s, line %s%d%s in %s%s()%s):\n    %s%s%s\n",
+        "%sWarning:%s In %s\"%s\"%s, line %s%d%s in %s%s%s:\n    %s%s%s\n",
+        YELLOW_BOLD,
+        RESET,
         CYAN_REGULAR,
         warning_file,
         RESET,
@@ -55,7 +59,7 @@ WIN32DLL_API void raise_warning(
     );
 }
 
-WIN32DLL_API ErrorStatus raise_error(
+ErrorStatus raise_error(
     const int error_code,
     const char *__restrict error_msg,
     const char *__restrict error_file,
@@ -79,17 +83,21 @@ WIN32DLL_API ErrorStatus raise_error(
             error_status.return_code = error_code;
             error_type = "Error";
             break;
-        case ARITHMETIC_ERROR:
-            error_status.return_code = error_code;
-            error_type = "ArithmeticError";
-            break;
         case VALUE_ERROR:
             error_status.return_code = error_code;
             error_type = "ValueError";
             break;
+        case POINTER_ERROR:
+            error_status.return_code = error_code;
+            error_type = "PointerError";
+            break;
         case MEMORY_ERROR:
             error_status.return_code = error_code;
             error_type = "MemoryError";
+            break;
+        case OS_ERROR:
+            error_status.return_code = error_code;
+            error_type = "OSError";
             break;
         case NOT_IMPLEMENTED_ERROR:
             error_status.return_code = error_code;
@@ -101,19 +109,18 @@ WIN32DLL_API ErrorStatus raise_error(
             break;
     }
 
-    int traceback_size = (
+    const int traceback_size = (
         strlen(error_file)
         + strlen(error_func)
         + strlen(error_msg)
         + strlen(error_type)
-        + strlen(PURPLE_BRIGHT_BOLD)
         + 3 * strlen(CYAN_REGULAR)
         + strlen(PURPLE_BRIGHT_BOLD)
         + strlen(PURPLE_REGULAR)
         + 5 * strlen(RESET)
-        + strlen("    File \"\", line  in ()\n: \n")
-        + 1
+        + strlen("    File \"\", line  in \n: \n")
         + snprintf(NULL, 0, "%d", error_line)   // Number of digits in error_line
+        + 1  // Null terminator
     );
     error_status.traceback = malloc(traceback_size * sizeof(char));
     if (!error_status.traceback)
@@ -128,7 +135,7 @@ WIN32DLL_API ErrorStatus raise_error(
     int actual_traceback_size = snprintf(
         error_status.traceback,
         traceback_size,
-        "    File %s\"%s\"%s, line %s%d%s in %s%s()%s\n%s%s%s: %s%s%s\n",
+        "    File %s\"%s\"%s, line %s%d%s in %s%s%s\n%s%s%s: %s%s%s\n",
         CYAN_REGULAR,
         error_file,
         RESET,
@@ -167,7 +174,7 @@ err_memory_alloc:
     return error_status;
 }
 
-WIN32DLL_API ErrorStatus traceback(
+ErrorStatus traceback(
     ErrorStatus error_status,
     const char *__restrict function_call_source_code,
     const char *__restrict error_file,
@@ -175,43 +182,41 @@ WIN32DLL_API ErrorStatus traceback(
     const char *__restrict error_func
 )
 {
-    if (error_status.return_code == SUCCESS)
+    if (
+        error_status.return_code == SUCCESS
+        || error_status.traceback_code_ != TRACEBACK_SUCCESS
+    )
     {
-        goto err_return_code_is_success;
-    }
-    else if (error_status.traceback_code_ != TRACEBACK_SUCCESS)
-    {
-        goto err_traceback_code_not_success;
+        return error_status;
     }
 
-    int traceback_size = (
+    const int traceback_size = (
         strlen(error_file)
         + strlen(error_func)
         + strlen(function_call_source_code)
-        + strlen(PURPLE_BRIGHT_BOLD)
         + 3 * strlen(CYAN_REGULAR)
-        + strlen(PURPLE_BRIGHT_BOLD)
-        + 2 * strlen(PURPLE_REGULAR)
-        + 6 * strlen(RESET)
-        + strlen("    File \"\", line  in ()\n: \n        \n")
-        + 1
+        + strlen(PURPLE_REGULAR)
+        + 4 * strlen(RESET)
+        + strlen("    File \"\", line  in \n: \n        \n")
         + snprintf(NULL, 0, "%d", error_line)   // Number of digits in error_line
         + strlen(error_status.traceback)
+        + 1  // Null terminator
     );
 
     char *new_traceback = malloc(traceback_size * sizeof(char));
     if (!new_traceback)
     {
         error_status.traceback_code_ = TRACEBACK_MALLOC_FAILED;
-        free(error_status.traceback);
         error_status.traceback = NULL;
-        goto err_traceback_memory_alloc;
+        free(new_traceback);
+        free(error_status.traceback);
+        return error_status;
     }
 
     int actual_traceback_size = snprintf(
         new_traceback,
         traceback_size,
-        "    File %s\"%s\"%s, line %s%d%s in %s%s()%s\n        %s%s%s\n%s",
+        "    File %s\"%s\"%s, line %s%d%s in %s%s%s\n        %s%s%s\n%s",
         CYAN_REGULAR,
         error_file,
         RESET,
@@ -248,32 +253,41 @@ WIN32DLL_API ErrorStatus traceback(
     }
 
     return error_status;
-
-err_traceback_memory_alloc:
-err_traceback_code_not_success:
-err_return_code_is_success:
-    return error_status;
 }
 
-WIN32DLL_API void print_and_free_traceback(ErrorStatus *__restrict error_status)
+void free_traceback(ErrorStatus *__restrict error_status)
 {
-    fprintf(stderr, "Traceback (most recent call last):\n");
+    if (error_status->traceback)
+    {
+        free(error_status->traceback);
+        error_status->traceback = NULL;
+    }
+}
+
+void print_and_free_traceback(ErrorStatus *__restrict error_status)
+{
+    fprintf(stderr, "%sTraceback%s %s(most recent call last):%s\n", BRIGHT_RED, RESET, DIM_RED, RESET);
     switch (error_status->traceback_code_)
     {
+        case TRACEBACK_NOT_INITIALIZED:
+            fputs("    Something went wrong. Traceback not initialized.\n", stderr);
+            break;
         case TRACEBACK_SUCCESS:
             fputs(error_status->traceback, stderr);
             free(error_status->traceback);
+            error_status->traceback = NULL;
             break;
         case TRACEBACK_MALLOC_FAILED:
-            fputs("Something went wrong. Failed to allocate memory for traceback.\n", stderr);
+            fputs("    Something went wrong. Failed to allocate memory for traceback.\n", stderr);
             break;
         case TRACEBACK_TRUNCATED:
             fputs(error_status->traceback, stderr);
-            fputs("\nWarning: Something went wrong. Traceback was truncated.\n", stderr);
+            fputs("\n    Something went wrong. Traceback was truncated.\n", stderr);
             free(error_status->traceback);
+            error_status->traceback = NULL;
             break;
         case TRACEBACK_SNPRINTF_FAILED:
-            fputs("Something went wrong. Failed to write to traceback.\n", stderr);
+            fputs("    Something went wrong. Failed to write to traceback.\n", stderr);
             break;
     }
 }

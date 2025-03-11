@@ -4,7 +4,7 @@
  * \brief Header file for utility functions for the hydrodynamics simulation.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-08
+ * \date 2025-03-11
  */
 
 #ifndef UTILS_H
@@ -21,14 +21,14 @@
  * 
  * \retval Sound speed a = sqrt(gamma * p / rho).
  */
-real get_sound_speed(real gamma, real rho, real p);
+double get_sound_speed(double gamma, double rho, double p);
 
 /**
  * \brief Get the time step for 1D system based on the CFL condition.
  * 
  * Calculate dt = cfl * dx / S_max, where S_max = max{|u| + a}. Note
- * that this can lead to an underestimate of S_max. For instance, at
- * t = 0, if u = 0, then S_max = a_max, which results in dt thats
+ * that this can lead to an underestimate of S_max. For instance, 
+ * if u = 0 at t0, then S_max = a_max, which results in dt thats
  * too large. It is advised to use a much smaller cfl for the initial
  * steps until the flow has developed.
  * 
@@ -37,9 +37,9 @@ real get_sound_speed(real gamma, real rho, real p);
  * 
  * \retval Time step dt.
  */
-real get_time_step_1d(
+double get_time_step_1d(
     const System *__restrict system,
-    const real cfl
+    const double cfl
 );
 
 /**
@@ -55,9 +55,9 @@ real get_time_step_1d(
  * 
  * \retval Time step dt.
  */
-real get_time_step_2d(
+double get_time_step_2d(
     const System *__restrict system,
-    const real cfl
+    const double cfl
 );
 
 #endif

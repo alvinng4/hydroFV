@@ -38,12 +38,12 @@
  * 
  * \return The value of the Riemann f_L or f_R function.
  */
-IN_FILE real riemann_f_L_or_R(
-    const real gamma,
-    const real rho_X,
-    const real p_X,
-    const real a_X,
-    const real p_star
+IN_FILE double riemann_f_L_or_R(
+    const double gamma,
+    const double rho_X,
+    const double p_X,
+    const double a_X,
+    const double p_star
 );
 
 /**
@@ -57,12 +57,12 @@ IN_FILE real riemann_f_L_or_R(
  * 
  * \return The value of the derivative of the Riemann f_L or f_R function.
  */
-IN_FILE real riemann_f_L_or_R_prime(
-    const real gamma,
-    const real rho_X,
-    const real p_X,
-    const real a_X,
-    const real p_star
+IN_FILE double riemann_f_L_or_R_prime(
+    const double gamma,
+    const double rho_X,
+    const double p_X,
+    const double a_X,
+    const double p_star
 );
 
 /**
@@ -81,17 +81,17 @@ IN_FILE real riemann_f_L_or_R_prime(
  * 
  * \return The value of the Riemann f function.
  */
-IN_FILE real riemann_f(
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real a_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real a_R,
-    const real p_star
+IN_FILE double riemann_f(
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double a_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double a_R,
+    const double p_star
 );
 
 /**
@@ -108,15 +108,15 @@ IN_FILE real riemann_f(
  * 
  * \return The value of the derivative of the Riemann f function.
  */
-IN_FILE real riemann_f_prime(
-    const real gamma,
-    const real rho_L,
-    const real p_L,
-    const real a_L,
-    const real rho_R,
-    const real p_R,
-    const real a_R,
-    const real p_star
+IN_FILE double riemann_f_prime(
+    const double gamma,
+    const double rho_L,
+    const double p_L,
+    const double a_L,
+    const double rho_R,
+    const double p_R,
+    const double a_R,
+    const double p_star
 );
 
 /**
@@ -141,17 +141,17 @@ IN_FILE real riemann_f_prime(
  * \retval ERROR_RIEMANN_SOLVER_EXACT_P_STAR_NOT_CONVERGED if p_star did not converge after maximum iterations
  */
 IN_FILE ErrorStatus solve_p_star(
-    real *restrict p_star,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real a_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real a_R,
-    const real tol,
+    double *restrict p_star,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double a_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double a_R,
+    const double tol,
     const int verbose
 );
 
@@ -171,17 +171,17 @@ IN_FILE ErrorStatus solve_p_star(
  * \param speed Speed S = x / t when sampling at (x, t).
  */
 IN_FILE void sample_left_state(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real a_L,
-    const real u_star,
-    const real p_star,
-    const real speed
+    double *restrict sol_rho,
+    double *restrict sol_u,
+    double *restrict sol_p,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double a_L,
+    const double u_star,
+    const double p_star,
+    const double speed
 );
 
 /**
@@ -200,17 +200,17 @@ IN_FILE void sample_left_state(
  * \param speed Speed S = x / t when sampling at (x, t).
  */
 IN_FILE void sample_right_state(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    const real gamma,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real a_R,
-    const real u_star,
-    const real p_star,
-    const real speed
+    double *restrict sol_rho,
+    double *restrict sol_u,
+    double *restrict sol_p,
+    const double gamma,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double a_R,
+    const double u_star,
+    const double p_star,
+    const double speed
 );
 
 /**
@@ -229,17 +229,17 @@ IN_FILE void sample_right_state(
  * \param speed Speed S = x / t when sampling at (x, t).
  */
 IN_FILE void sample_left_shock_wave(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real a_L,
-    const real u_star,
-    const real p_star,
-    const real speed
+    double *restrict sol_rho,
+    double *restrict sol_u,
+    double *restrict sol_p,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double a_L,
+    const double u_star,
+    const double p_star,
+    const double speed
 );
 
 /**
@@ -258,17 +258,17 @@ IN_FILE void sample_left_shock_wave(
  * \param speed Speed S = x / t when sampling at (x, t).
  */
 IN_FILE void sample_left_rarefaction_wave(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real a_L,
-    const real u_star,
-    const real p_star,
-    const real speed
+    double *restrict sol_rho,
+    double *restrict sol_u,
+    double *restrict sol_p,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double a_L,
+    const double u_star,
+    const double p_star,
+    const double speed
 );
 
 /**
@@ -287,17 +287,17 @@ IN_FILE void sample_left_rarefaction_wave(
  * \param speed Speed S = x / t when sampling at (x, t).
  */
 IN_FILE void sample_right_shock_wave(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    const real gamma,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real a_R,
-    const real u_star,
-    const real p_star,
-    const real speed
+    double *restrict sol_rho,
+    double *restrict sol_u,
+    double *restrict sol_p,
+    const double gamma,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double a_R,
+    const double u_star,
+    const double p_star,
+    const double speed
 );
 
 /**
@@ -316,40 +316,40 @@ IN_FILE void sample_right_shock_wave(
  * \param speed Speed S = x / t when sampling at (x, t).
  */
 IN_FILE void sample_right_rarefaction_wave(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    const real gamma,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real a_R,
-    const real u_star,
-    const real p_star,
-    const real speed
+    double *restrict sol_rho,
+    double *restrict sol_u,
+    double *restrict sol_p,
+    const double gamma,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double a_R,
+    const double u_star,
+    const double p_star,
+    const double speed
 );
 
 ErrorStatus solve_exact_1d(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real tol,
-    const real speed,
+    double *restrict sol_rho,
+    double *restrict sol_u,
+    double *restrict sol_p,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double tol,
+    const double speed,
     const int verbose
 )
 {
     ErrorStatus error_status;
 
     /* Compute the sound speeds */
-    real a_L;
-    real a_R;
+    double a_L;
+    double a_R;
     if (rho_L > 0.0)
     {
         a_L = get_sound_speed(gamma, rho_L, p_L);
@@ -402,7 +402,7 @@ ErrorStatus solve_exact_1d(
     }
     
     /* Solve for p_star and u_star */
-    real p_star;
+    double p_star;
     error_status = WRAP_TRACEBACK(solve_p_star(
         &p_star,
         gamma,
@@ -422,7 +422,7 @@ ErrorStatus solve_exact_1d(
         goto err_solve_p_star;
     }
 
-    real u_star = 0.5 * (u_L + u_R) + 0.5 * (
+    double u_star = 0.5 * (u_L + u_R) + 0.5 * (
         riemann_f_L_or_R(gamma, rho_R, p_R, a_R, p_star)
         - riemann_f_L_or_R(gamma, rho_L, p_L, a_L, p_star)
     );
@@ -469,24 +469,24 @@ err_solve_p_star:
 }
 
 ErrorStatus solve_flux_exact_1d(
-    real *restrict flux_mass,
-    real *restrict flux_momentum,
-    real *restrict flux_energy,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real tol,
-    const real speed,
+    double *restrict flux_mass,
+    double *restrict flux_momentum,
+    double *restrict flux_energy,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double tol,
+    const double speed,
     const int verbose
 )
 {
-    real sol_rho;
-    real sol_u;
-    real sol_p;
+    double sol_rho;
+    double sol_u;
+    double sol_p;
     ErrorStatus error_status = WRAP_TRACEBACK(solve_exact_1d(
         &sol_rho,
         &sol_u,
@@ -509,19 +509,19 @@ ErrorStatus solve_flux_exact_1d(
     return error_status;
 }
 
-IN_FILE real riemann_f_L_or_R(
-    const real gamma,
-    const real rho_X,
-    const real p_X,
-    const real a_X,
-    const real p_star
+IN_FILE double riemann_f_L_or_R(
+    const double gamma,
+    const double rho_X,
+    const double p_X,
+    const double a_X,
+    const double p_star
 )
 {
     /* shock wave */
     if (p_star > p_X)
     {
-        real A_X = riemann_A_L_or_R(gamma, rho_X);
-        real B_X = riemann_B_L_or_R(gamma, p_X);
+        double A_X = riemann_A_L_or_R(gamma, rho_X);
+        double B_X = riemann_B_L_or_R(gamma, p_X);
         return (p_star - p_X) * sqrt(A_X / (p_star + B_X));
     }
     /* rarefaction wave */
@@ -536,19 +536,19 @@ IN_FILE real riemann_f_L_or_R(
     }
 }
 
-IN_FILE real riemann_f_L_or_R_prime(
-    const real gamma,
-    const real rho_X,
-    const real p_X,
-    const real a_X,
-    const real p_star
+IN_FILE double riemann_f_L_or_R_prime(
+    const double gamma,
+    const double rho_X,
+    const double p_X,
+    const double a_X,
+    const double p_star
 )
 {
     /* shock wave */
     if (p_star > p_X)
     {
-        real A_X = riemann_A_L_or_R(gamma, rho_X);
-        real B_X = riemann_B_L_or_R(gamma, p_X);
+        double A_X = riemann_A_L_or_R(gamma, rho_X);
+        double B_X = riemann_B_L_or_R(gamma, p_X);
         return (
             (1.0 - 0.5 * (p_star - p_X) / (B_X - p_star))
             * sqrt(A_X / (B_X + p_star))
@@ -564,17 +564,17 @@ IN_FILE real riemann_f_L_or_R_prime(
     }
 }
 
-IN_FILE real riemann_f(
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real a_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real a_R,
-    const real p_star
+IN_FILE double riemann_f(
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double a_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double a_R,
+    const double p_star
 )
 {
     return (
@@ -584,15 +584,15 @@ IN_FILE real riemann_f(
     );
 }
 
-IN_FILE real riemann_f_prime(
-    const real gamma,
-    const real rho_L,
-    const real p_L,
-    const real a_L,
-    const real rho_R,
-    const real p_R,
-    const real a_R,
-    const real p_star
+IN_FILE double riemann_f_prime(
+    const double gamma,
+    const double rho_L,
+    const double p_L,
+    const double a_L,
+    const double rho_R,
+    const double p_R,
+    const double a_R,
+    const double p_star
 )
 {
     return (
@@ -602,43 +602,43 @@ IN_FILE real riemann_f_prime(
 }
 
 IN_FILE ErrorStatus solve_p_star(
-    real *restrict p_star,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real a_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real a_R,
-    const real tol,
+    double *restrict p_star,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double a_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double a_R,
+    const double tol,
     const int verbose
 )
 {
     ErrorStatus error_status;
 
-    real p_guess = guess_p(
+    double p_guess = guess_p(
         gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, tol
     );
 
     // For bisection method
     bool bracket_found = false;
-    real p_upper_bisection = p_guess;
-    real f_upper_bisection = riemann_f(
+    double p_upper_bisection = p_guess;
+    double f_upper_bisection = riemann_f(
         gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, p_upper_bisection
     );
-    real p_lower_bisection;
-    real f_lower_bisection;
+    double p_lower_bisection;
+    double f_lower_bisection;
 
     /* Newton-Raphson method */
-    real p_0 = p_guess;
+    double p_0 = p_guess;
     for (int i = 0; i < NEWTON_RAPHSON_MAX_ITER; i++)
     {
-        real f = riemann_f(
+        double f = riemann_f(
             gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, p_0
         );
-        real f_prime = riemann_f_prime(
+        double f_prime = riemann_f_prime(
             gamma, rho_L, p_L, a_L, rho_R, p_R, a_R, p_0
         );
         if (!bracket_found && f * f_upper_bisection < 0.0)
@@ -648,7 +648,7 @@ IN_FILE ErrorStatus solve_p_star(
             p_lower_bisection = p_0;
         }
 
-        real p_1 = p_0 - f / f_prime;
+        double p_1 = p_0 - f / f_prime;
 
         /* Failed to converge, switch to bisection method */
         if (p_1 < 0.0)
@@ -676,16 +676,16 @@ IN_FILE ErrorStatus solve_p_star(
         if (f_lower_bisection * f_upper_bisection >= 0.0)
         {
             p_upper_bisection *= 10.0;
-            real dp = (p_upper_bisection - p_lower_bisection) / BISECTION_BRACKET_NUM_INTERVALS;
+            double dp = (p_upper_bisection - p_lower_bisection) / BISECTION_BRACKET_NUM_INTERVALS;
             for (int i = 0; i < BISECTION_BRACKET_NUM_INTERVALS; i++)
             {
-                real _p_lower = p_lower_bisection + i * dp;
-                real _p_upper = p_lower_bisection + (i + 1) * dp;
+                double _p_lower = p_lower_bisection + i * dp;
+                double _p_upper = p_lower_bisection + (i + 1) * dp;
 
-                real _f_lower = riemann_f(
+                double _f_lower = riemann_f(
                     gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, _p_lower
                 );
-                real _f_upper = riemann_f(
+                double _f_upper = riemann_f(
                     gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, _p_upper
                 );
 
@@ -711,13 +711,13 @@ IN_FILE ErrorStatus solve_p_star(
     int count = 0;
     while (true)
     {
-        real p_mid = 0.5 * (p_lower_bisection + p_upper_bisection);
+        double p_mid = 0.5 * (p_lower_bisection + p_upper_bisection);
         if (p_upper_bisection - p_lower_bisection < tol)
         {
             *p_star = p_mid;
             break;
         }
-        real f_mid = riemann_f(
+        double f_mid = riemann_f(
             gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, p_mid
         );
 
@@ -763,17 +763,17 @@ err_bisection_bracket_root:
 }
 
 IN_FILE void sample_left_state(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real a_L,
-    const real u_star,
-    const real p_star,
-    const real speed
+    double *restrict sol_rho,
+    double *restrict sol_u,
+    double *restrict sol_p,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double a_L,
+    const double u_star,
+    const double p_star,
+    const double speed
 )
 {
     /* Shock wave */
@@ -815,17 +815,17 @@ IN_FILE void sample_left_state(
 }
 
 IN_FILE void sample_right_state(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    const real gamma,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real a_R,
-    const real u_star,
-    const real p_star,
-    const real speed
+    double *restrict sol_rho,
+    double *restrict sol_u,
+    double *restrict sol_p,
+    const double gamma,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double a_R,
+    const double u_star,
+    const double p_star,
+    const double speed
 )
 {
     /* Shock wave */
@@ -867,23 +867,23 @@ IN_FILE void sample_right_state(
 }
 
 IN_FILE void sample_left_shock_wave(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real a_L,
-    const real u_star,
-    const real p_star,
-    const real speed
+    double *restrict sol_rho,
+    double *restrict sol_u,
+    double *restrict sol_p,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double a_L,
+    const double u_star,
+    const double p_star,
+    const double speed
 )
 {
-    real p_star_over_p_L = p_star / p_L;
+    double p_star_over_p_L = p_star / p_L;
 
     // Shock speed
-    real S_L = u_L - a_L * sqrt(
+    double S_L = u_L - a_L * sqrt(
         (gamma + 1.0) / (2.0 * gamma) * p_star_over_p_L
         + (gamma - 1.0) / (2.0 * gamma)
     );
@@ -901,7 +901,7 @@ IN_FILE void sample_left_shock_wave(
     else
     {
         // Gamma minus one divided by gamma plus one
-        real gmodgpo = (gamma - 1.0) / (gamma + 1.0);
+        double gmodgpo = (gamma - 1.0) / (gamma + 1.0);
         *sol_rho = (
             rho_L * (p_star_over_p_L + gmodgpo) / (gmodgpo * p_star_over_p_L + 1.0)
         );
@@ -912,23 +912,23 @@ IN_FILE void sample_left_shock_wave(
 }
 
 IN_FILE void sample_left_rarefaction_wave(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real a_L,
-    const real u_star,
-    const real p_star,
-    const real speed
+    double *restrict sol_rho,
+    double *restrict sol_u,
+    double *restrict sol_p,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double a_L,
+    const double u_star,
+    const double p_star,
+    const double speed
 )
 {
     // The rarefaction wave is enclosed by the Head and the Tail
 
     // Characteristics speed of the head
-    real S_HL = u_L - a_L;
+    double S_HL = u_L - a_L;
 
     /* Left state regime */
     if (speed < S_HL)
@@ -940,17 +940,17 @@ IN_FILE void sample_left_rarefaction_wave(
     }
 
     // Sound speed behind the rarefaction
-    real a_star_L = a_L * pow(p_star / p_L, (gamma - 1.0) / (2.0 * gamma));
+    double a_star_L = a_L * pow(p_star / p_L, (gamma - 1.0) / (2.0 * gamma));
 
     // Characteristics speed of the tail
-    real S_TL = u_star - a_star_L;
+    double S_TL = u_star - a_star_L;
 
     /* Rarefaction fan regime */
     if (speed < S_TL)
     {
         // Two divided by gamma plus one
-        real tdgpo = 2.0 / (gamma + 1.0);
-        real common = pow(
+        double tdgpo = 2.0 / (gamma + 1.0);
+        double common = pow(
             (
                 tdgpo
                 + (u_L - speed) * ((gamma - 1.0) / (a_L * (gamma + 1.0)))
@@ -974,23 +974,23 @@ IN_FILE void sample_left_rarefaction_wave(
 }
 
 IN_FILE void sample_right_shock_wave(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    const real gamma,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real a_R,
-    const real u_star,
-    const real p_star,
-    const real speed
+    double *restrict sol_rho,
+    double *restrict sol_u,
+    double *restrict sol_p,
+    const double gamma,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double a_R,
+    const double u_star,
+    const double p_star,
+    const double speed
 )
 {
-    real p_star_over_p_R = p_star / p_R;
+    double p_star_over_p_R = p_star / p_R;
 
     // Shock speed
-    real S_R = u_R + a_R * sqrt(
+    double S_R = u_R + a_R * sqrt(
         p_star_over_p_R * (gamma + 1.0) / (2.0 * gamma)
         + (gamma - 1.0) / (2.0 * gamma)
     );
@@ -1008,7 +1008,7 @@ IN_FILE void sample_right_shock_wave(
     else
     {
         // Gamma minus one divided by gamma plus one
-        real gmodgpo = (gamma - 1.0) / (gamma + 1.0);
+        double gmodgpo = (gamma - 1.0) / (gamma + 1.0);
         *sol_rho = (
             rho_R * (p_star_over_p_R + gmodgpo) / (gmodgpo * p_star_over_p_R + 1.0)
         );
@@ -1019,23 +1019,23 @@ IN_FILE void sample_right_shock_wave(
 }
 
 IN_FILE void sample_right_rarefaction_wave(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    const real gamma,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real a_R,
-    const real u_star,
-    const real p_star,
-    const real speed
+    double *restrict sol_rho,
+    double *restrict sol_u,
+    double *restrict sol_p,
+    const double gamma,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double a_R,
+    const double u_star,
+    const double p_star,
+    const double speed
 )
 {
     // The rarefaction wave is enclosed by the Head and the Tail
 
     // Characteristics speed of the head
-    real S_HR = u_R + a_R;
+    double S_HR = u_R + a_R;
 
     /* Right state regime */
     if (speed > S_HR)
@@ -1047,16 +1047,16 @@ IN_FILE void sample_right_rarefaction_wave(
     }
 
     // Sound speed behind the rarefaction
-    real a_star_R = a_R * pow(p_star / p_R, (gamma - 1.0) / (2.0 * gamma));
+    double a_star_R = a_R * pow(p_star / p_R, (gamma - 1.0) / (2.0 * gamma));
 
     // Characteristics speed of the tail
-    real S_TR = u_star + a_star_R;
+    double S_TR = u_star + a_star_R;
 
     /* Rarefaction fan regime */
     if (speed > S_TR)
     {
-        real two_divided_by_gamma_plus_one = 2.0 / (gamma + 1.0);
-        real common = pow(
+        double two_divided_by_gamma_plus_one = 2.0 / (gamma + 1.0);
+        double common = pow(
             (
                 two_divided_by_gamma_plus_one
                 - (u_R - speed) * (gamma - 1.0) / (a_R * (gamma + 1.0))

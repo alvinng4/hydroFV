@@ -4,7 +4,7 @@
  * \brief Functions related to the hydrodynamics system.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-08
+ * \date 2025-03-11
  */
 
 #include <math.h>
@@ -16,7 +16,7 @@
 #include "error.h"
 #include "system.h"
 
-WIN32DLL_API System get_new_system_struct(void)
+System get_new_system_struct(void)
 {
     System system = {
         .coord_sys = NULL,
@@ -70,6 +70,13 @@ WIN32DLL_API System get_new_system_struct(void)
     return system;
 }
 
+/**
+ * \brief Check the system input for the system_init function.
+ * 
+ * \param system Pointer to the system struct.
+ * 
+ * \return Error status.
+ */
 IN_FILE ErrorStatus check_init_system_input(const System *__restrict system)
 {
     /* Coordinate system */
@@ -81,7 +88,7 @@ IN_FILE ErrorStatus check_init_system_input(const System *__restrict system)
     /* Gamma */
     if (system->gamma < 1.0)
     {
-        size_t error_message_size = strlen("Gamma must be greater than 1. Got: ") + 1 + 128;
+        const size_t error_message_size = strlen("Gamma must be greater than 1. Got: ") + 1 + 128;
         char error_message[error_message_size];
         snprintf(error_message, error_message_size, "Gamma must be greater than 1. Got: %.3g", system->gamma);
         return WRAP_RAISE_ERROR(VALUE_ERROR, error_message);
@@ -90,77 +97,77 @@ IN_FILE ErrorStatus check_init_system_input(const System *__restrict system)
     /* Array pointers */
     if (system->density_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Density array pointer (system->density_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Density array pointer (system->density_) is not NULL.");
     }
     if (system->velocity_x_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Velocity (x-component) array pointer (system->velocity_x_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (x-component) array pointer (system->velocity_x_) is not NULL.");
     }
     if (system->velocity_y_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Velocity (y-component) array pointer (system->velocity_y_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (y-component) array pointer (system->velocity_y_) is not NULL.");
     }
     if (system->velocity_z_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Velocity (z-component) array pointer (system->velocity_z_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (z-component) array pointer (system->velocity_z_) is not NULL.");
     }
     if (system->pressure_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Pressure array pointer (system->pressure_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Pressure array pointer (system->pressure_) is not NULL.");
     }
     if (system->mass_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Mass array pointer (system->mass_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Mass array pointer (system->mass_) is not NULL.");
     }
     if (system->momentum_x_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Momentum (x-component) array pointer (system->momentum_x_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Momentum (x-component) array pointer (system->momentum_x_) is not NULL.");
     }
     if (system->momentum_y_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Momentum (y-component) array pointer (system->momentum_y_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Momentum (y-component) array pointer (system->momentum_y_) is not NULL.");
     }
     if (system->momentum_z_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Momentum (z-component) array pointer (system->momentum_z_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Momentum (z-component) array pointer (system->momentum_z_) is not NULL.");
     }
     if (system->energy_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Energy array pointer (system->energy_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Energy array pointer (system->energy_) is not NULL.");
     }
     if (system->mid_points_x_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Mid points x array pointer (system->mid_points_x_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Mid points x array pointer (system->mid_points_x_) is not NULL.");
     }
     if (system->mid_points_y_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Mid points y array pointer (system->mid_points_y_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Mid points y array pointer (system->mid_points_y_) is not NULL.");
     }
     if (system->mid_points_z_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Mid points z array pointer (system->mid_points_z_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Mid points z array pointer (system->mid_points_z_) is not NULL.");
     }
     if (system->surface_area_x_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Surface area x array pointer (system->surface_area_x_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Surface area x array pointer (system->surface_area_x_) is not NULL.");
     }
     if (system->surface_area_y_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Surface area y array pointer (system->surface_area_y_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Surface area y array pointer (system->surface_area_y_) is not NULL.");
     }
     if (system->surface_area_z_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Surface area z array pointer (system->surface_area_z_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Surface area z array pointer (system->surface_area_z_) is not NULL.");
     }
     if (system->volume_)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Volume array pointer (system->volume_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Volume array pointer (system->volume_) is not NULL.");
     }
 
     /* Number of ghost cells */
-    if (system->num_ghost_cells_side < 0)
+    if (system->num_ghost_cells_side < 1)
     {
-        size_t error_message_size = strlen("Number of ghost cells must be non-negative. Got: ") + 1 + 128;
+        size_t error_message_size = strlen("Number of ghost cells per side must be at least one. Got: ") + 1 + 128;
         char error_message[error_message_size];
         snprintf(error_message, error_message_size, "Number of ghost cells must be non-negative. Got: %d", system->num_ghost_cells_side);
         return WRAP_RAISE_ERROR(VALUE_ERROR, error_message);
@@ -179,18 +186,18 @@ IN_FILE ErrorStatus check_init_system_input(const System *__restrict system)
             }
             if (system->z_min >= system->z_max)
             {
-                size_t error_message_size = strlen("z_min must be less than z_max. Got: z_min = , z_max = ") + 1 + 256;
+                size_t error_message_size = strlen("z_min must be less than z_max. Got: z_min = , z_max = ") + 1 + 2 * 128;
                 char error_message[error_message_size];
                 snprintf(error_message, error_message_size, "z_min must be less than z_max. Got: z_min = %.3g, z_max = %.3g", system->z_min, system->z_max);
                 return WRAP_RAISE_ERROR(VALUE_ERROR, error_message);
             }
             if (!system->boundary_condition_z_min)
             {
-                return WRAP_RAISE_ERROR(VALUE_ERROR, "Boundary condition pointer for z_min is NULL.");
+                return WRAP_RAISE_ERROR(POINTER_ERROR, "Boundary condition pointer for z_min is NULL.");
             }
             if (!system->boundary_condition_z_max)
             {
-                return WRAP_RAISE_ERROR(VALUE_ERROR, "Boundary condition pointer for z_max is NULL.");
+                return WRAP_RAISE_ERROR(POINTER_ERROR, "Boundary condition pointer for z_max is NULL.");
             }
             /* FALL THROUGH */
         case COORD_SYS_CARTESIAN_2D:
@@ -210,11 +217,11 @@ IN_FILE ErrorStatus check_init_system_input(const System *__restrict system)
             }
             if (!system->boundary_condition_y_min)
             {
-                return WRAP_RAISE_ERROR(VALUE_ERROR, "Boundary condition pointer for y_min is NULL.");
+                return WRAP_RAISE_ERROR(POINTER_ERROR, "Boundary condition pointer for y_min is NULL.");
             }
             if (!system->boundary_condition_y_max)
             {
-                return WRAP_RAISE_ERROR(VALUE_ERROR, "Boundary condition pointer for y_max is NULL.");
+                return WRAP_RAISE_ERROR(POINTER_ERROR, "Boundary condition pointer for y_max is NULL.");
             }
             /* FALL THROUGH */
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
@@ -234,11 +241,11 @@ IN_FILE ErrorStatus check_init_system_input(const System *__restrict system)
             }
             if (!system->boundary_condition_x_min)
             {
-                return WRAP_RAISE_ERROR(VALUE_ERROR, "Boundary condition pointer for x_min is NULL.");
+                return WRAP_RAISE_ERROR(POINTER_ERROR, "Boundary condition pointer for x_min is NULL.");
             }
             if (!system->boundary_condition_x_max)
             {
-                return WRAP_RAISE_ERROR(VALUE_ERROR, "Boundary condition pointer for x_max is NULL.");
+                return WRAP_RAISE_ERROR(POINTER_ERROR, "Boundary condition pointer for x_max is NULL.");
             }
             break;
         default:
@@ -248,20 +255,25 @@ IN_FILE ErrorStatus check_init_system_input(const System *__restrict system)
     return make_success_error_status();
 }
 
-IN_FILE ErrorStatus get_coord_sys_flag(
-    System *__restrict system
-)
+/**
+ * \brief Set the coordinate system flag based on the coordinate system string in the system struct.
+ * 
+ * \param system Pointer to the system struct.
+ * 
+ * \return Error status.
+ */
+IN_FILE ErrorStatus get_coord_sys_flag(System *__restrict system)
 {
     const char *coord_sys = system->coord_sys;
     int *coord_sys_flag = &system->coord_sys_flag_;
 
     if (!coord_sys)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Coordinate system pointer is NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Coordinate system pointer is NULL.");
     }
     if (!coord_sys_flag)
     {
-        return WRAP_RAISE_ERROR(VALUE_ERROR, "Coordinate system flag pointer is NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Coordinate system flag pointer is NULL.");
     }
 
     if (strcmp(coord_sys, "cartesian_1d") == 0)
@@ -297,16 +309,7 @@ IN_FILE ErrorStatus get_coord_sys_flag(
  * 
  * \param system Pointer to the system struct.
  * 
- * \retval SUCCESS if successful.
- * \retval ERROR_UNKNOWN_BOUNDARY_CONDITION_X_MIN if the boundary condition for x_min is not recognized.
- * \retval ERROR_UNKNOWN_BOUNDARY_CONDITION_X_MAX if the boundary condition for x_max is not recognized.
- * \retval ERROR_UNKNOWN_BOUNDARY_CONDITION_Y_MIN if the boundary condition for y_min is not recognized.
- * \retval ERROR_UNKNOWN_BOUNDARY_CONDITION_Y_MAX if the boundary condition for y_max is not recognized.
- * \retval ERROR_UNKNOWN_BOUNDARY_CONDITION_Z_MIN if the boundary condition for z_min is not recognized.
- * \retval ERROR_UNKNOWN_BOUNDARY_CONDITION_Z_MAX if the boundary condition for z_max is not recognized.
- * \retval ERROR_BOUNDARY_CONDITION_PERIODIC_MISMATCH_X if only one side of x_min and x_max is set to periodic boundary condition.
- * \retval ERROR_BOUNDARY_CONDITION_PERIODIC_MISMATCH_Y if only one side of y_min and y_max is set to periodic boundary condition.
- * \retval ERROR_BOUNDARY_CONDITION_PERIODIC_MISMATCH_Z if only one side of z_min and z_max is set to periodic boundary condition.
+ * \return Error status.
  */
 IN_FILE ErrorStatus get_boundary_condition_flag(System *__restrict system)
 {
@@ -325,7 +328,7 @@ IN_FILE ErrorStatus get_boundary_condition_flag(System *__restrict system)
         case COORD_SYS_CARTESIAN_3D:
             if (!boundary_condition_z_min || !boundary_condition_z_max)
             {
-                error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Boundary condition for z_min or z_max is NULL.");
+                error_status = WRAP_RAISE_ERROR(POINTER_ERROR, "Boundary condition for z_min or z_max is NULL.");
                 goto err_null_boundary_condition;
             }
 
@@ -379,7 +382,7 @@ IN_FILE ErrorStatus get_boundary_condition_flag(System *__restrict system)
         case COORD_SYS_CARTESIAN_2D:
             if (!boundary_condition_y_min || !boundary_condition_y_max)
             {
-                error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Boundary condition for y_min or y_max is NULL.");
+                error_status = WRAP_RAISE_ERROR(POINTER_ERROR, "Boundary condition for y_min or y_max is NULL.");
                 goto err_null_boundary_condition;
             }
 
@@ -433,7 +436,7 @@ IN_FILE ErrorStatus get_boundary_condition_flag(System *__restrict system)
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
             if (!boundary_condition_x_min || !boundary_condition_x_max)
             {
-                error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Boundary condition for x_min or x_max is NULL.");
+                error_status = WRAP_RAISE_ERROR(POINTER_ERROR, "Boundary condition for x_min or x_max is NULL.");
                 goto err_null_boundary_condition;
             }
 
@@ -553,6 +556,13 @@ err_null_boundary_condition:
     return error_status;
 }
 
+/**
+ * \brief Initialize the cell width for the system struct.
+ * 
+ * \param system Pointer to the system struct.
+ * 
+ * \return Error status.
+ */
 IN_FILE ErrorStatus initialize_cell_width(System *__restrict system)
 {
     switch (system->coord_sys_flag_)
@@ -573,6 +583,13 @@ IN_FILE ErrorStatus initialize_cell_width(System *__restrict system)
     return make_success_error_status();
 }
 
+/**
+ * \brief Initialize the mid points for the system struct.
+ * 
+ * \param system Pointer to the system struct.
+ * 
+ * \return Error status.
+ */
 IN_FILE ErrorStatus initialize_mid_points(System *__restrict system)
 {
     switch (system->coord_sys_flag_)
@@ -613,6 +630,13 @@ IN_FILE ErrorStatus initialize_mid_points(System *__restrict system)
     return make_success_error_status();
 }
 
+/**
+ * \brief Initialize the surface area for the system struct.
+ * 
+ * \param system Pointer to the system struct.
+ * 
+ * \return Error status.
+ */
 IN_FILE ErrorStatus initialize_surface_area(System *__restrict system)
 {
     switch (system->coord_sys_flag_)
@@ -629,10 +653,10 @@ IN_FILE ErrorStatus initialize_surface_area(System *__restrict system)
         case COORD_SYS_CYLINDRICAL_1D: 
         {
             const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
-            const real dx = system->dx_;
+            const double dx = system->dx_;
             for (int i = 1; i < (total_num_cells_x + 1); i++)
             {
-                const real r = system->x_min + i * dx;
+                const double r = system->x_min + i * dx;
                 system->surface_area_x_[i] = 2.0 * M_PI * r;
             }
             return make_success_error_status();
@@ -640,10 +664,10 @@ IN_FILE ErrorStatus initialize_surface_area(System *__restrict system)
         case COORD_SYS_SPHERICAL_1D:
         {
             const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
-            const real dx = system->dx_;
+            const double dx = system->dx_;
             for (int i = 0; i < (total_num_cells_x + 1); i++)
             {
-                const real r = system->x_min + i * dx;
+                const double r = system->x_min + i * dx;
                 system->surface_area_x_[i] = 4.0 * M_PI * r * r;
             }
             return make_success_error_status();
@@ -652,8 +676,8 @@ IN_FILE ErrorStatus initialize_surface_area(System *__restrict system)
         {
             const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
             const int total_num_cells_y = system->num_cells_y + 2 * system->num_ghost_cells_side;
-            const real area_x = system->dy_;
-            const real area_y = system->dx_;
+            const double area_x = system->dy_;
+            const double area_y = system->dx_;
             for (int i = 0; i < total_num_cells_x; i++)
             {
                 system->surface_area_x_[i] = area_x;
@@ -669,9 +693,9 @@ IN_FILE ErrorStatus initialize_surface_area(System *__restrict system)
             const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
             const int total_num_cells_y = system->num_cells_y + 2 * system->num_ghost_cells_side;
             const int total_num_cells_z = system->num_cells_z + 2 * system->num_ghost_cells_side;
-            const real area_x = system->dy_ * system->dz_;
-            const real area_y = system->dx_ * system->dz_;
-            const real area_z = system->dx_ * system->dy_;
+            const double area_x = system->dy_ * system->dz_;
+            const double area_y = system->dx_ * system->dz_;
+            const double area_z = system->dx_ * system->dy_;
             for (int i = 0; i < total_num_cells_x; i++)
             {
                 system->surface_area_x_[i] = area_x;
@@ -693,6 +717,13 @@ IN_FILE ErrorStatus initialize_surface_area(System *__restrict system)
     }
 }
 
+/**
+ * \brief Initialize the volume for the system struct.
+ * 
+ * \param system Pointer to the system struct.
+ * 
+ * \return Error status.
+ */
 IN_FILE ErrorStatus initialize_volume(System *__restrict system)
 {
     switch (system->coord_sys_flag_)
@@ -700,7 +731,7 @@ IN_FILE ErrorStatus initialize_volume(System *__restrict system)
         case COORD_SYS_CARTESIAN_1D:
         {
             const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
-            const real volume = system->dx_;
+            const double volume = system->dx_;
             for (int i = 0; i < total_num_cells_x; i++)
             {
                 system->volume_[i] = volume;
@@ -710,11 +741,11 @@ IN_FILE ErrorStatus initialize_volume(System *__restrict system)
         case COORD_SYS_CYLINDRICAL_1D: 
         {
             const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
-            const real dx = system->dx_;
+            const double dx = system->dx_;
             for (int i = 0; i < total_num_cells_x; i++)
             {
-                const real r_min = system->x_min + i * dx;
-                const real r_max = system->x_min + (i + 1) * dx;
+                const double r_min = system->x_min + i * dx;
+                const double r_max = system->x_min + (i + 1) * dx;
                 system->volume_[i] = M_PI * (r_max * r_max - r_min * r_min);
             }
             return make_success_error_status();
@@ -722,11 +753,11 @@ IN_FILE ErrorStatus initialize_volume(System *__restrict system)
         case COORD_SYS_SPHERICAL_1D:
         {
             const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
-            const real dx = system->dx_;
+            const double dx = system->dx_;
             for (int i = 0; i < total_num_cells_x; i++)
             {
-                const real r_min = system->x_min + i * dx;
-                const real r_max = system->x_min + (i + 1) * dx;
+                const double r_min = system->x_min + i * dx;
+                const double r_max = system->x_min + (i + 1) * dx;
                 system->volume_[i] = (4.0 / 3.0) * M_PI * (r_max * r_max * r_max - r_min * r_min * r_min);
             }
             return make_success_error_status();
@@ -735,7 +766,7 @@ IN_FILE ErrorStatus initialize_volume(System *__restrict system)
         {
             const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
             const int total_num_cells_y = system->num_cells_y + 2 * system->num_ghost_cells_side;
-            const real volume = system->dx_ * system->dy_;
+            const double volume = system->dx_ * system->dy_;
             for (int i = 0; i < total_num_cells_x; i++)
             {
                 for (int j = 0; j < total_num_cells_y; j++)
@@ -750,7 +781,7 @@ IN_FILE ErrorStatus initialize_volume(System *__restrict system)
             const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
             const int total_num_cells_y = system->num_cells_y + 2 * system->num_ghost_cells_side;
             const int total_num_cells_z = system->num_cells_z + 2 * system->num_ghost_cells_side;
-            const real volume = system->dx_ * system->dy_ * system->dz_;
+            const double volume = system->dx_ * system->dy_ * system->dz_;
             for (int i = 0; i < total_num_cells_x; i++)
             {
                 for (int j = 0; j < total_num_cells_y; j++)
@@ -827,11 +858,11 @@ ErrorStatus system_init(System *__restrict system)
     }
 
     /* Allocate memory */
-    system->density_ = calloc(total_num_cells, sizeof(real));
-    system->pressure_ = calloc(total_num_cells, sizeof(real));
-    system->mass_ = calloc(total_num_cells, sizeof(real));
-    system->energy_ = calloc(total_num_cells, sizeof(real));
-    system->volume_ = malloc(total_num_cells * sizeof(real));
+    system->density_ = calloc(total_num_cells, sizeof(double));
+    system->pressure_ = calloc(total_num_cells, sizeof(double));
+    system->mass_ = calloc(total_num_cells, sizeof(double));
+    system->energy_ = calloc(total_num_cells, sizeof(double));
+    system->volume_ = malloc(total_num_cells * sizeof(double));
 
     if (
         !system->density_
@@ -850,10 +881,10 @@ ErrorStatus system_init(System *__restrict system)
         case COORD_SYS_CARTESIAN_3D:
         {
             const int total_num_cells_z = system->num_cells_z + 2 * system->num_ghost_cells_side;
-            system->mid_points_z_ = malloc(total_num_cells_z * sizeof(real));
-            system->surface_area_z_ = malloc((total_num_cells_z + 1) * sizeof(real));
-            system->velocity_z_ = calloc(total_num_cells, sizeof(real));
-            system->momentum_z_ = calloc(total_num_cells, sizeof(real));
+            system->mid_points_z_ = malloc(total_num_cells_z * sizeof(double));
+            system->surface_area_z_ = malloc((total_num_cells_z + 1) * sizeof(double));
+            system->velocity_z_ = calloc(total_num_cells, sizeof(double));
+            system->momentum_z_ = calloc(total_num_cells, sizeof(double));
             if (!system->mid_points_z_ || !system->surface_area_z_ || !system->velocity_z_ || !system->momentum_z_)
             {
                 error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
@@ -864,10 +895,10 @@ ErrorStatus system_init(System *__restrict system)
         case COORD_SYS_CARTESIAN_2D:
         {
             const int total_num_cells_y = system->num_cells_y + 2 * system->num_ghost_cells_side;
-            system->mid_points_y_ = malloc(total_num_cells_y * sizeof(real));
-            system->surface_area_y_ = malloc((total_num_cells_y + 1) * sizeof(real));
-            system->velocity_y_ = calloc(total_num_cells, sizeof(real));
-            system->momentum_y_ = calloc(total_num_cells, sizeof(real));
+            system->mid_points_y_ = malloc(total_num_cells_y * sizeof(double));
+            system->surface_area_y_ = malloc((total_num_cells_y + 1) * sizeof(double));
+            system->velocity_y_ = calloc(total_num_cells, sizeof(double));
+            system->momentum_y_ = calloc(total_num_cells, sizeof(double));
             if (!system->mid_points_y_ || !system->surface_area_y_ || !system->velocity_y_ || !system->momentum_y_)
             {
                 error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
@@ -878,10 +909,10 @@ ErrorStatus system_init(System *__restrict system)
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
         {
             const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
-            system->mid_points_x_ = malloc(total_num_cells_x * sizeof(real));
-            system->surface_area_x_ = malloc((total_num_cells_x + 1) * sizeof(real));
-            system->velocity_x_ = calloc(total_num_cells, sizeof(real));
-            system->momentum_x_ = calloc(total_num_cells, sizeof(real));
+            system->mid_points_x_ = malloc(total_num_cells_x * sizeof(double));
+            system->surface_area_x_ = malloc((total_num_cells_x + 1) * sizeof(double));
+            system->velocity_x_ = calloc(total_num_cells, sizeof(double));
+            system->momentum_x_ = calloc(total_num_cells, sizeof(double));
             if (!system->mid_points_x_ || !system->surface_area_x_ || !system->velocity_x_ || !system->momentum_x_)
             {
                 error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
@@ -969,13 +1000,20 @@ void free_system_memory(System *__restrict system)
     free(system->volume_);
 }
 
+/**
+ * \brief Set the boundary condition for 1D system.
+ * 
+ * \param system Pointer to the system struct.
+ * 
+ * \return Error status.
+ */
 IN_FILE ErrorStatus set_boundary_condition_1d(System *__restrict system)
 {
     ErrorStatus error_status;
 
-    real *__restrict density = system->density_;
-    real *__restrict velocity_x = system->velocity_x_;
-    real *__restrict pressure = system->pressure_;
+    double *__restrict density = system->density_;
+    double *__restrict velocity_x = system->velocity_x_;
+    double *__restrict pressure = system->pressure_;
     const int num_ghost_cells_side = system->num_ghost_cells_side;
 
     switch (system->boundary_condition_flag_x_min_)
@@ -1049,14 +1087,21 @@ err_unknown_boundary_condition_flag:
     return error_status;
 }
 
+/**
+ * \brief Set the boundary condition for 2D Cartesian system.
+ * 
+ * \param system Pointer to the system struct.
+ * 
+ * \return Error status.
+ */
 IN_FILE ErrorStatus set_boundary_condition_cartesian_2d(System *__restrict system)
 {
     ErrorStatus error_status;
 
-    real *__restrict density = system->density_;
-    real *__restrict velocity_x = system->velocity_x_;
-    real *__restrict velocity_y = system->velocity_y_;
-    real *__restrict pressure = system->pressure_;
+    double *__restrict density = system->density_;
+    double *__restrict velocity_x = system->velocity_x_;
+    double *__restrict velocity_y = system->velocity_y_;
+    double *__restrict pressure = system->pressure_;
     const int num_ghost_cells_side = system->num_ghost_cells_side;
     const int num_cells_x = system->num_cells_x;
     const int num_cells_y = system->num_cells_y;
@@ -1240,6 +1285,13 @@ err_unknown_boundary_condition_flag:
     return error_status;
 }
 
+/**
+ * \brief Set the boundary condition for 3D Cartesian system.
+ * 
+ * \param system Pointer to the system struct.
+ * 
+ * \return Error status.
+ */
 IN_FILE ErrorStatus set_boundary_condition_cartesian_3d(System *__restrict system)
 {
     (void) system;
@@ -1264,28 +1316,28 @@ ErrorStatus set_boundary_condition(System *__restrict system)
 ErrorStatus convert_conserved_to_primitive(System *__restrict system)
 {
     const int num_ghost_cells_side = system->num_ghost_cells_side;
-    const real gamma = system->gamma;
-    const real *__restrict volume = system->volume_;
-    const real *__restrict mass = system->mass_;
-    const real *__restrict momentum_x = system->momentum_x_;
-    const real *__restrict momentum_y = system->momentum_y_;
-    // const real *__restrict momentum_z = system->momentum_z_;
-    const real *__restrict energy = system->energy_;
-    real *__restrict density = system->density_;
-    real *__restrict velocity_x = system->velocity_x_;
-    real *__restrict velocity_y = system->velocity_y_;
-    // real *__restrict velocity_z = system->velocity_z_;
-    real *__restrict pressure = system->pressure_;
+    const double gamma = system->gamma;
+    const double *__restrict volume = system->volume_;
+    const double *__restrict mass = system->mass_;
+    const double *__restrict momentum_x = system->momentum_x_;
+    const double *__restrict momentum_y = system->momentum_y_;
+    // const double *__restrict momentum_z = system->momentum_z_;
+    const double *__restrict energy = system->energy_;
+    double *__restrict density = system->density_;
+    double *__restrict velocity_x = system->velocity_x_;
+    double *__restrict velocity_y = system->velocity_y_;
+    // double *__restrict velocity_z = system->velocity_z_;
+    double *__restrict pressure = system->pressure_;
 
     switch(system->coord_sys_flag_)
     {
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
             for (int i = 0; i < (system->num_cells_x + 2 * num_ghost_cells_side); i++)
             {
-                const real mass_i = mass[i];
-                const real momentum_x_i = momentum_x[i];
-                const real energy_i = energy[i];
-                const real volume_i = volume[i];
+                const double mass_i = mass[i];
+                const double momentum_x_i = momentum_x[i];
+                const double energy_i = energy[i];
+                const double volume_i = volume[i];
                 density[i] = mass_i / volume_i;
                 velocity_x[i] = momentum_x_i / mass_i;
                 pressure[i] = (gamma - 1.0) * (energy_i - 0.5 * mass_i * velocity_x[i] * velocity_x[i]) / volume_i;
@@ -1297,11 +1349,11 @@ ErrorStatus convert_conserved_to_primitive(System *__restrict system)
                 for (int j = 0; j < (system->num_cells_y + 2 * num_ghost_cells_side); j++)
                 {
                     const int index = j * (system->num_cells_x + 2 * num_ghost_cells_side) + i;
-                    const real mass_ij = mass[index];
-                    const real momentum_x_ij = momentum_x[index];
-                    const real momentum_y_ij = momentum_y[index];
-                    const real energy_ij = energy[index];
-                    const real volume_ij = volume[index];
+                    const double mass_ij = mass[index];
+                    const double momentum_x_ij = momentum_x[index];
+                    const double momentum_y_ij = momentum_y[index];
+                    const double energy_ij = energy[index];
+                    const double volume_ij = volume[index];
                     density[index] = mass_ij / volume_ij;
                     velocity_x[index] = momentum_x_ij / mass_ij;
                     velocity_y[index] = momentum_y_ij / mass_ij;
@@ -1326,28 +1378,28 @@ ErrorStatus convert_conserved_to_primitive(System *__restrict system)
 ErrorStatus convert_primitive_to_conserved(System *__restrict system)
 {
     const int num_ghost_cells_side = system->num_ghost_cells_side;
-    const real gamma = system->gamma;
-    const real *__restrict volume = system->volume_;
-    const real *__restrict density = system->density_;
-    const real *__restrict velocity_x = system->velocity_x_;
-    const real *__restrict velocity_y = system->velocity_y_;
-    // const real *__restrict velocity_z = system->velocity_z_;
-    const real *__restrict pressure = system->pressure_;
-    real *__restrict mass = system->mass_;
-    real *__restrict momentum_x = system->momentum_x_;
-    real *__restrict momentum_y = system->momentum_y_;
-    // real *__restrict momentum_z = system->momentum_z_;
-    real *__restrict energy = system->energy_;
+    const double gamma = system->gamma;
+    const double *__restrict volume = system->volume_;
+    const double *__restrict density = system->density_;
+    const double *__restrict velocity_x = system->velocity_x_;
+    const double *__restrict velocity_y = system->velocity_y_;
+    // const double *__restrict velocity_z = system->velocity_z_;
+    const double *__restrict pressure = system->pressure_;
+    double *__restrict mass = system->mass_;
+    double *__restrict momentum_x = system->momentum_x_;
+    double *__restrict momentum_y = system->momentum_y_;
+    // double *__restrict momentum_z = system->momentum_z_;
+    double *__restrict energy = system->energy_;
 
     switch(system->coord_sys_flag_)
     {
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
             for (int i = 0; i < (system->num_cells_x + 2 * num_ghost_cells_side); i++)
             {
-                const real density_i = density[i];
-                const real velocity_x_i = velocity_x[i];
-                const real pressure_i = pressure[i];
-                const real volume_i = volume[i];
+                const double density_i = density[i];
+                const double velocity_x_i = velocity_x[i];
+                const double pressure_i = pressure[i];
+                const double volume_i = volume[i];
                 mass[i] = density_i * volume_i;
                 momentum_x[i] = mass[i] * velocity_x_i;
                 energy[i] = volume[i] * (
@@ -1361,11 +1413,11 @@ ErrorStatus convert_primitive_to_conserved(System *__restrict system)
                 for (int j = 0; j < (system->num_cells_y + 2 * num_ghost_cells_side); j++)
                 {
                     const int index = j * (system->num_cells_x + 2 * num_ghost_cells_side) + i;
-                    const real density_ij = density[index];
-                    const real velocity_x_ij = velocity_x[index];
-                    const real velocity_y_ij = velocity_y[index];
-                    const real pressure_ij = pressure[index];
-                    const real volume_ij = volume[index];
+                    const double density_ij = density[index];
+                    const double velocity_x_ij = velocity_x[index];
+                    const double velocity_y_ij = velocity_y[index];
+                    const double pressure_ij = pressure[index];
+                    const double volume_ij = volume[index];
                     mass[index] = density_ij * volume_ij;
                     momentum_x[index] = mass[index] * velocity_x_ij;
                     momentum_y[index] = mass[index] * velocity_y_ij;

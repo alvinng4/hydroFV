@@ -4,7 +4,7 @@
  * \brief Source term calculation for the hydrodynamics simulation
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-08
+ * \date 2025-03-11
  */
 
 #include "hydro.h"
@@ -22,17 +22,17 @@
  * \param[in] specific_energy Specific energy
  */
 IN_FILE void _compute_geometry_source_term(
-    real *__restrict d_mass,
-    real *__restrict d_momentum,
-    real *__restrict d_energy,
-    const real pre_factor,
-    const real gamma,
-    const real density,
-    const real specific_momentum,
-    const real specific_energy
+    double *__restrict d_mass,
+    double *__restrict d_momentum,
+    double *__restrict d_energy,
+    const double pre_factor,
+    const double gamma,
+    const double density,
+    const double specific_momentum,
+    const double specific_energy
 )
 {
-    const real pressure = (gamma - 1) * (specific_energy - 0.5 * specific_momentum * specific_momentum / density);
+    const double pressure = (gamma - 1) * (specific_energy - 0.5 * specific_momentum * specific_momentum / density);
     *d_mass = pre_factor * specific_momentum;
     *d_momentum = pre_factor * specific_momentum * specific_momentum / density;
     *d_energy = pre_factor * specific_momentum * (specific_energy + pressure) / density;
@@ -40,13 +40,13 @@ IN_FILE void _compute_geometry_source_term(
 
 ErrorStatus add_geometry_source_term(
     System *__restrict system,
-    const real dt
+    const double dt
 )
 {
     ErrorStatus error_status;
 
     /* Get alpha according to the coordinate system */
-    real alpha;
+    double alpha;
     switch (system->coord_sys_flag_)
     {
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CARTESIAN_2D: case COORD_SYS_CARTESIAN_3D:
@@ -61,40 +61,38 @@ ErrorStatus add_geometry_source_term(
             alpha = 2.0;
             break;
         default:
-            error_status = WRAP_RAISE_ERROR(
-                VALUE_ERROR, "Unknown coordinate system flag."
-            );
+            error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Unknown coordinate system flag.");
             goto error_coord_sys;
     }
 
     const int num_ghost_cells_side = system->num_ghost_cells_side;
     const int num_cells_x = system->num_cells_x;
-    const real gamma = system->gamma;
-    const real *__restrict mid_points_x = system->mid_points_x_;
-    const real *__restrict volume = system->volume_;
-    const real *__restrict density = system->density_;
-    real *__restrict mass = system->mass_;
-    real *__restrict momentum = system->momentum_x_;
-    real *__restrict energy = system->energy_;
+    const double gamma = system->gamma;
+    const double *__restrict mid_points_x = system->mid_points_x_;
+    const double *__restrict volume = system->volume_;
+    const double *__restrict density = system->density_;
+    double *__restrict mass = system->mass_;
+    double *__restrict momentum = system->momentum_x_;
+    double *__restrict energy = system->energy_;
 
     /* Compute the source term with RK4 */
     for (int i = num_ghost_cells_side; i < (num_cells_x + num_ghost_cells_side); i++)
     {
-        real temp_mass, temp_momentum, temp_energy;
-        real k1_mass, k1_momentum, k1_energy;
-        real k2_mass, k2_momentum, k2_energy;
-        real k3_mass, k3_momentum, k3_energy;
-        real k4_mass, k4_momentum, k4_energy;
+        double temp_mass, temp_momentum, temp_energy;
+        double k1_mass, k1_momentum, k1_energy;
+        double k2_mass, k2_momentum, k2_energy;
+        double k3_mass, k3_momentum, k3_energy;
+        double k4_mass, k4_momentum, k4_energy;
 
-        const real volume_i = volume[i];
-        const real mass_i = mass[i];
-        const real momentum_i = momentum[i];
-        const real energy_i = energy[i];
-        const real density_i = density[i];
-        const real specific_momentum_i = momentum_i / volume_i;
-        const real specific_energy_i = energy_i / volume_i;
+        const double volume_i = volume[i];
+        const double mass_i = mass[i];
+        const double momentum_i = momentum[i];
+        const double energy_i = energy[i];
+        const double density_i = density[i];
+        const double specific_momentum_i = momentum_i / volume_i;
+        const double specific_energy_i = energy_i / volume_i;
 
-        const real pre_factor = -alpha * volume_i / mid_points_x[i];
+        const double pre_factor = -alpha * volume_i / mid_points_x[i];
 
         _compute_geometry_source_term(
             &k1_mass,

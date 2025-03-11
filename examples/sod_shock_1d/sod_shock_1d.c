@@ -5,14 +5,12 @@
 
 #define RIEMANN_SOLVER "riemann_solver_exact" // "riemann_solver_exact" or "riemann_solver_hllc"
 #define COORD_SYS "cartesian_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
-#define NUM_TOTAL_CALLS 1024
+#define NUM_TOTAL_CELLS 64
 #define NUM_GHOST_CELLS_SIDE 1
-#define NUM_CELLS NUM_TOTAL_CALLS - 2 * NUM_GHOST_CELLS_SIDE
-#define INTEGRATOR "random_choice_1d" // "godunov_first_order_1d" or "random_choice_1d"
+#define NUM_CELLS NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
+#define INTEGRATOR "godunov_first_order_1d" // "godunov_first_order_1d" or "random_choice_1d"
 
 #define CFL 0.4
-#define INITIAL_CFL_SHRINK_FACTOR 0.2
-#define NUM_STEPS_SHRINK 50
 #define TF 0.2
 #define TOL 1e-6 // For the riemann solver
 
@@ -70,6 +68,7 @@ int main(void)
 {
     ErrorStatus error_status;
 
+    /* System parameters */
     System system = get_new_system_struct();
     system.coord_sys = COORD_SYS;
     system.boundary_condition_x_min = LEFT_BOUNDARY_CONDITION;
@@ -92,25 +91,32 @@ int main(void)
         goto error;
     }
 
-    IntegratorParam integrator_param = {
-        .integrator = INTEGRATOR,
-        .riemann_solver = RIEMANN_SOLVER,
-        .cfl = CFL,
-        .cfl_initial_shrink_factor = INITIAL_CFL_SHRINK_FACTOR,
-        .num_steps_shrink = NUM_STEPS_SHRINK,
-        .tol = TOL
-    };
+    /* Integrator parameters */
+    IntegratorParam integrator_param = get_new_integrator_param();
+    integrator_param.integrator = INTEGRATOR;
+    integrator_param.riemann_solver = RIEMANN_SOLVER;
+    integrator_param.cfl = CFL;
 
-    StoringParam storing_param;
+    /* Storing parameters */
+    StoringParam storing_param = get_new_storing_param();
+    storing_param.is_storing = true;
+    storing_param.store_initial = false;
+    storing_param.storing_interval = TF; // Only store the final snapshot
+    storing_param.output_dir = "snapshots/";
 
+    /* Settings */
     Settings settings = {
         .verbose = 1,
         .no_progress_bar = false
     };
 
+    /* Simulation parameters */
     SimulationParam simulation_param = {
         .tf = TF
     };
+
+    /* Simulation status */
+    SimulationStatus simulation_status;
 
     printf("Launching simulation...\n");
     time_t start = clock();
@@ -119,29 +125,16 @@ int main(void)
         &integrator_param,
         &storing_param,
         &settings,
-        &simulation_param
+        &simulation_param,
+        &simulation_status
     ));
     time_t end = clock();
-    printf("Simulation time: %f s\n", (double) (end - start) / CLOCKS_PER_SEC);
     if (error_status.return_code != SUCCESS)
     {
         goto error;
     }
+    printf("Simulation time: %f s, Number of steps: %lld\n", (double) (end - start) / CLOCKS_PER_SEC, simulation_status.num_steps);
     printf("Done!\n");
-
-    FILE *file = fopen("sod_shock_1d.csv", "w");
-    fprintf(file, "mid_point,density,velocity,pressure\n");
-    for (int i = system.num_ghost_cells_side; i < (system.num_ghost_cells_side + system.num_cells_x); i++)
-    {
-        fprintf(
-            file,
-            "%f,%f,%f,%f\n",
-            system.mid_points_x_[i],
-            system.density_[i],
-            system.velocity_x_[i],
-            system.pressure_[i]
-        );
-    }
 
     free_system_memory(&system);
     return 0;

@@ -4,7 +4,7 @@
  * \brief Header file for the source term calculation
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-08
+ * \date 2025-03-11
  */
 
 #ifndef SOURCE_TERM_H
@@ -12,9 +12,15 @@
 
 #include "hydro.h"
 
+/**
+ * \brief Add the geometry source term.
+ * 
+ * \param system Pointer to the system
+ * \param dt Time step
+ */
 ErrorStatus add_geometry_source_term(
     System *__restrict system,
-    const real dt
+    const double dt
 );
 
 #endif

@@ -35,18 +35,18 @@
  * \retval error_code if error occurs
  */
 ErrorStatus solve_exact_1d(
-    real *restrict sol_rho,
-    real *restrict sol_u,
-    real *restrict sol_p,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real tol,
-    const real speed,
+    double *restrict sol_rho,
+    double *restrict sol_u,
+    double *restrict sol_p,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double tol,
+    const double speed,
     const int verbose
 );
 
@@ -71,18 +71,18 @@ ErrorStatus solve_exact_1d(
  * \retval error_code if error occurs
  */
 ErrorStatus solve_flux_exact_1d(
-    real *restrict flux_mass,
-    real *restrict flux_momentum,
-    real *restrict flux_energy,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real tol,
-    const real speed,
+    double *restrict flux_mass,
+    double *restrict flux_momentum,
+    double *restrict flux_energy,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double tol,
+    const double speed,
     const int verbose
 );
 

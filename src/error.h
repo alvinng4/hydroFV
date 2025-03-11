@@ -1,9 +1,11 @@
 /**
  * \file error.h
- * \author Ching Yin Ng
  * \brief Error codes and prototypes of error-related functions
  * 
  * This file contains error codes and prototypes of error-related functions for the C library. 
+ * 
+ * \author Ching-Yin Ng
+ * \date 2025-03-11
  */
 
 #ifndef ERROR_H
@@ -14,10 +16,11 @@
 #define SUCCESS 0
 #define FAILURE 1
 #define ERROR 2
-#define ARITHMETIC_ERROR 3
-#define VALUE_ERROR 4
+#define VALUE_ERROR 3
+#define POINTER_ERROR 4
 #define MEMORY_ERROR 5
-#define NOT_IMPLEMENTED_ERROR 6
+#define OS_ERROR 6
+#define NOT_IMPLEMENTED_ERROR 7
 
 
 /* Traceback code */
@@ -65,7 +68,7 @@
 ErrorStatus make_success_error_status(void);
 
 /**
- * \brief Raise a warning.
+ * \brief Raise a warning and print to stderr.
  * 
  * \param warning_msg Warning message.
  * \param warning_file File where the warning occurs.
@@ -118,7 +121,12 @@ ErrorStatus traceback(
 );
 
 /**
- * \brief Print and free the traceback string.
+ * \brief Free the memory allocated for the traceback string.
+ */
+void free_traceback(ErrorStatus *__restrict error_status);
+
+/**
+ * \brief Print the traceback string to stderr and free the memory.
  * 
  * \param error_status Pointer to the error status struct.
  */

@@ -1,10 +1,10 @@
 /**
- * \file integrator_godunov_first_order_1d.c
+ * \file integrator_random_choice_1d.c
  * 
- * \brief First-order Godunov scheme for the 1D Euler equations.
+ * \brief Random choice method for the 1D Euler equations.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-08
+ * \date 2025-03-11
  */
 
 #include <stdbool.h>
@@ -21,11 +21,11 @@
 #define VAN_DER_CORPUT_SEQUENCE_K1 5
 #define VAN_DER_CORPUT_SEQUENCE_K2 3
 
-IN_FILE real get_van_der_corput_sequence(int64 n)
+IN_FILE double get_van_der_corput_sequence(int64 n)
 {
-    real result = 0;
+    double result = 0;
     int base = VAN_DER_CORPUT_SEQUENCE_K1;
-    real bk = 1.0 / (real) base;
+    double bk = 1.0 / (double) base;
     while (n > 0)
     {
         const int a_i = n % base;
@@ -33,17 +33,18 @@ IN_FILE real get_van_der_corput_sequence(int64 n)
         result += A_i * bk;
 
         n /= base;
-        bk /= (real) base;
+        bk /= (double) base;
     }
     return result;
 }
 
-WIN32DLL_API ErrorStatus random_choice_1d(
+ErrorStatus random_choice_1d(
     System *__restrict system,
     IntegratorParam *__restrict integrator_param,
     StoringParam *__restrict storing_param,
     Settings *__restrict settings,
-    SimulationParam *__restrict simulation_param
+    SimulationParam *__restrict simulation_param,
+    SimulationStatus *__restrict simulation_status
 )
 {
     /* Declare variables */
@@ -109,31 +110,43 @@ WIN32DLL_API ErrorStatus random_choice_1d(
         is_compute_geometry_source_term = false;
     }
 
-    const real gamma = system->gamma;
-    real *__restrict density = system->density_;
-    real *__restrict velocity_x = system->velocity_x_;
-    real *__restrict pressure = system->pressure_;
-    const real dx = system->dx_;
+    /* Arrays */
+    double *__restrict density = system->density_;
+    double *__restrict velocity_x = system->velocity_x_;
+    double *__restrict pressure = system->pressure_;
+
+    /* System parameters */
+    const double gamma = system->gamma;
     const int num_cells = system->num_cells_x;
     const int num_ghost_cells_side = system->num_ghost_cells_side;
     const int num_total_cells = num_cells + 2 * num_ghost_cells_side;
+    const double dx = system->dx_;
 
-    const real cfl = integrator_param->cfl;
-    const real cfl_initial_shrink_factor = integrator_param->cfl_initial_shrink_factor;
-    const int num_steps_shrink = integrator_param->num_steps_shrink;
+    /* Integrator parameters */
+    const double cfl = integrator_param->cfl;
+    const double cfl_initial_shrink_factor = integrator_param->cfl_initial_shrink_factor;
+    const int cfl_initial_shrink_num_steps = integrator_param->cfl_initial_shrink_num_steps;
 
+    /* Storing parameters */
+    const bool is_storing = storing_param->is_storing;
+    const double storing_interval = storing_param->storing_interval;
+    int *__restrict store_count_ptr = &storing_param->store_count_;
+
+    /* Settings */
     const bool no_progress_bar = settings->no_progress_bar;
 
-    const real tf = simulation_param->tf;
+    /* Simulation parameters */
+    const double tf = simulation_param->tf;
 
-    const int num_interfaces = num_cells + 1;
-
-    real t = 0.0;
+    /* Simulation status */
+    int64 *__restrict num_steps_ptr = &simulation_status->num_steps;
+    double *__restrict dt_ptr = &simulation_status->dt;
+    double *__restrict t_ptr = &simulation_status->t;
 
     /* Allocate memory */
-    real *restrict temp_density = malloc(num_total_cells * sizeof(real));
-    real *restrict temp_velocity_x = malloc(num_total_cells * sizeof(real));
-    real *restrict temp_pressure = malloc(num_total_cells * sizeof(real));
+    double *__restrict temp_density = malloc(num_total_cells * sizeof(double));
+    double *__restrict temp_velocity_x = malloc(num_total_cells * sizeof(double));
+    double *__restrict temp_pressure = malloc(num_total_cells * sizeof(double));
     if (!temp_density || !temp_velocity_x || !temp_pressure)
     {
         error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
@@ -144,46 +157,60 @@ WIN32DLL_API ErrorStatus random_choice_1d(
     ProgressBarParam progress_bar_param;
     if (!no_progress_bar)
     {
-        progress_bar_param = start_progress_bar(tf);
+        start_progress_bar(&progress_bar_param, tf);
     }
 
-    int64 count = 0;
-    while (t < tf)
+    *num_steps_ptr = 0;
+    *dt_ptr = 0.0;
+    *t_ptr = 0.0;
+
+    /* Store first snapshot */
+    *store_count_ptr = 0;
+    const int store_initial_offset = (is_storing && storing_param->store_initial) ? 1 : 0;
+    if (is_storing && storing_param->store_initial)
+    {
+        error_status = WRAP_TRACEBACK(store_snapshot(system, integrator_param, simulation_status, storing_param));
+        if (error_status.return_code != SUCCESS)
+        {
+            goto err_store_first_snapshot;
+        }
+    }
+
+    while (*t_ptr < tf)
     {
         /* Compute time step */
-        real dt;
-        if (count < num_steps_shrink)
+        if (*num_steps_ptr < cfl_initial_shrink_num_steps)
         {
-            dt = get_time_step_1d(system, cfl * cfl_initial_shrink_factor);
+            *dt_ptr = get_time_step_1d(system, cfl * cfl_initial_shrink_factor);
         }
         else
         {
-            dt = get_time_step_1d(system, cfl);
+            *dt_ptr = get_time_step_1d(system, cfl);
         }
-        if (t + dt > tf)
+        if (*t_ptr + (*dt_ptr) > tf)
         {
-            dt = tf - t;
+            *dt_ptr = tf - *t_ptr;
         }
-        if (dt == 0.0)
+        if ((*dt_ptr) == 0.0)
         {
             error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "dt is zero.");
             goto err_dt_zero;
         }
 
         /* Update step */
-        real theta = get_van_der_corput_sequence(count + 1);
-        memcpy(temp_density, density, num_total_cells * sizeof(real));
-        memcpy(temp_velocity_x, velocity_x, num_total_cells * sizeof(real));
-        memcpy(temp_pressure, pressure, num_total_cells * sizeof(real));
-        for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_interfaces); i++)
+        double theta = get_van_der_corput_sequence(*num_steps_ptr + 1);
+        memcpy(temp_density, density, num_total_cells * sizeof(double));
+        memcpy(temp_velocity_x, velocity_x, num_total_cells * sizeof(double));
+        memcpy(temp_pressure, pressure, num_total_cells * sizeof(double));
+        for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells + 1); i++)
         {
-            real rho_L;
-            real u_L;
-            real p_L;
-            real rho_R;
-            real u_R;
-            real p_R;
-            real speed;
+            double rho_L;
+            double u_L;
+            double p_L;
+            double rho_R;
+            double u_R;
+            double p_R;
+            double speed;
             if (theta <= 0.5)
             {
                 rho_L = temp_density[i - 1];
@@ -192,7 +219,7 @@ WIN32DLL_API ErrorStatus random_choice_1d(
                 rho_R = temp_density[i];
                 u_R = temp_velocity_x[i];
                 p_R = temp_pressure[i];
-                speed = theta * dx / dt;
+                speed = theta * dx / (*dt_ptr);
             }
             else
             {
@@ -202,7 +229,7 @@ WIN32DLL_API ErrorStatus random_choice_1d(
                 rho_R = temp_density[i + 1];
                 u_R = temp_velocity_x[i + 1];
                 p_R = temp_pressure[i + 1];
-                speed = (theta - 1.0) * dx / dt;
+                speed = (theta - 1.0) * dx / (*dt_ptr);
             }
 
             error_status = WRAP_TRACEBACK(solve_exact_1d(
@@ -238,27 +265,37 @@ WIN32DLL_API ErrorStatus random_choice_1d(
             goto err_convert_conserved_to_primitive;
         }
 
-        t += dt;
-        count++;
-
         if (is_compute_geometry_source_term)
         {
-            error_status = WRAP_TRACEBACK(add_geometry_source_term(system, dt));
+            error_status = WRAP_TRACEBACK(add_geometry_source_term(system, (*dt_ptr)));
             if (error_status.return_code != SUCCESS)
             {
                 goto err_compute_geometry_source_term;
             }
         }
 
+        (*t_ptr) += (*dt_ptr);
+        (*num_steps_ptr)++;
+
+        /* Store snapshot */
+        if (is_storing && ((*t_ptr) >= storing_interval * (*store_count_ptr - store_initial_offset + 1)))
+        {
+            error_status = WRAP_TRACEBACK(store_snapshot(system, integrator_param, simulation_status, storing_param));
+            if (error_status.return_code != SUCCESS)
+            {
+                goto err_store_snapshot;
+            }
+        }
+
         if (!no_progress_bar)
         {
-            update_progress_bar(&progress_bar_param, t, false);
+            update_progress_bar(&progress_bar_param, *t_ptr, false);
         }
     }
 
     if (!no_progress_bar)
     {
-        update_progress_bar(&progress_bar_param, t, true);
+        update_progress_bar(&progress_bar_param, *t_ptr, true);
     }
 
     free(temp_density);
@@ -267,6 +304,7 @@ WIN32DLL_API ErrorStatus random_choice_1d(
 
     return make_success_error_status();
 
+err_store_snapshot:
 err_set_boundary_condition:
 err_convert_conserved_to_primitive:
 err_compute_geometry_source_term:
@@ -274,8 +312,9 @@ err_solve_flux:
 err_dt_zero:
     if (!no_progress_bar)
     {
-        update_progress_bar(&progress_bar_param, t, true);
+        update_progress_bar(&progress_bar_param, *t_ptr, true);
     }
+err_store_first_snapshot:
 err_memory:
     free(temp_density);
     free(temp_velocity_x);

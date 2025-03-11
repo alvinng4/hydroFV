@@ -30,34 +30,34 @@
  * \param tol Tolerance for the pressure.
  */
 ErrorStatus solve_flux_hllc_1d(
-    real *__restrict flux_mass,
-    real *__restrict flux_momentum,
-    real *__restrict flux_energy,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real tol
+    double *__restrict flux_mass,
+    double *__restrict flux_momentum,
+    double *__restrict flux_energy,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double tol
 );
 
 ErrorStatus solve_flux_hllc_2d(
-    real *__restrict flux_mass,
-    real *__restrict flux_momentum_x,
-    real *__restrict flux_momentum_y,
-    real *__restrict flux_energy,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real v_L,
-    const real p_L,
-    const real rho_R,
-    const real u_R,
-    const real v_R,
-    const real p_R,
-    const real tol
+    double *__restrict flux_mass,
+    double *__restrict flux_momentum_x,
+    double *__restrict flux_momentum_y,
+    double *__restrict flux_energy,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double v_L,
+    const double p_L,
+    const double rho_R,
+    const double u_R,
+    const double v_R,
+    const double p_R,
+    const double tol
 );
 
 #endif

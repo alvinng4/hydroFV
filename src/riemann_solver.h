@@ -6,7 +6,7 @@
  * \cite Toro, E. F., Riemann Solvers and Numerical Methods for Fluid Dynamics, 3rd ed. Springer., 2009.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-08
+ * \date 2025-03-11
  */
 
 #ifndef RIEMANN_SOLVER_H
@@ -20,16 +20,15 @@
 /* HLLC Riemann solver */
 #include "riemann_solver_hllc.h"
 
-#define RIEMANN_SOLVER_EXACT 0
-#define RIEMANN_SOLVER_HLLC 1
+#define RIEMANN_SOLVER_EXACT 1
+#define RIEMANN_SOLVER_HLLC 2
 
 /**
- * \brief Return riemann solver flag based on the input string
+ * \brief Set riemann solver flag based on the input string
  * 
  * \param integrator_param Pointer to the integrator parameters.
  * 
- * \retval SUCCESS If the riemann solver is recognized
- * \retval ERROR_UNKNOWN_RIEMANN_SOLVER If the riemann solver is not recognized
+ * \return ErrorStatus struct.
  */
 ErrorStatus get_riemann_solver_flag(IntegratorParam *__restrict integrator_param);
 
@@ -55,34 +54,34 @@ ErrorStatus get_riemann_solver_flag(IntegratorParam *__restrict integrator_param
 ErrorStatus solve_flux_1d(
     IntegratorParam *__restrict integrator_param,
     Settings *__restrict settings,
-    real *__restrict flux_mass,
-    real *__restrict flux_momentum,
-    real *__restrict flux_energy,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R
+    double *__restrict flux_mass,
+    double *__restrict flux_momentum,
+    double *__restrict flux_energy,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R
 );
 
 ErrorStatus solve_flux_2d(
     IntegratorParam *__restrict integrator_param,
     Settings *__restrict settings,
-    real *__restrict flux_mass,
-    real *__restrict flux_momentum_x,
-    real *__restrict flux_momentum_y,
-    real *__restrict flux_energy,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real v_L,
-    const real p_L,
-    const real rho_R,
-    const real u_R,
-    const real v_R,
-    const real p_R
+    double *__restrict flux_mass,
+    double *__restrict flux_momentum_x,
+    double *__restrict flux_momentum_y,
+    double *__restrict flux_energy,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double v_L,
+    const double p_L,
+    const double rho_R,
+    const double u_R,
+    const double v_R,
+    const double p_R
 );
 
 /**
@@ -93,7 +92,7 @@ ErrorStatus solve_flux_2d(
  * 
  * \return Value of the riemann A_L or A_R function.
  */
-real riemann_A_L_or_R(const real gamma, const real rho_X);
+double riemann_A_L_or_R(const double gamma, const double rho_X);
 
 /**
  * \brief Compute the riemann B_L or B_R function.
@@ -103,7 +102,7 @@ real riemann_A_L_or_R(const real gamma, const real rho_X);
  * 
  * \return Value of the riemann A_L or A_R function.
  */
-real riemann_B_L_or_R(const real gamma, const real p_X);
+double riemann_B_L_or_R(const double gamma, const double p_X);
 
 /**
  * \brief Get an initial guess for the pressure in the middle state.
@@ -121,17 +120,17 @@ real riemann_B_L_or_R(const real gamma, const real p_X);
  * 
  * \return Initial guess for the pressure in the middle state.
  */
-real guess_p(
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real a_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real a_R,
-    const real tol
+double guess_p(
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double a_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double a_R,
+    const double tol
 );
 
 /**
@@ -152,38 +151,38 @@ real guess_p(
  * \param speed Speed S = x / t for sampling at (x, t).
  */
 void solve_vacuum_1d(
-    real *__restrict sol_rho,
-    real *__restrict sol_u,
-    real *__restrict sol_p,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real a_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real a_R,
-    const real speed
+    double *__restrict sol_rho,
+    double *__restrict sol_u,
+    double *__restrict sol_p,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double a_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double a_R,
+    const double speed
 );
 
 void solve_vacuum_2d(
-    real *__restrict sol_rho,
-    real *__restrict sol_u,
-    real *__restrict sol_v,
-    real *__restrict sol_p,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real v_L,
-    const real p_L,
-    const real a_L,
-    const real rho_R,
-    const real u_R,
-    const real v_R,
-    const real p_R,
-    const real a_R,
-    const real speed
+    double *__restrict sol_rho,
+    double *__restrict sol_u,
+    double *__restrict sol_v,
+    double *__restrict sol_p,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double v_L,
+    const double p_L,
+    const double a_L,
+    const double rho_R,
+    const double u_R,
+    const double v_R,
+    const double p_R,
+    const double a_R,
+    const double speed
 );
 
 

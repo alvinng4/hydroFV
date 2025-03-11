@@ -1,15 +1,18 @@
+/**
+ * \file progress_bar.c
+ * 
+ * \brief Functions for displaying a progress bar in the terminal.
+ * 
+ * \author Ching-Yin Ng
+ * \date 2025-03-11
+ */
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <time.h>
+#include <sys/time.h>
 
-#ifdef WIN32
-    #include <windows.h>
-    #include <stdint.h>
-#else
-    #include <sys/time.h>
-#endif
-
-#include "common.h"
+#include "hydro.h"
 #include "progress_bar.h"
 
 #define PROGRESS_BAR_LENGTH 40
@@ -28,35 +31,6 @@
 #define CYAN "\033[0;36m"
 #define MAGENTA "\033[0;35m"
 
-
-#ifdef WIN32
-typedef struct timeval {
-    long tv_sec;
-    long tv_usec;
-} timeval;
-
-int gettimeofday(struct timeval * tp, struct timezone * tzp)
-{
-    // Note: some broken versions only have 8 trailing zero's, the correct epoch has 9 trailing zero's
-    // This magic number is the number of 100 nanosecond intervals since January 1, 1601 (UTC)
-    // until 00:00:00 January 1, 1970 
-    static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
-
-    SYSTEMTIME  system_time;
-    FILETIME    file_time;
-    uint64_t    time;
-
-    GetSystemTime( &system_time );
-    SystemTimeToFileTime( &system_time, &file_time );
-    time =  ((uint64_t)file_time.dwLowDateTime )      ;
-    time += ((uint64_t)file_time.dwHighDateTime) << 32;
-
-    tp->tv_sec  = (long) ((time - EPOCH) / 10000000L);
-    tp->tv_usec = (long) (system_time.wMilliseconds * 1000);
-    return 0;
-}
-#endif
-
 /**
  * \brief Get current time as a decimal number of seconds using clock_gettime(CLOCK_MONOTONIC, )
  * 
@@ -69,11 +43,19 @@ IN_FILE double get_current_time(void)
     return (double) ts.tv_sec + (double) ts.tv_nsec / 1.0e9;
 }
 
+/**
+ * \brief Print the progress bar to stdout.
+ * 
+ * \param progress_bar_param Pointer to progress bar parameters
+ * \param percent Percentage of completion
+ * \param estimated_time_remaining Estimated time remaining in seconds
+ * \param is_end Whether the progress bar is at the end
+ */
 IN_FILE void print_progress_bar(
-    ProgressBarParam *__restrict progress_bar_param,
+    const ProgressBarParam *__restrict progress_bar_param,
     double percent,
-    double estimated_time_remaining,
-    bool is_end
+    const double estimated_time_remaining,
+    const bool is_end
 )
 {
     if (percent < 0.0)
@@ -197,27 +179,38 @@ IN_FILE void print_progress_bar(
     }
 }
 
-WIN32DLL_API ProgressBarParam start_progress_bar(double total)
+ErrorStatus start_progress_bar(
+    ProgressBarParam *__restrict progress_bar_param,
+    const double total
+)
 {
-    ProgressBarParam progress_bar_param;
+    ErrorStatus error_status;
 
-    progress_bar_param.start = get_current_time();
-    progress_bar_param.current = 0.0;
-    progress_bar_param.total = total;
+    progress_bar_param->start = get_current_time();
+    progress_bar_param->current = 0.0;
+    progress_bar_param->total = total;
+    if (progress_bar_param->total <= 0.0)
+    {
+        error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Total must be greater than 0.");
+        goto error;
+    }
 
-    progress_bar_param.time_last_print = progress_bar_param.start;
+    progress_bar_param->time_last_print = progress_bar_param->start;
 
-    progress_bar_param.last_five_progress_percent[0] = 0.0;
-    progress_bar_param.time_last_five_update[0] = 0.0;
-    progress_bar_param.at_least_four_count = 0;
+    progress_bar_param->last_five_progress_percent[0] = 0.0;
+    progress_bar_param->time_last_five_update[0] = 0.0;
+    progress_bar_param->at_least_four_count = 0;
 
-    print_progress_bar(&progress_bar_param, 0.0, 0, false);
+    print_progress_bar(progress_bar_param, 0.0, 0, false);
 
-    return progress_bar_param;
+    return make_success_error_status();
+
+error:
+    return error_status;
 }
 
 IN_FILE time_t least_squares_regression_remaining_time(
-    ProgressBarParam *__restrict progress_bar_param,
+    const ProgressBarParam *__restrict progress_bar_param,
     const double diff_now_start
 )
 {
@@ -253,12 +246,12 @@ IN_FILE time_t least_squares_regression_remaining_time(
     const double m = (5.0 * sum_xy - sum_x * sum_y) / (5.0 * sum_x_squared - sum_x * sum_x);
     const double b = (sum_y - m * sum_x) / 5.0;
 
-    const double estimated_time_remaining = m * target_x + b - diff_now_start;
+    const time_t estimated_time_remaining = m * target_x + b - diff_now_start;
 
-    return (time_t) estimated_time_remaining;
+    return estimated_time_remaining;
 }
 
-WIN32DLL_API void update_progress_bar(
+void update_progress_bar(
     ProgressBarParam *__restrict progress_bar_param,
     double current,
     bool is_end

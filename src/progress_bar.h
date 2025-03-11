@@ -1,3 +1,12 @@
+/**
+ * \file progress_bar.h
+ * 
+ * \brief Header file for progress bar related functions.
+ * 
+ * \author Ching-Yin Ng
+ * \date 2025-03-11
+ */
+
 #ifndef PROGRESS_BAR_H
 #define PROGRESS_BAR_H
 
@@ -15,7 +24,24 @@ typedef struct ProgressBarParam
     double total;
 } ProgressBarParam;
 
-ProgressBarParam start_progress_bar(double total);
+/**
+ * \brief Start the progress bar.
+ * 
+ * \param progress_bar_param Pointer to progress bar parameters
+ * \param total Total value
+ */
+ErrorStatus start_progress_bar(
+    ProgressBarParam *__restrict progress_bar_param,
+    const double total
+);
+
+/**
+ * \brief Update the progress bar.
+ * 
+ * \param progress_bar_param Pointer to progress bar parameters
+ * \param current Current value
+ * \param is_end Whether the progress bar is at the end
+ */
 void update_progress_bar(
     ProgressBarParam *__restrict progress_bar_param,
     double current,

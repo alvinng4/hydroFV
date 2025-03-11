@@ -20,9 +20,7 @@
 #include "riemann_solver_hllc.h"
 
 
-WIN32DLL_API ErrorStatus get_riemann_solver_flag(
-    IntegratorParam *__restrict integrator_param
-)
+ErrorStatus get_riemann_solver_flag(IntegratorParam *__restrict integrator_param)
 {
     const char *riemann_solver = integrator_param->riemann_solver;
     if (strcmp(riemann_solver, "riemann_solver_exact") == 0)
@@ -44,16 +42,16 @@ WIN32DLL_API ErrorStatus get_riemann_solver_flag(
 ErrorStatus solve_flux_1d(
     IntegratorParam *__restrict integrator_param,
     Settings *__restrict settings,
-    real *__restrict flux_mass,
-    real *__restrict flux_momentum,
-    real *__restrict flux_energy,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R
+    double *__restrict flux_mass,
+    double *__restrict flux_momentum,
+    double *__restrict flux_energy,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R
 )
 {
     switch (integrator_param->riemann_solver_flag_)
@@ -96,19 +94,19 @@ ErrorStatus solve_flux_1d(
 ErrorStatus solve_flux_2d(
     IntegratorParam *__restrict integrator_param,
     Settings *__restrict settings,
-    real *__restrict flux_mass,
-    real *__restrict flux_momentum_x,
-    real *__restrict flux_momentum_y,
-    real *__restrict flux_energy,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real v_L,
-    const real p_L,
-    const real rho_R,
-    const real u_R,
-    const real v_R,
-    const real p_R
+    double *__restrict flux_mass,
+    double *__restrict flux_momentum_x,
+    double *__restrict flux_momentum_y,
+    double *__restrict flux_energy,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double v_L,
+    const double p_L,
+    const double rho_R,
+    const double u_R,
+    const double v_R,
+    const double p_R
 )
 {
     (void) settings;
@@ -138,31 +136,31 @@ ErrorStatus solve_flux_2d(
     }
 }
 
-real riemann_A_L_or_R(const real gamma, const real rho_X)
+double riemann_A_L_or_R(const double gamma, const double rho_X)
 {
     return 2.0 / ((gamma + 1.0) * rho_X);
 }
 
-real riemann_B_L_or_R(const real gamma, const real p_X)
+double riemann_B_L_or_R(const double gamma, const double p_X)
 {
     return p_X * ((gamma - 1.0) / (gamma + 1.0));
 }
 
-real guess_p(
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real a_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real a_R,
-    const real tol
+double guess_p(
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double a_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double a_R,
+    const double tol
 )
 {
-    real p_min;
-    real p_max;
+    double p_min;
+    double p_max;
 
     if (p_L > p_R)
     {
@@ -175,8 +173,8 @@ real guess_p(
         p_max = p_R;
     }
 
-    real ppv = 0.5 * (p_L + p_R) - 0.125 * (u_R - u_L) * (rho_L + rho_R) * (a_L + a_R);
-    real p_guess;
+    double ppv = 0.5 * (p_L + p_R) - 0.125 * (u_R - u_L) * (rho_L + rho_R) * (a_L + a_R);
+    double p_guess;
 
     /* Select PVRS Riemann solver */
     if (p_max / p_min <= 2.0 && (p_min <= ppv && ppv <= p_max))
@@ -187,7 +185,7 @@ real guess_p(
     /* Select Two-Rarefaction Riemann solver */
     else if (ppv < p_min)
     {
-        real gamma_minus_one_over_two = 0.5 * (gamma - 1.0);
+        double gamma_minus_one_over_two = 0.5 * (gamma - 1.0);
         p_guess = (
             a_L + a_R - gamma_minus_one_over_two * (u_R - u_L)
         ) / (
@@ -200,13 +198,13 @@ real guess_p(
     /* Select Two-Shock Riemann solver with PVRS as estimate */
     else
     {
-        real A_L = riemann_A_L_or_R(gamma, rho_L);
-        real B_L = riemann_B_L_or_R(gamma, p_L);
-        real g_L = sqrt(A_L / (ppv + B_L));
+        double A_L = riemann_A_L_or_R(gamma, rho_L);
+        double B_L = riemann_B_L_or_R(gamma, p_L);
+        double g_L = sqrt(A_L / (ppv + B_L));
 
-        real A_R = riemann_A_L_or_R(gamma, rho_R);
-        real B_R = riemann_B_L_or_R(gamma, p_R);
-        real g_R = sqrt(A_R / (ppv + B_R));
+        double A_R = riemann_A_L_or_R(gamma, rho_R);
+        double B_R = riemann_B_L_or_R(gamma, p_R);
+        double g_R = sqrt(A_R / (ppv + B_R));
 
         p_guess = (g_L * p_L + g_R * p_R - (u_R - u_L)) / (g_L + g_R);
     }
@@ -234,15 +232,15 @@ real guess_p(
  * \param speed Speed S = x / t for sampling at (x, t).
  */
 IN_FILE void sample_for_right_vacuum_1d(
-    real *__restrict sol_rho,
-    real *__restrict sol_u,
-    real *__restrict sol_p,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real a_L,
-    const real speed
+    double *__restrict sol_rho,
+    double *__restrict sol_u,
+    double *__restrict sol_p,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double a_L,
+    const double speed
 )
 {
     /* Left state regime */
@@ -255,12 +253,12 @@ IN_FILE void sample_for_right_vacuum_1d(
     }
 
     // Speed of the front
-    real S_star_L = u_L + 2.0 * a_L / (gamma - 1.0);
+    double S_star_L = u_L + 2.0 * a_L / (gamma - 1.0);
     
     /* Rarefaction wave regime */
     if (speed < S_star_L)
     {
-        real temp = (
+        double temp = (
             2.0 / (gamma + 1.0)
             + (u_L - speed) * (gamma - 1.0) / ((gamma + 1.0) * a_L)
         );
@@ -296,15 +294,15 @@ IN_FILE void sample_for_right_vacuum_1d(
  * \param speed Speed S = x / t for sampling at (x, t).
  */
 IN_FILE void sample_for_left_vacuum_1d(
-    real *__restrict sol_rho,
-    real *__restrict sol_u,
-    real *__restrict sol_p,
-    const real gamma,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real a_R,
-    const real speed
+    double *__restrict sol_rho,
+    double *__restrict sol_u,
+    double *__restrict sol_p,
+    const double gamma,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double a_R,
+    const double speed
 )
 {
     /* Right state regime */
@@ -317,12 +315,12 @@ IN_FILE void sample_for_left_vacuum_1d(
     }
 
     // Speed of the front
-    real S_star_R = u_R - 2.0 * a_R / (gamma - 1.0);
+    double S_star_R = u_R - 2.0 * a_R / (gamma - 1.0);
     
     /* Rarefaction wave regime */
     if (speed > S_star_R)
     {
-        real temp = (
+        double temp = (
             2.0 / (gamma + 1.0)
             - (u_R - speed) * (gamma - 1.0) / ((gamma + 1.0) * a_R)
         );
@@ -362,24 +360,24 @@ IN_FILE void sample_for_left_vacuum_1d(
  * \param speed Speed S = x / t for sampling at (x, t).
  */
 IN_FILE void sample_vacuum_generation_1d(
-    real *__restrict sol_rho,
-    real *__restrict sol_u,
-    real *__restrict sol_p,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real a_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real a_R,
-    const real speed
+    double *__restrict sol_rho,
+    double *__restrict sol_u,
+    double *__restrict sol_p,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double a_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double a_R,
+    const double speed
 )
 {
     // Speed of the left and right rarefaction waves   
-    real S_star_L = 2.0 * a_L / (gamma - 1.0);
-    real S_star_R = 2.0 * a_R / (gamma - 1.0);
+    double S_star_L = 2.0 * a_L / (gamma - 1.0);
+    double S_star_R = 2.0 * a_R / (gamma - 1.0);
 
     /* Left state regime */
     if (speed <= S_star_L)
@@ -403,20 +401,20 @@ IN_FILE void sample_vacuum_generation_1d(
     }
 }
 
-WIN32DLL_API void solve_vacuum_1d(
-    real *__restrict sol_rho,
-    real *__restrict sol_u,
-    real *__restrict sol_p,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real a_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real a_R,
-    const real speed
+void solve_vacuum_1d(
+    double *__restrict sol_rho,
+    double *__restrict sol_u,
+    double *__restrict sol_p,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double a_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double a_R,
+    const double speed
 )
 {
     /* If both states are vacuum, then the solution is also vacuum */
@@ -478,17 +476,17 @@ WIN32DLL_API void solve_vacuum_1d(
  * \param speed Speed S = x / t for sampling at (x, t).
  */
 IN_FILE void sample_for_right_vacuum_2d(
-    real *__restrict sol_rho,
-    real *__restrict sol_u,
-    real *__restrict sol_v,
-    real *__restrict sol_p,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real v_L,
-    const real p_L,
-    const real a_L,
-    const real speed
+    double *__restrict sol_rho,
+    double *__restrict sol_u,
+    double *__restrict sol_v,
+    double *__restrict sol_p,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double v_L,
+    const double p_L,
+    const double a_L,
+    const double speed
 )
 {
     /* Left state regime */
@@ -502,12 +500,12 @@ IN_FILE void sample_for_right_vacuum_2d(
     }
 
     // Speed of the front
-    real S_star_L = u_L + 2.0 * a_L / (gamma - 1.0);
+    double S_star_L = u_L + 2.0 * a_L / (gamma - 1.0);
     
     /* Rarefaction wave regime */
     if (speed < S_star_L)
     {
-        real temp = (
+        double temp = (
             2.0 / (gamma + 1.0)
             + (u_L - speed) * (gamma - 1.0) / ((gamma + 1.0) * a_L)
         );
@@ -545,17 +543,17 @@ IN_FILE void sample_for_right_vacuum_2d(
  * \param speed Speed S = x / t for sampling at (x, t).
  */
 IN_FILE void sample_for_left_vacuum_2d(
-    real *__restrict sol_rho,
-    real *__restrict sol_u,
-    real *__restrict sol_v,
-    real *__restrict sol_p,
-    const real gamma,
-    const real rho_R,
-    const real u_R,
-    const real v_R,
-    const real p_R,
-    const real a_R,
-    const real speed
+    double *__restrict sol_rho,
+    double *__restrict sol_u,
+    double *__restrict sol_v,
+    double *__restrict sol_p,
+    const double gamma,
+    const double rho_R,
+    const double u_R,
+    const double v_R,
+    const double p_R,
+    const double a_R,
+    const double speed
 )
 {
     /* Right state regime */
@@ -569,12 +567,12 @@ IN_FILE void sample_for_left_vacuum_2d(
     }
 
     // Speed of the front
-    real S_star_R = u_R - 2.0 * a_R / (gamma - 1.0);
+    double S_star_R = u_R - 2.0 * a_R / (gamma - 1.0);
     
     /* Rarefaction wave regime */
     if (speed > S_star_R)
     {
-        real temp = (
+        double temp = (
             2.0 / (gamma + 1.0)
             - (u_R - speed) * (gamma - 1.0) / ((gamma + 1.0) * a_R)
         );
@@ -616,27 +614,27 @@ IN_FILE void sample_for_left_vacuum_2d(
  * \param speed Speed S = x / t for sampling at (x, t).
  */
 IN_FILE void sample_vacuum_generation_2d(
-    real *__restrict sol_rho,
-    real *__restrict sol_u,
-    real *__restrict sol_v,
-    real *__restrict sol_p,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real v_L,
-    const real p_L,
-    const real a_L,
-    const real rho_R,
-    const real u_R,
-    const real v_R,
-    const real p_R,
-    const real a_R,
-    const real speed
+    double *__restrict sol_rho,
+    double *__restrict sol_u,
+    double *__restrict sol_v,
+    double *__restrict sol_p,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double v_L,
+    const double p_L,
+    const double a_L,
+    const double rho_R,
+    const double u_R,
+    const double v_R,
+    const double p_R,
+    const double a_R,
+    const double speed
 )
 {
     // Speed of the left and right rarefaction waves   
-    real S_star_L = 2.0 * a_L / (gamma - 1.0);
-    real S_star_R = 2.0 * a_R / (gamma - 1.0);
+    double S_star_L = 2.0 * a_L / (gamma - 1.0);
+    double S_star_R = 2.0 * a_R / (gamma - 1.0);
 
     /* Left state regime */
     if (speed <= S_star_L)
@@ -661,23 +659,23 @@ IN_FILE void sample_vacuum_generation_2d(
     }
 }
 
-WIN32DLL_API void solve_vacuum_2d(
-    real *__restrict sol_rho,
-    real *__restrict sol_u,
-    real *__restrict sol_v,
-    real *__restrict sol_p,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real v_L,
-    const real p_L,
-    const real a_L,
-    const real rho_R,
-    const real u_R,
-    const real v_R,
-    const real p_R,
-    const real a_R,
-    const real speed
+void solve_vacuum_2d(
+    double *__restrict sol_rho,
+    double *__restrict sol_u,
+    double *__restrict sol_v,
+    double *__restrict sol_p,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double v_L,
+    const double p_L,
+    const double a_L,
+    const double rho_R,
+    const double u_R,
+    const double v_R,
+    const double p_R,
+    const double a_R,
+    const double speed
 )
 {
     /* If both states are vacuum, then the solution is also vacuum */

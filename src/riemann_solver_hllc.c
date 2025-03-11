@@ -27,7 +27,7 @@
  * 
  * \return Value of the q_L or q_R function.
  */
-IN_FILE real compute_q_L_or_R(real gamma, real p_X, real p_star)
+IN_FILE double compute_q_L_or_R(double gamma, double p_X, double p_star)
 {
     if (p_star <= p_X)
     {
@@ -40,22 +40,22 @@ IN_FILE real compute_q_L_or_R(real gamma, real p_X, real p_star)
 }
 
 ErrorStatus solve_flux_hllc_1d(
-    real *__restrict flux_mass,
-    real *__restrict flux_momentum,
-    real *__restrict flux_energy,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real p_L,
-    const real rho_R,
-    const real u_R,
-    const real p_R,
-    const real tol
+    double *__restrict flux_mass,
+    double *__restrict flux_momentum,
+    double *__restrict flux_energy,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double p_L,
+    const double rho_R,
+    const double u_R,
+    const double p_R,
+    const double tol
 )
 {
     /* Compute the sound speeds */
-    real a_L;
-    real a_R;
+    double a_L;
+    double a_R;
     if (rho_L > 0.0)
     {
         a_L = get_sound_speed(gamma, rho_L, p_L);
@@ -89,9 +89,9 @@ ErrorStatus solve_flux_hllc_1d(
         || ((a_L + a_R) * 2.0 / (gamma + 1.0)) <= (u_R - u_L)
     )
     {
-        real sol_rho;
-        real sol_u;
-        real sol_p;
+        double sol_rho;
+        double sol_u;
+        double sol_p;
         solve_vacuum_1d(
             &sol_rho,
             &sol_u,
@@ -109,7 +109,7 @@ ErrorStatus solve_flux_hllc_1d(
         );
 
         /* Compute the fluxes */
-        real sol_energy_density = sol_rho * (
+        double sol_energy_density = sol_rho * (
             0.5 * sol_u * sol_u + sol_p / (sol_rho * (gamma - 1.0))
         );
         *flux_mass = sol_rho * sol_u;
@@ -119,21 +119,21 @@ ErrorStatus solve_flux_hllc_1d(
     }
 
     /* Estimate the wave speeds */
-    real p_star = guess_p(
+    double p_star = guess_p(
         gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, tol
     );
 
-    real S_L = u_L - a_L * compute_q_L_or_R(gamma, p_L, p_star);
-    real S_R = u_R + a_R * compute_q_L_or_R(gamma, p_R, p_star);
+    double S_L = u_L - a_L * compute_q_L_or_R(gamma, p_L, p_star);
+    double S_R = u_R + a_R * compute_q_L_or_R(gamma, p_R, p_star);
 
-    real S_star = (p_R - p_L + rho_L * u_L * (S_L - u_L) - rho_R * u_R * (S_R - u_R)) / (
+    double S_star = (p_R - p_L + rho_L * u_L * (S_L - u_L) - rho_R * u_R * (S_R - u_R)) / (
         rho_L * (S_L - u_L) - rho_R * (S_R - u_R)
     );
 
     /* Compute the fluxes */
     if (0.0 <= S_L)
     {
-        real energy_density_L = rho_L * (
+        double energy_density_L = rho_L * (
             0.5 * u_L * u_L + p_L / (rho_L * (gamma - 1.0))
         );
         *flux_mass = rho_L * u_L;
@@ -143,16 +143,16 @@ ErrorStatus solve_flux_hllc_1d(
     }
     else if (S_L <= 0.0 && 0.0 <= S_star)
     {
-        real energy_density_L = rho_L * (
+        double energy_density_L = rho_L * (
             0.5 * u_L * u_L + p_L / (rho_L * (gamma - 1.0))
         );
-        real flux_mass_L = rho_L * u_L;
-        real flux_momentum_L = flux_mass_L * u_L + p_L;
-        real flux_energy_L = u_L * (energy_density_L + p_L);
+        double flux_mass_L = rho_L * u_L;
+        double flux_momentum_L = flux_mass_L * u_L + p_L;
+        double flux_energy_L = u_L * (energy_density_L + p_L);
 
-        real rho_star_L = rho_L * (S_L - u_L) / (S_L - S_star);
-        real momentum_star_L = rho_star_L * S_star;
-        real energy_star_L = rho_star_L * (
+        double rho_star_L = rho_L * (S_L - u_L) / (S_L - S_star);
+        double momentum_star_L = rho_star_L * S_star;
+        double energy_star_L = rho_star_L * (
             energy_density_L / rho_L
             + (S_star - u_L) * (S_star + p_L / (rho_L * (S_L - u_L)))
         );
@@ -164,16 +164,16 @@ ErrorStatus solve_flux_hllc_1d(
     }
     else if (S_star <= 0.0 && 0.0 <= S_R)
     {
-        real energy_density_R = rho_R * (
+        double energy_density_R = rho_R * (
             0.5 * u_R * u_R + p_R / (rho_R * (gamma - 1.0))
         );
-        real flux_mass_R = rho_R * u_R;
-        real flux_momentum_R = flux_mass_R * u_R + p_R;
-        real flux_energy_R = u_R * (energy_density_R + p_R);
+        double flux_mass_R = rho_R * u_R;
+        double flux_momentum_R = flux_mass_R * u_R + p_R;
+        double flux_energy_R = u_R * (energy_density_R + p_R);
 
-        real rho_star_R = rho_R * (S_R - u_R) / (S_R - S_star);
-        real momentum_star_R = rho_star_R * S_star;
-        real energy_star_R = rho_star_R * (
+        double rho_star_R = rho_R * (S_R - u_R) / (S_R - S_star);
+        double momentum_star_R = rho_star_R * S_star;
+        double energy_star_R = rho_star_R * (
             energy_density_R / rho_R
             + (S_star - u_R) * (S_star + p_R / (rho_R * (S_R - u_R)))
         );
@@ -185,7 +185,7 @@ ErrorStatus solve_flux_hllc_1d(
     }
     else if (S_R <= 0.0)
     {
-        real energy_density_R = rho_R * (
+        double energy_density_R = rho_R * (
             0.5 * u_R * u_R + p_R / (rho_R * (gamma - 1.0))
         );
         *flux_mass = rho_R * u_R;
@@ -200,25 +200,25 @@ ErrorStatus solve_flux_hllc_1d(
 }
 
 ErrorStatus solve_flux_hllc_2d(
-    real *__restrict flux_mass,
-    real *__restrict flux_momentum_x,
-    real *__restrict flux_momentum_y,
-    real *__restrict flux_energy,
-    const real gamma,
-    const real rho_L,
-    const real u_L,
-    const real v_L,
-    const real p_L,
-    const real rho_R,
-    const real u_R,
-    const real v_R,
-    const real p_R,
-    const real tol
+    double *__restrict flux_mass,
+    double *__restrict flux_momentum_x,
+    double *__restrict flux_momentum_y,
+    double *__restrict flux_energy,
+    const double gamma,
+    const double rho_L,
+    const double u_L,
+    const double v_L,
+    const double p_L,
+    const double rho_R,
+    const double u_R,
+    const double v_R,
+    const double p_R,
+    const double tol
 )
 {
     /* Compute the sound speeds */
-    real a_L;
-    real a_R;
+    double a_L;
+    double a_R;
     if (rho_L > 0.0)
     {
         a_L = get_sound_speed(gamma, rho_L, p_L);
@@ -252,10 +252,10 @@ ErrorStatus solve_flux_hllc_2d(
         || ((a_L + a_R) * 2.0 / (gamma + 1.0)) <= (u_R - u_L)
     )
     {
-        real sol_rho;
-        real sol_u;
-        real sol_v;
-        real sol_p;
+        double sol_rho;
+        double sol_u;
+        double sol_v;
+        double sol_p;
         solve_vacuum_2d(
             &sol_rho,
             &sol_u,
@@ -276,7 +276,7 @@ ErrorStatus solve_flux_hllc_2d(
         );
 
         /* Compute the fluxes */
-        real sol_energy_density = sol_rho * (
+        double sol_energy_density = sol_rho * (
             0.5 * (sol_u * sol_u + sol_v * sol_v) + sol_p / (sol_rho * (gamma - 1.0))
         );
         *flux_mass = sol_rho * sol_u;
@@ -287,21 +287,21 @@ ErrorStatus solve_flux_hllc_2d(
     }
 
     /* Estimate the wave speeds */
-    real p_star = guess_p(
+    double p_star = guess_p(
         gamma, rho_L, u_L, p_L, a_L, rho_R, u_R, p_R, a_R, tol
     );
 
-    real S_L = u_L - a_L * compute_q_L_or_R(gamma, p_L, p_star);
-    real S_R = u_R + a_R * compute_q_L_or_R(gamma, p_R, p_star);
+    double S_L = u_L - a_L * compute_q_L_or_R(gamma, p_L, p_star);
+    double S_R = u_R + a_R * compute_q_L_or_R(gamma, p_R, p_star);
 
-    real S_star = (p_R - p_L + rho_L * u_L * (S_L - u_L) - rho_R * u_R * (S_R - u_R)) / (
+    double S_star = (p_R - p_L + rho_L * u_L * (S_L - u_L) - rho_R * u_R * (S_R - u_R)) / (
         rho_L * (S_L - u_L) - rho_R * (S_R - u_R)
     );
 
     /* Compute the fluxes */
     if (0.0 <= S_L)
     {
-        real energy_density_L = rho_L * (
+        double energy_density_L = rho_L * (
             0.5 * (u_L * u_L + v_L * v_L) + p_L / (rho_L * (gamma - 1.0))
         );
         *flux_mass = rho_L * u_L;
@@ -312,18 +312,18 @@ ErrorStatus solve_flux_hllc_2d(
     }
     else if (S_L <= 0.0 && 0.0 <= S_star)
     {
-        real energy_density_L = rho_L * (
+        double energy_density_L = rho_L * (
             0.5 * (u_L * u_L + v_L * v_L) + p_L / (rho_L * (gamma - 1.0))
         );
-        real flux_mass_L = rho_L * u_L;
-        real flux_momentum_L_x = flux_mass_L * u_L + p_L;
-        real flux_momentum_L_y = flux_mass_L * v_L;
-        real flux_energy_L = u_L * (energy_density_L + p_L);
+        double flux_mass_L = rho_L * u_L;
+        double flux_momentum_L_x = flux_mass_L * u_L + p_L;
+        double flux_momentum_L_y = flux_mass_L * v_L;
+        double flux_energy_L = u_L * (energy_density_L + p_L);
 
-        real rho_star_L = rho_L * (S_L - u_L) / (S_L - S_star);
-        real momentum_star_L_x = rho_star_L * S_star;
-        real momentum_star_L_y = rho_star_L * v_L;
-        real energy_star_L = rho_star_L * (
+        double rho_star_L = rho_L * (S_L - u_L) / (S_L - S_star);
+        double momentum_star_L_x = rho_star_L * S_star;
+        double momentum_star_L_y = rho_star_L * v_L;
+        double energy_star_L = rho_star_L * (
             energy_density_L / rho_L
             + (S_star - u_L) * (S_star + p_L / (rho_L * (S_L - u_L)))
         );
@@ -336,18 +336,18 @@ ErrorStatus solve_flux_hllc_2d(
     }
     else if (S_star <= 0.0 && 0.0 <= S_R)
     {
-        real energy_density_R = rho_R * (
+        double energy_density_R = rho_R * (
             0.5 * (u_R * u_R + v_R * v_R) + p_R / (rho_R * (gamma - 1.0))
         );
-        real flux_mass_R = rho_R * u_R;
-        real flux_momentum_R_x = flux_mass_R * u_R + p_R;
-        real flux_momentum_R_y = flux_mass_R * v_R;
-        real flux_energy_R = u_R * (energy_density_R + p_R);
+        double flux_mass_R = rho_R * u_R;
+        double flux_momentum_R_x = flux_mass_R * u_R + p_R;
+        double flux_momentum_R_y = flux_mass_R * v_R;
+        double flux_energy_R = u_R * (energy_density_R + p_R);
 
-        real rho_star_R = rho_R * (S_R - u_R) / (S_R - S_star);
-        real momentum_star_R_x = rho_star_R * S_star;
-        real momentum_star_R_y = rho_star_R * v_R;
-        real energy_star_R = rho_star_R * (
+        double rho_star_R = rho_R * (S_R - u_R) / (S_R - S_star);
+        double momentum_star_R_x = rho_star_R * S_star;
+        double momentum_star_R_y = rho_star_R * v_R;
+        double energy_star_R = rho_star_R * (
             energy_density_R / rho_R
             + (S_star - u_R) * (S_star + p_R / (rho_R * (S_R - u_R)))
         );
@@ -360,7 +360,7 @@ ErrorStatus solve_flux_hllc_2d(
     }
     else if (S_R <= 0.0)
     {
-        real energy_density_R = rho_R * (
+        double energy_density_R = rho_R * (
             0.5 * (u_R * u_R + v_R * v_R) + p_R / (rho_R * (gamma - 1.0))
         );
         *flux_mass = rho_R * u_R;

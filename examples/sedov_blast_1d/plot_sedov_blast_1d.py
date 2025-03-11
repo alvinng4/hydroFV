@@ -1,50 +1,51 @@
 """
-Sedov-Taylor blast test
+Plot the result of Sedov-Taylor blast test
 
 Usage:
-    python sedov_blast.py
+    python plot_sedov_blast.py
 
 Reference:
     J. R. Kamm and F. X. Timmes, On Efficient Generation of Numerically Robust Sedov Solutions, LANL Report,
     No. LA-UR-07-2849 (2007).
 
 Author: Ching-Yin Ng
-Date: 2025-2-27
+Date: 2025-03-11
 """
 
 from pathlib import Path
 
+import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-import polars as pl
 
-COORD_SYS = "spherical_1d"  # "cartesian_1d", "cylindrical_1d", or "spherical_1d"
 IS_PLOT_REFERENCE_SOL = True
+RESULT_PATH = Path(__file__).parent / "snapshots/snapshot_0.h5"
 
-RESULT_PATH = Path(__file__).parent / "sedov_blast_1d.csv"
+MARKER_SIZE = 4
 
-### Sedov blast wave parameters ###
-NUM_EXPLOSION_CELLS = 1
-
-DOMAIN = (0.0, 1.2)
 RHO_0 = 1.0
 U_0 = 0.0
 P_0 = 1e-5
 
 
 def main() -> None:
-    result_df = pl.read_csv(RESULT_PATH)
+    with h5py.File(RESULT_PATH, "r") as f:
+        coord_sys = f["parameters/coordinate_system"][()].decode("utf-8")
+        density = f["fields/density"][()]
+        velocity = f["fields/velocity_x"][()]
+        pressure = f["fields/pressure"][()]
+        x_min = f["parameters/x_min"][()]
+        x_max = f["parameters/x_max"][()]
 
-    mid_points = result_df["mid_point"].to_numpy()
-    density = result_df["density"].to_numpy()
-    velocity = result_df["velocity"].to_numpy()
-    pressure = result_df["pressure"].to_numpy()
+    mid_points = np.linspace(
+        x_min / (2.0 * len(density)), x_max - x_min / (2.0 * len(density)), len(density)
+    )
 
     _, axs = plt.subplots(1, 3, figsize=(14, 4))
 
     # Plot the reference solution and the actual solution
     if IS_PLOT_REFERENCE_SOL:
-        x_sol, rho_sol, u_sol, p_sol = get_reference_sol()
+        x_sol, rho_sol, u_sol, p_sol = get_reference_sol(coord_sys, (x_min, x_max))
         axs[0].plot(x_sol, rho_sol, "r-")
         axs[1].plot(x_sol, u_sol, "r-")
         axs[2].plot(x_sol, p_sol, "r-")
@@ -65,8 +66,15 @@ def main() -> None:
     plt.show()
 
 
-def get_reference_sol() -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def get_reference_sol(
+    coord_sys: str, domain: tuple[float, float]
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Get the reference solution of the Sedov blast problem at t = 1.0s.
+
+    Parameters
+    ----------
+    coord_sys : str
+        Coordinate system.
 
     Returns
     -------
@@ -79,7 +87,7 @@ def get_reference_sol() -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
     p_sol : np.ndarray
         Pressure solution.
     """
-    if COORD_SYS == "cartesian_1d":
+    if coord_sys == "cartesian_1d":
         r_shock = 0.5
         rho_shock = 6.0
         u_shock = 0.277778
@@ -178,7 +186,7 @@ def get_reference_sol() -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
             ]
         )
 
-    elif COORD_SYS == "cylindrical_1d":
+    elif coord_sys == "cylindrical_1d":
         r_shock = 0.75
         rho_shock = 6.0
         u_shock = 0.312500
@@ -296,7 +304,7 @@ def get_reference_sol() -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
                 0.3729,
             ]
         )
-    elif COORD_SYS == "spherical_1d":
+    elif coord_sys == "spherical_1d":
         r_shock = 1.0
         rho_shock = 6.0
         u_shock = 0.333334
@@ -392,7 +400,7 @@ def get_reference_sol() -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
     u_sol = u_shock * f_shock
     p_sol = p_shock * h_shock
 
-    x_sol = np.append(x_sol, np.linspace(x_sol[-1] + 0.0001, DOMAIN[1], 500))
+    x_sol = np.append(x_sol, np.linspace(x_sol[-1] + 0.0001, domain[1], 500))
     rho_sol = np.append(rho_sol, np.full(500, RHO_0))
     u_sol = np.append(u_sol, np.full(500, U_0))
     p_sol = np.append(p_sol, np.full(500, P_0))
