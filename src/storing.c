@@ -523,6 +523,7 @@ IN_FILE ErrorStatus store_snapshot_2d(
     H5Dwrite(dataset_velocity_x, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, system->velocity_x_);
     H5Dwrite(dataset_velocity_y, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, system->velocity_y_);
     H5Dwrite(dataset_pressure, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, system->pressure_);
+
     H5Dwrite(dataset_x_min, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &system->x_min);
     H5Dwrite(dataset_x_max, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &system->x_max);
     H5Dwrite(dataset_y_min, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &system->y_min);
@@ -556,13 +557,14 @@ IN_FILE ErrorStatus store_snapshot_2d(
     H5Dclose(dataset_boundary_condition_y_min);
     H5Dclose(dataset_boundary_condition_y_max);
 
+    H5Dclose(dataset_density);
+    H5Dclose(dataset_velocity_x);
+    H5Dclose(dataset_velocity_y);
+    H5Dclose(dataset_pressure);  
+    
     H5Dclose(dataset_num_steps);
     H5Dclose(dataset_simulation_time);
     H5Dclose(dataset_dt);
-
-    H5Dclose(dataset_density);
-    H5Dclose(dataset_velocity_x);
-    H5Dclose(dataset_pressure);    
 
     H5Sclose(scaler_dataspace);
     H5Sclose(field_dataspace);
