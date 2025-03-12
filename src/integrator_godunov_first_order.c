@@ -12,6 +12,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef USE_OPENMP
+#include <omp.h>
+#endif
+
 #include "hydro.h"
 #include "progress_bar.h"
 #include "riemann_solver.h"
@@ -140,14 +144,19 @@ ErrorStatus godunov_first_order_1d(
             error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "dt is zero.");
             goto err_dt_zero;
         }
+        const double dt = (*dt_ptr);
 
         /* Compute fluxes and update step */
+        error_status = make_success_error_status();
+#ifdef USE_OPENMP
+        #pragma omp parallel for
+#endif
         for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells + 1); i++)
         {
             double flux_mass;
             double flux_momentum_x;
             double flux_energy;
-            error_status = WRAP_TRACEBACK(solve_flux_1d(
+            ErrorStatus local_error_status = WRAP_TRACEBACK(solve_flux_1d(
                 integrator_param,
                 settings,
                 &flux_mass,
@@ -161,14 +170,17 @@ ErrorStatus godunov_first_order_1d(
                 velocity_x[i],
                 pressure[i]
             ));
-            if (error_status.return_code != SUCCESS)
+            if (local_error_status.return_code != SUCCESS)
             {
+                error_status = local_error_status;
+#ifndef USE_OPENMP
                 goto err_solve_flux;
+#endif
             }
 
-            const double d_rho = flux_mass * (*dt_ptr);
-            const double d_rho_u = flux_momentum_x * (*dt_ptr);
-            const double d_energy_density = flux_energy * (*dt_ptr);
+            const double d_rho = flux_mass * dt;
+            const double d_rho_u = flux_momentum_x * dt;
+            const double d_energy_density = flux_energy * dt;
 
             mass[i - 1] -= d_rho * surface_area_x[i - 1];
             momentum_x[i - 1] -= d_rho_u * surface_area_x[i - 1];
@@ -178,6 +190,13 @@ ErrorStatus godunov_first_order_1d(
             momentum_x[i] += d_rho_u * surface_area_x[i];
             energy[i] += d_energy_density * surface_area_x[i];
         }
+
+#ifdef USE_OPENMP
+        if (error_status.return_code != SUCCESS)
+        {
+            goto err_solve_flux;
+        }
+#endif
 
         error_status = WRAP_TRACEBACK(convert_conserved_to_primitive(system));
         if (error_status.return_code != SUCCESS)
@@ -192,14 +211,14 @@ ErrorStatus godunov_first_order_1d(
 
         if (is_compute_geometry_source_term)
         {
-            error_status = WRAP_TRACEBACK(add_geometry_source_term(system, (*dt_ptr)));
+            error_status = WRAP_TRACEBACK(add_geometry_source_term(system, dt));
             if (error_status.return_code != SUCCESS)
             {
                 goto err_compute_geometry_source_term;
             }
         }
 
-        (*t_ptr) += (*dt_ptr);
+        (*t_ptr) += dt;
         (*num_steps_ptr)++;
 
         /* Store snapshot */
@@ -357,20 +376,26 @@ ErrorStatus godunov_first_order_2d(
             error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "dt is zero.");
             goto err_dt_zero;
         }
+        const double dt = (*dt_ptr);
 
         /* Compute fluxes and update step */
-        const double dt = (*dt_ptr);
+        error_status = make_success_error_status();
+#ifdef USE_OPENMP
+        #pragma omp parallel for
+#endif
         for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x + 1); i++)
         {
             for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y + 1); j++)
             {
+                ErrorStatus local_error_status;
+
                 /* x-direction */
                 double flux_mass_x;
                 double flux_momentum_x_x;
                 double flux_momentum_x_y;
                 double flux_energy_x;
 
-                error_status = WRAP_TRACEBACK(solve_flux_2d(
+                local_error_status = WRAP_TRACEBACK(solve_flux_2d(
                     integrator_param,
                     settings,
                     &flux_mass_x,
@@ -387,9 +412,12 @@ ErrorStatus godunov_first_order_2d(
                     velocity_y[j * total_num_cells_x + i],
                     pressure[j * total_num_cells_x + i]
                 ));
-                if (error_status.return_code != SUCCESS)
+                if (local_error_status.return_code != SUCCESS)
                 {
+                    error_status = local_error_status;
+#ifndef USE_OPENMP
                     goto err_solve_flux;
+#endif
                 }
 
                 /* y-direction */
@@ -397,7 +425,7 @@ ErrorStatus godunov_first_order_2d(
                 double flux_momentum_y_x;
                 double flux_momentum_y_y;
                 double flux_energy_y;
-                error_status = WRAP_TRACEBACK(solve_flux_2d(
+                local_error_status = WRAP_TRACEBACK(solve_flux_2d(
                     integrator_param,
                     settings,
                     &flux_mass_y,
@@ -414,9 +442,12 @@ ErrorStatus godunov_first_order_2d(
                     velocity_x[j * total_num_cells_x + i],
                     pressure[j * total_num_cells_x + i]
                 ));
-                if (error_status.return_code != SUCCESS)
+                if (local_error_status.return_code != SUCCESS)
                 {
+                    error_status = local_error_status;
+#ifndef USE_OPENMP
                     goto err_solve_flux;
+#endif
                 }
 
                 mass[j * total_num_cells_x + (i - 1)] -= dt * flux_mass_x * surface_area_x[i - 1];
@@ -435,6 +466,13 @@ ErrorStatus godunov_first_order_2d(
                 energy[j * total_num_cells_x + i] += dt * (flux_energy_x * surface_area_x[i] + flux_energy_y * surface_area_y[j]);
             }
         }
+
+#ifdef USE_OPENMP
+        if (error_status.return_code != SUCCESS)
+        {
+            goto err_solve_flux;
+        }
+#endif
 
         error_status = WRAP_TRACEBACK(convert_conserved_to_primitive(system));
         if (error_status.return_code != SUCCESS)
@@ -476,7 +514,6 @@ ErrorStatus godunov_first_order_2d(
 err_store_snapshot:
 err_set_boundary_condition:
 err_convert_conserved_to_primitive:
-err_compute_geometry_source_term:
 err_solve_flux:
 err_dt_zero:
     if (!no_progress_bar)

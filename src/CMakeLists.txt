@@ -5,6 +5,20 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -Wextra -Wpedantic")
 
+# OpenMP (optional)
+option(USE_OPENMP "Enable OpenMP" OFF)
+if(USE_OPENMP)
+    find_package(OpenMP)
+    if(OpenMP_C_FOUND)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+        add_definitions(-DUSE_OPENMP)
+        message(STATUS "Building with OpenMP support")
+    else()
+        message(WARNING "OpenMP requested but not found")
+    endif()
+endif()
+
+
 # List of source files
 set(
     SRCS
@@ -35,6 +49,9 @@ find_package(HDF5 REQUIRED COMPONENTS C)
 
 # Link libraries
 target_link_libraries(hydro m ${HDF5_LIBRARIES})
+if(OpenMP_C_FOUND)
+    target_link_libraries(hydro ${OpenMP_C_LIBRARIES})
+endif()
 
 # Install rules
 install(

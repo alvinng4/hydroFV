@@ -9,6 +9,10 @@
 
 #include "hydro.h"
 
+#ifdef USE_OPENMP
+#include <omp.h>
+#endif
+
 /**
  * \brief Compute the source term for the cylindrical / spherical 1D geometry.
  * 
@@ -76,6 +80,9 @@ ErrorStatus add_geometry_source_term(
     double *__restrict energy = system->energy_;
 
     /* Compute the source term with RK4 */
+#ifdef USE_OPENMP
+    #pragma omp parallel for
+#endif
     for (int i = num_ghost_cells_side; i < (num_cells_x + num_ghost_cells_side); i++)
     {
         double temp_mass, temp_momentum, temp_energy;

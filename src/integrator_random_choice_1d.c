@@ -12,6 +12,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef USE_OPENMP
+#include <omp.h>
+#endif
+
 #include "hydro.h"
 #include "progress_bar.h"
 #include "riemann_solver.h"
@@ -196,12 +200,17 @@ ErrorStatus random_choice_1d(
             error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "dt is zero.");
             goto err_dt_zero;
         }
+        const double dt = (*dt_ptr);
 
         /* Update step */
-        double theta = get_van_der_corput_sequence(*num_steps_ptr + 1);
+        const double theta = get_van_der_corput_sequence(*num_steps_ptr + 1);
         memcpy(temp_density, density, num_total_cells * sizeof(double));
         memcpy(temp_velocity_x, velocity_x, num_total_cells * sizeof(double));
         memcpy(temp_pressure, pressure, num_total_cells * sizeof(double));
+        error_status = make_success_error_status();
+#ifdef USE_OPENMP
+        #pragma omp parallel for
+#endif
         for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells + 1); i++)
         {
             double rho_L;
@@ -219,7 +228,7 @@ ErrorStatus random_choice_1d(
                 rho_R = temp_density[i];
                 u_R = temp_velocity_x[i];
                 p_R = temp_pressure[i];
-                speed = theta * dx / (*dt_ptr);
+                speed = theta * dx / dt;
             }
             else
             {
@@ -229,10 +238,10 @@ ErrorStatus random_choice_1d(
                 rho_R = temp_density[i + 1];
                 u_R = temp_velocity_x[i + 1];
                 p_R = temp_pressure[i + 1];
-                speed = (theta - 1.0) * dx / (*dt_ptr);
+                speed = (theta - 1.0) * dx / dt;
             }
 
-            error_status = WRAP_TRACEBACK(solve_exact_1d(
+            ErrorStatus local_error_status = WRAP_TRACEBACK(solve_exact_1d(
                 &density[i],
                 &velocity_x[i],
                 &pressure[i],
@@ -247,11 +256,21 @@ ErrorStatus random_choice_1d(
                 speed,
                 settings->verbose
             ));
-            if (error_status.return_code != SUCCESS)
+            if (local_error_status.return_code != SUCCESS)
             {
+                error_status = local_error_status;
+#ifndef USE_OPENMP
                 goto err_solve_flux;
+#endif
             }
         }
+
+#ifdef USE_OPENMP
+        if (error_status.return_code != SUCCESS)
+        {
+            goto err_solve_flux;
+        }
+#endif
 
         error_status = WRAP_TRACEBACK(set_boundary_condition(system));
         if (error_status.return_code != SUCCESS)
@@ -267,14 +286,14 @@ ErrorStatus random_choice_1d(
 
         if (is_compute_geometry_source_term)
         {
-            error_status = WRAP_TRACEBACK(add_geometry_source_term(system, (*dt_ptr)));
+            error_status = WRAP_TRACEBACK(add_geometry_source_term(system, dt));
             if (error_status.return_code != SUCCESS)
             {
                 goto err_compute_geometry_source_term;
             }
         }
 
-        (*t_ptr) += (*dt_ptr);
+        (*t_ptr) += dt;
         (*num_steps_ptr)++;
 
         /* Store snapshot */
