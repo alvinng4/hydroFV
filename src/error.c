@@ -15,7 +15,7 @@
 
 #define RESET "\033[0m"
 #define BRIGHT_RED "\033[1;31m"
-#define DIM_RED "\033[5;31;40m"
+#define DIM_RED "\033[5;31m"
 #define YELLOW_BOLD "\033[1;33m"
 #define CYAN_REGULAR "\033[0;36m"
 #define PURPLE_REGULAR "\033[0;35m"

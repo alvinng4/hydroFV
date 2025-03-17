@@ -56,6 +56,5 @@ endif()
 # Install rules
 install(
     TARGETS hydro
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
+    ARCHIVE DESTINATION lib
 )
