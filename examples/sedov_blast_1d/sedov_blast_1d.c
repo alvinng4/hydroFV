@@ -4,7 +4,7 @@
 #include "hydro.h"
 
 #define RIEMANN_SOLVER "riemann_solver_hllc" // "riemann_solver_exact" or "riemann_solver_hllc"
-#define COORD_SYS "cartesian_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
+#define COORD_SYS "spherical_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
 #define NUM_TOTAL_CELLS 1024
 #define NUM_GHOST_CELLS_SIDE 1
 #define NUM_CELLS NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
@@ -15,7 +15,7 @@
 #define TOL 1e-6 // For the riemann solver
 
 /* Sedov Blast parameters */
-#define NUM_EXPLOSION_CELLS 1
+#define NUM_EXPLOSION_CELLS 50
 
 #define GAMMA 1.4
 #define RHO_0 1.0

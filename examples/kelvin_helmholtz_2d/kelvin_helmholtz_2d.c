@@ -6,28 +6,35 @@
 
 #define RIEMANN_SOLVER "riemann_solver_hllc"
 #define COORD_SYS "cartesian_2d"
-#define NUM_TOTAL_CELLS_X 256
-#define NUM_TOTAL_CELLS_Y 256
+#define NUM_TOTAL_CELLS_X 512
+#define NUM_TOTAL_CELLS_Y 512
 #define NUM_GHOST_CELLS_SIDE 1
 #define NUM_CELLS_X NUM_TOTAL_CELLS_X - 2 * NUM_GHOST_CELLS_SIDE
 #define NUM_CELLS_Y NUM_TOTAL_CELLS_Y - 2 * NUM_GHOST_CELLS_SIDE
 #define INTEGRATOR "godunov_first_order_2d"
 
 #define CFL 0.4
-#define TF 2.0
+#define TF 3.0
 #define TOL 1e-6 // For the riemann solver
 
 /* Parameters */
-#define GAMMA 1.4
-#define DISCONTINUITY_POS 0.25
+#define GAMMA 5.0 / 3.0
 #define LEFT_BOUNDARY_CONDITION "periodic"
 #define RIGHT_BOUNDARY_CONDITION "periodic"
 #define BOTTOM_BOUNDARY_CONDITION "periodic"
 #define TOP_BOUNDARY_CONDITION "periodic"
-#define DOMAIN_MIN_X -1.5
-#define DOMAIN_MAX_X 1.5
-#define DOMAIN_MIN_Y -0.75
-#define DOMAIN_MAX_Y 0.75
+#define DOMAIN_MIN_X 0.0
+#define DOMAIN_MAX_X 1.0
+#define DOMAIN_MIN_Y 0.0
+#define DOMAIN_MAX_Y 1.0
+#define RHO_1 1.0
+#define RHO_2 2.0
+#define RHO_M 0.5 * (RHO_1 - RHO_2)
+#define U_1 0.5
+#define U_2 -0.5
+#define U_M 0.5 * (U_1 - U_2)
+#define L 0.025
+
 
 IN_FILE ErrorStatus get_initial_system(System *__restrict system)
 {
@@ -54,20 +61,29 @@ IN_FILE ErrorStatus get_initial_system(System *__restrict system)
         for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
         {
             const int idx = j * total_num_cells_x + i;
-            if (fabs(mid_points_y[j]) > 0.25)
+            if (mid_points_y[j] < 0.25)
             {
-                density[idx] = 1.0;
-                velocity_x[idx] = 0.5;
-                velocity_y[idx] = 0.01 * sin(2.0 * M_PI * mid_points_x[i]);
-                pressure[idx] = 2.5;
+                density[idx] = RHO_1 - RHO_M * exp((mid_points_y[j] - 0.25) / L);
+                velocity_x[idx] = U_1 - U_M * exp((mid_points_y[j] - 0.25) / L);
+            }
+            else if (mid_points_y[j] < 0.5)
+            {
+                density[idx] = RHO_2 + RHO_M * exp((- mid_points_y[j] + 0.25) / L);
+                velocity_x[idx] = U_2 + U_M * exp((- mid_points_y[j] + 0.25) / L);
+            }
+            else if (mid_points_y[j] < 0.75)
+            {
+                density[idx] = RHO_2 + RHO_M * exp((mid_points_y[j] - 0.75) / L);
+                velocity_x[idx] = U_2 + U_M * exp((mid_points_y[j] - 0.75) / L);
             }
             else
             {
-                density[idx] = 2.0;
-                velocity_x[idx] = -0.5;
-                velocity_y[idx] = 0.01 * sin(2.0 * M_PI * mid_points_x[i]);
-                pressure[idx] = 2.5;
+                density[idx] = RHO_1 - RHO_M * exp((- mid_points_y[j] + 0.75) / L);
+                velocity_x[idx] = U_1 - U_M * exp((- mid_points_y[j] + 0.75) / L);
             }
+
+            velocity_y[idx] = 0.01 * sin(4.0 * M_PI * mid_points_x[i]);
+            pressure[idx] = 2.5;
         }
     }
 
@@ -126,8 +142,8 @@ int main(void)
     /* Storing parameters */
     StoringParam storing_param = get_new_storing_param();
     storing_param.is_storing = true;
-    storing_param.store_initial = false;
-    storing_param.storing_interval = 0.01;
+    storing_param.store_initial = true;
+    storing_param.storing_interval = 0.02;
     storing_param.output_dir = "snapshots/";
 
     /* Settings */

@@ -46,13 +46,10 @@ def main() -> None:
             num_cells_y = f["parameters/num_cells_y"][()]
             num_ghost_cells_side = f["parameters/num_ghost_cells_side"][()]
 
-            # Drawing frame
-            fig = plt.figure(frameon=False)
-            fig.set_size_inches(12, 6)
-            ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
-            ax.set_axis_off()
-            fig.add_axes(ax)
+            t = f["simulation_status/simulation_time"][()]
 
+            # Drawing frame
+            fig, ax = plt.subplots(figsize=(6, 6))
             ax.imshow(
                 density.reshape(
                     num_cells_x + 2 * num_ghost_cells_side,
@@ -63,9 +60,17 @@ def main() -> None:
                 ],
                 origin="lower",
                 extent=(x_min, x_max, y_min, y_max),
-                vmin=0.0,
+                vmin=1.0,
+                vmax=2.0,
+                cmap="gist_gray",
             )
+            colorbar = plt.colorbar(ax.images[0], ax=ax)
+            colorbar.set_label("Density")
+            plt.xlabel("x")
+            plt.ylabel("y")
+            plt.title(f"Kelvin-Helmholtz Instability (t={t:.2f})")
 
+            
             plt.savefig(FRAME_FOLDER / f"frame_{i:04d}.png")
             plt.close("all")
 
