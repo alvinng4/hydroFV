@@ -4,7 +4,7 @@
  * \brief Header file for the hydrodynamic module.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-11
+ * \date 2025-03-18
  */
 
 #ifndef HYDRO_H
@@ -18,6 +18,9 @@
 
 /* Integrators */
 #include "integrator.h"
+
+/* Reconstruction */
+#include "reconstruction.h"
 
 /* Riemann solver */
 #include "riemann_solver.h"

@@ -6,7 +6,7 @@
  * \cite Toro, E. F., Riemann Solvers and Numerical Methods for Fluid Dynamics, 3rd ed. Springer., 2009.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-08
+ * \date 2025-03-18
  */
 
 #include <math.h>
@@ -23,6 +23,11 @@
 ErrorStatus get_riemann_solver_flag(IntegratorParam *__restrict integrator_param)
 {
     const char *riemann_solver = integrator_param->riemann_solver;
+    if (!riemann_solver)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Riemann solver is not set.");
+    }
+
     if (strcmp(riemann_solver, "riemann_solver_exact") == 0)
     {
         integrator_param->riemann_solver_flag_ = RIEMANN_SOLVER_EXACT;

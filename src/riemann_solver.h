@@ -6,7 +6,7 @@
  * \cite Toro, E. F., Riemann Solvers and Numerical Methods for Fluid Dynamics, 3rd ed. Springer., 2009.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-11
+ * \date 2025-03-18
  */
 
 #ifndef RIEMANN_SOLVER_H
@@ -33,7 +33,7 @@
 ErrorStatus get_riemann_solver_flag(IntegratorParam *__restrict integrator_param);
 
 /**
- * \brief Solve the Riemann problem for flux for the whole system
+ * \brief Solve the Riemann problem for flux
  * 
  * \param integrator_param Pointer to the integrator parameters.
  * \param settings Pointer to the settings.

@@ -4,7 +4,7 @@
  * \brief First-order Godunov scheme for the Euler equations.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-11
+ * \date 2025-03-18
  */
 
 #include <stdbool.h>
@@ -18,6 +18,7 @@
 
 #include "hydro.h"
 #include "progress_bar.h"
+#include "reconstruction.h"
 #include "riemann_solver.h"
 #include "source_term.h"
 #include "utils.h"
@@ -71,9 +72,10 @@ ErrorStatus godunov_first_order_1d(
     double *__restrict momentum_x = system->momentum_x_;
     double *__restrict energy = system->energy_;
     double *__restrict surface_area_x = system->surface_area_x_;
-    double *__restrict density = system->density_;
-    double *__restrict velocity_x = system->velocity_x_;
-    double *__restrict pressure = system->pressure_;
+
+    double *__restrict interface_density = system->interface_density_x_;
+    double *__restrict interface_velocity_x = system->interface_velocity_x_x_;
+    double *__restrict interface_pressure = system->interface_pressure_x_;
 
     /* System parameters */
     const double gamma = system->gamma;
@@ -100,6 +102,8 @@ ErrorStatus godunov_first_order_1d(
     int64 *__restrict num_steps_ptr = &simulation_status->num_steps;
     double *__restrict dt_ptr = &simulation_status->dt;
     double *__restrict t_ptr = &simulation_status->t;
+
+    /* Reconstruction */
 
     /* Main Loop */
     ProgressBarParam progress_bar_param;
@@ -147,7 +151,11 @@ ErrorStatus godunov_first_order_1d(
         const double dt = (*dt_ptr);
 
         /* Compute fluxes and update step */
-        error_status = make_success_error_status();
+        error_status = reconstruct_cell_interface_1d(system, integrator_param);
+        if (error_status.return_code != SUCCESS)
+        {
+            goto err_reconstruct_cell_interface;
+        }
 #ifdef USE_OPENMP
         #pragma omp parallel for
 #endif
@@ -163,19 +171,16 @@ ErrorStatus godunov_first_order_1d(
                 &flux_momentum_x,
                 &flux_energy,
                 gamma,
-                density[i - 1],
-                velocity_x[i - 1],
-                pressure[i - 1],
-                density[i],
-                velocity_x[i],
-                pressure[i]
+                interface_density[i - 1],
+                interface_velocity_x[i - 1],
+                interface_pressure[i - 1],
+                interface_density[i],
+                interface_velocity_x[i],
+                interface_pressure[i]
             ));
             if (local_error_status.return_code != SUCCESS)
             {
                 error_status = local_error_status;
-#ifndef USE_OPENMP
-                goto err_solve_flux;
-#endif
             }
 
             const double d_rho = flux_mass * dt;
@@ -191,12 +196,10 @@ ErrorStatus godunov_first_order_1d(
             energy[i] += d_energy_density * surface_area_x[i];
         }
 
-#ifdef USE_OPENMP
         if (error_status.return_code != SUCCESS)
         {
             goto err_solve_flux;
         }
-#endif
 
         error_status = WRAP_TRACEBACK(convert_conserved_to_primitive(system));
         if (error_status.return_code != SUCCESS)
@@ -249,6 +252,7 @@ err_set_boundary_condition:
 err_convert_conserved_to_primitive:
 err_compute_geometry_source_term:
 err_solve_flux:
+err_reconstruct_cell_interface:
 err_dt_zero:
     if (!no_progress_bar)
     {
@@ -300,10 +304,15 @@ ErrorStatus godunov_first_order_2d(
     double *__restrict energy = system->energy_;
     double *__restrict surface_area_x = system->surface_area_x_;
     double *__restrict surface_area_y = system->surface_area_y_;
-    double *__restrict density = system->density_;
-    double *__restrict velocity_x = system->velocity_x_;
-    double *__restrict velocity_y = system->velocity_y_;
-    double *__restrict pressure = system->pressure_;
+
+    double *__restrict interface_density_x = system->interface_density_x_;
+    double *__restrict interface_density_y = system->interface_density_y_;
+    double *__restrict interface_velocity_x_x = system->interface_velocity_x_x_;
+    double *__restrict interface_velocity_x_y = system->interface_velocity_x_y_;
+    double *__restrict interface_velocity_y_x = system->interface_velocity_y_x_;
+    double *__restrict interface_velocity_y_y = system->interface_velocity_y_y_;
+    double *__restrict interface_pressure_x = system->interface_pressure_x_;
+    double *__restrict interface_pressure_y = system->interface_pressure_y_;
 
     /* System parameters */
     const double gamma = system->gamma;
@@ -379,7 +388,11 @@ ErrorStatus godunov_first_order_2d(
         const double dt = (*dt_ptr);
 
         /* Compute fluxes and update step */
-        error_status = make_success_error_status();
+        error_status = reconstruct_cell_interface_2d(system, integrator_param);
+        if (error_status.return_code != SUCCESS)
+        {
+            goto err_reconstruct_cell_interface;
+        }
 #ifdef USE_OPENMP
         #pragma omp parallel for
 #endif
@@ -403,21 +416,18 @@ ErrorStatus godunov_first_order_2d(
                     &flux_momentum_x_y,
                     &flux_energy_x,
                     gamma,
-                    density[j * total_num_cells_x + (i - 1)],
-                    velocity_x[j * total_num_cells_x + (i - 1)],
-                    velocity_y[j * total_num_cells_x + (i - 1)],
-                    pressure[j * total_num_cells_x + (i - 1)],
-                    density[j * total_num_cells_x + i],
-                    velocity_x[j * total_num_cells_x + i],
-                    velocity_y[j * total_num_cells_x + i],
-                    pressure[j * total_num_cells_x + i]
+                    interface_density_x[j * total_num_cells_x + (i - 1)],
+                    interface_velocity_x_x[j * total_num_cells_x + (i - 1)],
+                    interface_velocity_x_y[j * total_num_cells_x + (i - 1)],
+                    interface_pressure_x[j * total_num_cells_x + (i - 1)],
+                    interface_density_x[j * total_num_cells_x + i],
+                    interface_velocity_x_x[j * total_num_cells_x + i],
+                    interface_velocity_x_y[j * total_num_cells_x + i],
+                    interface_pressure_x[j * total_num_cells_x + i]
                 ));
                 if (local_error_status.return_code != SUCCESS)
                 {
                     error_status = local_error_status;
-#ifndef USE_OPENMP
-                    goto err_solve_flux;
-#endif
                 }
 
                 /* y-direction */
@@ -433,21 +443,18 @@ ErrorStatus godunov_first_order_2d(
                     &flux_momentum_y_x,
                     &flux_energy_y,
                     gamma,
-                    density[(j - 1) * total_num_cells_x + i],
-                    velocity_y[(j - 1) * total_num_cells_x + i],
-                    velocity_x[(j - 1) * total_num_cells_x + i],
-                    pressure[(j - 1) * total_num_cells_x + i],
-                    density[j * total_num_cells_x + i],
-                    velocity_y[j * total_num_cells_x + i],
-                    velocity_x[j * total_num_cells_x + i],
-                    pressure[j * total_num_cells_x + i]
+                    interface_density_y[(j - 1) * total_num_cells_x + i],
+                    interface_velocity_y_y[(j - 1) * total_num_cells_x + i],
+                    interface_velocity_y_x[(j - 1) * total_num_cells_x + i],
+                    interface_pressure_y[(j - 1) * total_num_cells_x + i],
+                    interface_density_y[j * total_num_cells_x + i],
+                    interface_velocity_y_y[j * total_num_cells_x + i],
+                    interface_velocity_y_x[j * total_num_cells_x + i],
+                    interface_pressure_y[j * total_num_cells_x + i]
                 ));
                 if (local_error_status.return_code != SUCCESS)
                 {
                     error_status = local_error_status;
-#ifndef USE_OPENMP
-                    goto err_solve_flux;
-#endif
                 }
 
                 mass[j * total_num_cells_x + (i - 1)] -= dt * flux_mass_x * surface_area_x[i - 1];
@@ -467,12 +474,10 @@ ErrorStatus godunov_first_order_2d(
             }
         }
 
-#ifdef USE_OPENMP
         if (error_status.return_code != SUCCESS)
         {
             goto err_solve_flux;
         }
-#endif
 
         error_status = WRAP_TRACEBACK(convert_conserved_to_primitive(system));
         if (error_status.return_code != SUCCESS)
@@ -515,6 +520,7 @@ err_store_snapshot:
 err_set_boundary_condition:
 err_convert_conserved_to_primitive:
 err_solve_flux:
+err_reconstruct_cell_interface:
 err_dt_zero:
     if (!no_progress_bar)
     {

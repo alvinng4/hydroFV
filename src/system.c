@@ -4,7 +4,7 @@
  * \brief Functions related to the hydrodynamics system.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-11
+ * \date 2025-03-18
  */
 
 #include <math.h>
@@ -48,6 +48,21 @@ System get_new_system_struct(void)
         .dx_ = -1.0,
         .dy_ = -1.0,
         .dz_ = -1.0,
+        .interface_density_x_ = NULL,
+        .interface_density_y_ = NULL,
+        .interface_density_z_ = NULL,
+        .interface_velocity_x_x_ = NULL,
+        .interface_velocity_x_y_ = NULL,
+        .interface_velocity_x_z_ = NULL,
+        .interface_velocity_y_x_ = NULL,
+        .interface_velocity_y_y_ = NULL,
+        .interface_velocity_y_z_ = NULL,
+        .interface_velocity_z_x_ = NULL,
+        .interface_velocity_z_y_ = NULL,
+        .interface_velocity_z_z_ = NULL,
+        .interface_pressure_x_ = NULL,
+        .interface_pressure_y_ = NULL,
+        .interface_pressure_z_ = NULL,
         .density_ = NULL,
         .velocity_x_ = NULL,
         .velocity_y_ = NULL,
@@ -95,6 +110,66 @@ IN_FILE ErrorStatus check_init_system_input(const System *__restrict system)
     }
 
     /* Array pointers */
+    if (system->interface_density_x_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Density interface (x-direction) array pointer (system->interface_density_x_) is not NULL.");
+    }
+    if (system->interface_density_y_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Density interface (y-direction) array pointer (system->interface_density_y_) is not NULL.");
+    }
+    if (system->interface_density_z_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Density interface (z-direction) array pointer (system->interface_density_z_) is not NULL.");
+    }
+    if (system->interface_velocity_x_x_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (x-component) interface (x-direction) array pointer (system->interface_velocity_x_x_) is not NULL.");
+    }
+    if (system->interface_velocity_x_y_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (x-component) interface (y-direction) array pointer (system->interface_velocity_x_y_) is not NULL.");
+    }
+    if (system->interface_velocity_x_z_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (x-component) interface (z-direction) array pointer (system->interface_velocity_x_z_) is not NULL.");
+    }
+    if (system->interface_velocity_y_x_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (y-component) interface (x-direction) array pointer (system->interface_velocity_y_x_) is not NULL.");
+    }
+    if (system->interface_velocity_y_y_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (y-component) interface (y-direction) array pointer (system->interface_velocity_y_y_) is not NULL.");
+    }
+    if (system->interface_velocity_y_z_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (y-component) interface (z-direction) array pointer (system->interface_velocity_y_z_) is not NULL.");
+    }
+    if (system->interface_velocity_z_x_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (z-component) interface (x-direction) array pointer (system->interface_velocity_z_x_) is not NULL.");
+    }
+    if (system->interface_velocity_z_y_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (z-component) interface (y-direction) array pointer (system->interface_velocity_z_y_) is not NULL.");
+    }
+    if (system->interface_velocity_z_z_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (z-component) interface (z-direction) array pointer (system->interface_velocity_z_z_) is not NULL.");
+    }
+    if (system->interface_pressure_x_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Pressure interface (x-direction) array pointer (system->interface_pressure_x_) is not NULL.");
+    }
+    if (system->interface_pressure_y_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Pressure interface (y-direction) array pointer (system->interface_pressure_y_) is not NULL.");
+    }
+    if (system->interface_pressure_z_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Pressure interface (z-direction) array pointer (system->interface_pressure_z_) is not NULL.");
+    }
     if (system->density_)
     {
         return WRAP_RAISE_ERROR(POINTER_ERROR, "Density array pointer (system->density_) is not NULL.");
@@ -167,9 +242,17 @@ IN_FILE ErrorStatus check_init_system_input(const System *__restrict system)
     /* Number of ghost cells */
     if (system->num_ghost_cells_side < 1)
     {
-        size_t error_message_size = strlen("Number of ghost cells per side must be at least one. Got: ") + 1 + 128;
-        char error_message[error_message_size];
-        snprintf(error_message, error_message_size, "Number of ghost cells must be non-negative. Got: %d", system->num_ghost_cells_side);
+        size_t error_message_size = (
+            strlen("Number of ghost cells per side must be at least 1. Got: ")
+            + snprintf(NULL, 0, "%d", system->num_ghost_cells_side)
+            + 1 // for the null terminator
+        );
+        char *error_message = malloc(error_message_size * sizeof(char));
+        if (!error_message)
+        {
+            return WRAP_RAISE_ERROR(MEMORY_ERROR, "Failed to allocate memory for error message.");
+        }
+        snprintf(error_message, error_message_size, "Number of ghost cells per side must be at least 1. Got: %d", system->num_ghost_cells_side);
         return WRAP_RAISE_ERROR(VALUE_ERROR, error_message);
     }
 
@@ -881,11 +964,30 @@ ErrorStatus system_init(System *__restrict system)
         case COORD_SYS_CARTESIAN_3D:
         {
             const int total_num_cells_z = system->num_cells_z + 2 * system->num_ghost_cells_side;
+            system->interface_density_z_ = malloc(total_num_cells * sizeof(double));
+            system->interface_velocity_x_z_ = malloc(total_num_cells * sizeof(double));
+            system->interface_velocity_y_z_ = malloc(total_num_cells * sizeof(double));
+            system->interface_velocity_z_x_ = malloc(total_num_cells * sizeof(double));
+            system->interface_velocity_z_y_ = malloc(total_num_cells * sizeof(double));
+            system->interface_velocity_z_z_ = malloc(total_num_cells * sizeof(double));
+            system->interface_pressure_z_ = malloc(total_num_cells * sizeof(double));
             system->mid_points_z_ = malloc(total_num_cells_z * sizeof(double));
             system->surface_area_z_ = malloc((total_num_cells_z + 1) * sizeof(double));
             system->velocity_z_ = calloc(total_num_cells, sizeof(double));
             system->momentum_z_ = calloc(total_num_cells, sizeof(double));
-            if (!system->mid_points_z_ || !system->surface_area_z_ || !system->velocity_z_ || !system->momentum_z_)
+            if (
+                !system->interface_density_z_
+                || !system->interface_velocity_x_z_
+                || !system->interface_velocity_y_z_
+                || !system->interface_velocity_z_x_
+                || !system->interface_velocity_z_y_
+                || !system->interface_velocity_z_z_
+                || !system->interface_pressure_z_
+                || !system->mid_points_z_
+                || !system->surface_area_z_
+                || !system->velocity_z_
+                || !system->momentum_z_
+            )
             {
                 error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
                 goto err_init_memory_alloc_z;
@@ -895,11 +997,26 @@ ErrorStatus system_init(System *__restrict system)
         case COORD_SYS_CARTESIAN_2D:
         {
             const int total_num_cells_y = system->num_cells_y + 2 * system->num_ghost_cells_side;
+            system->interface_density_y_ = malloc(total_num_cells * sizeof(double));
+            system->interface_velocity_x_y_ = malloc(total_num_cells * sizeof(double));
+            system->interface_velocity_y_x_ = malloc(total_num_cells * sizeof(double));
+            system->interface_velocity_y_y_ = malloc(total_num_cells * sizeof(double));
+            system->interface_pressure_y_ = malloc(total_num_cells * sizeof(double));
             system->mid_points_y_ = malloc(total_num_cells_y * sizeof(double));
             system->surface_area_y_ = malloc((total_num_cells_y + 1) * sizeof(double));
             system->velocity_y_ = calloc(total_num_cells, sizeof(double));
             system->momentum_y_ = calloc(total_num_cells, sizeof(double));
-            if (!system->mid_points_y_ || !system->surface_area_y_ || !system->velocity_y_ || !system->momentum_y_)
+            if (
+                !system->interface_density_y_
+                || !system->interface_velocity_x_y_
+                || !system->interface_velocity_y_x_
+                || !system->interface_velocity_y_y_
+                || !system->interface_pressure_y_
+                || !system->mid_points_y_
+                || !system->surface_area_y_
+                || !system->velocity_y_
+                || !system->momentum_y_
+            )
             {
                 error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
                 goto err_init_memory_alloc_y;
@@ -909,11 +1026,22 @@ ErrorStatus system_init(System *__restrict system)
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
         {
             const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
+            system->interface_density_x_ = malloc(total_num_cells * sizeof(double));
+            system->interface_velocity_x_x_ = malloc(total_num_cells * sizeof(double));
+            system->interface_pressure_x_ = malloc(total_num_cells * sizeof(double));
             system->mid_points_x_ = malloc(total_num_cells_x * sizeof(double));
             system->surface_area_x_ = malloc((total_num_cells_x + 1) * sizeof(double));
             system->velocity_x_ = calloc(total_num_cells, sizeof(double));
             system->momentum_x_ = calloc(total_num_cells, sizeof(double));
-            if (!system->mid_points_x_ || !system->surface_area_x_ || !system->velocity_x_ || !system->momentum_x_)
+            if (
+                !system->interface_density_x_
+                || !system->interface_velocity_x_x_
+                || !system->interface_pressure_x_
+                || !system->mid_points_x_
+                || !system->surface_area_x_
+                || !system->velocity_x_
+                || !system->momentum_x_
+            )
             {
                 error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation failed.");
                 goto err_init_memory_alloc_x;
@@ -951,16 +1079,31 @@ ErrorStatus system_init(System *__restrict system)
 
 err_init_sys_attr:
 err_init_memory_alloc_z:
+    free(system->interface_density_z_);
+    free(system->interface_velocity_x_z_);
+    free(system->interface_velocity_y_z_);
+    free(system->interface_velocity_z_x_);
+    free(system->interface_velocity_z_y_);
+    free(system->interface_velocity_z_z_);
+    free(system->interface_pressure_z_);
     free(system->mid_points_z_);
     free(system->surface_area_z_);
     free(system->velocity_z_);
     free(system->momentum_z_);
 err_init_memory_alloc_y:
+    free(system->interface_density_y_);
+    free(system->interface_velocity_x_y_);
+    free(system->interface_velocity_y_x_);
+    free(system->interface_velocity_y_y_);
+    free(system->interface_pressure_y_);
     free(system->mid_points_y_);
     free(system->surface_area_y_);
     free(system->velocity_y_);
     free(system->momentum_y_);
 err_init_memory_alloc_x:
+    free(system->interface_density_x_);
+    free(system->interface_velocity_x_x_);
+    free(system->interface_pressure_x_);
     free(system->mid_points_x_);
     free(system->surface_area_x_);
     free(system->velocity_x_);
@@ -981,6 +1124,21 @@ err_coord_sys_flag:
 
 void free_system_memory(System *__restrict system)
 {
+    free(system->interface_density_x_);
+    free(system->interface_density_y_);
+    free(system->interface_density_z_);
+    free(system->interface_velocity_x_x_);
+    free(system->interface_velocity_x_y_);
+    free(system->interface_velocity_x_z_);
+    free(system->interface_velocity_y_x_);
+    free(system->interface_velocity_y_y_);
+    free(system->interface_velocity_y_z_);
+    free(system->interface_velocity_z_x_);
+    free(system->interface_velocity_z_y_);
+    free(system->interface_velocity_z_z_);
+    free(system->interface_pressure_x_);
+    free(system->interface_pressure_y_);
+    free(system->interface_pressure_z_);
     free(system->density_);
     free(system->velocity_x_);
     free(system->velocity_y_);

@@ -4,7 +4,7 @@
  * \brief Random choice method for the 1D Euler equations.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-11
+ * \date 2025-03-18
  */
 
 #include <stdbool.h>
@@ -259,18 +259,13 @@ ErrorStatus random_choice_1d(
             if (local_error_status.return_code != SUCCESS)
             {
                 error_status = local_error_status;
-#ifndef USE_OPENMP
-                goto err_solve_flux;
-#endif
             }
         }
 
-#ifdef USE_OPENMP
         if (error_status.return_code != SUCCESS)
         {
             goto err_solve_flux;
         }
-#endif
 
         error_status = WRAP_TRACEBACK(set_boundary_condition(system));
         if (error_status.return_code != SUCCESS)

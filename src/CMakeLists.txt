@@ -5,6 +5,12 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -Wextra -Wpedantic")
 
+# Debugging flags
+option (DEBUG "Debug mode" OFF)
+if (DEBUG)
+    set(CMAKE_C_FLAGS "-O0 -g -Wall -Wextra -Wpedantic -fsanitize=address -fsanitize=undefined")
+endif()
+
 # OpenMP (optional)
 option(USE_OPENMP "Enable OpenMP" OFF)
 if(USE_OPENMP)
@@ -24,10 +30,11 @@ set(
     SRCS
     error.c
     hydro.c
-    integrator_godunov_first_order.c
     integrator_random_choice_1d.c
+    integrator_godunov_first_order.c
     integrator.c
     progress_bar.c
+    reconstruction.c
     riemann_solver_exact.c
     riemann_solver_hllc.c
     riemann_solver.c

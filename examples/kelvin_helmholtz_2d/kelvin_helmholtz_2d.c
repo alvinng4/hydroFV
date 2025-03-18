@@ -12,6 +12,7 @@
 #define NUM_CELLS_X NUM_TOTAL_CELLS_X - 2 * NUM_GHOST_CELLS_SIDE
 #define NUM_CELLS_Y NUM_TOTAL_CELLS_Y - 2 * NUM_GHOST_CELLS_SIDE
 #define INTEGRATOR "godunov_first_order_2d"
+#define RECONSTRUCTION "piecewise_constant" // "piecewise_constant", "piecewise_linear" or "piecewise_parabolic"
 
 #define CFL 0.4
 #define TF 3.0
@@ -137,6 +138,7 @@ int main(void)
     IntegratorParam integrator_param = get_new_integrator_param();
     integrator_param.integrator = INTEGRATOR;
     integrator_param.riemann_solver = RIEMANN_SOLVER;
+    integrator_param.reconstruction = RECONSTRUCTION;
     integrator_param.cfl = CFL;
 
     /* Storing parameters */

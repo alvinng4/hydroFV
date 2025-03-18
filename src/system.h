@@ -4,7 +4,7 @@
  * \brief Header file for definition and prototypes related to the hydrodynamics system.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-11
+ * \date 2025-03-18
  */
 
 #ifndef SYSTEM_H
@@ -56,6 +56,21 @@ typedef struct System
     double dx_;
     double dy_;
     double dz_;
+    double *interface_density_x_;
+    double *interface_density_y_;
+    double *interface_density_z_;
+    double *interface_velocity_x_x_;
+    double *interface_velocity_x_y_;
+    double *interface_velocity_x_z_;
+    double *interface_velocity_y_x_;
+    double *interface_velocity_y_y_;
+    double *interface_velocity_y_z_;
+    double *interface_velocity_z_x_;
+    double *interface_velocity_z_y_;
+    double *interface_velocity_z_z_;
+    double *interface_pressure_x_;
+    double *interface_pressure_y_;
+    double *interface_pressure_z_;
     double *density_;
     double *velocity_x_;
     double *velocity_y_;

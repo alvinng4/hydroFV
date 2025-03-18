@@ -5,17 +5,18 @@
 
 #define RIEMANN_SOLVER "riemann_solver_hllc" // "riemann_solver_exact" or "riemann_solver_hllc"
 #define COORD_SYS "spherical_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
-#define NUM_TOTAL_CELLS 1024
+#define NUM_TOTAL_CELLS 512
 #define NUM_GHOST_CELLS_SIDE 1
 #define NUM_CELLS NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
 #define INTEGRATOR "godunov_first_order_1d" // "godunov_first_order_1d" or "random_choice_1d"
+#define RECONSTRUCTION "piecewise_constant" // "piecewise_constant", "piecewise_linear" or "piecewise_parabolic"
 
 #define CFL 0.4
 #define TF 1.0
 #define TOL 1e-6 // For the riemann solver
 
 /* Sedov Blast parameters */
-#define NUM_EXPLOSION_CELLS 50
+#define NUM_EXPLOSION_CELLS 12
 
 #define GAMMA 1.4
 #define RHO_0 1.0
@@ -118,6 +119,7 @@ int main(void)
     IntegratorParam integrator_param = get_new_integrator_param();
     integrator_param.integrator = INTEGRATOR;
     integrator_param.riemann_solver = RIEMANN_SOLVER;
+    integrator_param.reconstruction = RECONSTRUCTION;
     integrator_param.cfl = CFL;
 
     /* Storing parameters */
