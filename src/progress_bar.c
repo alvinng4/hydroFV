@@ -156,7 +156,7 @@ IN_FILE void print_progress_bar(
         fputs(BAR, stdout);
     }
     printf(
-        "%s %3d%%%s %s %s%02d:%02d:%02d%s %s %s%s%s",
+        "%s %3d%%%s %s %s%02d:%02d:%02d%s %s %s%s%s\033[K",
         DEEP_GREEN,
         (int) (percent * 100),
         RESET,
@@ -259,7 +259,10 @@ void update_progress_bar(
 )
 {
     const double current_time = get_current_time();
-    if (current_time - progress_bar_param->time_last_update < MIN_UPDATE_INTERVAL_SECOND)
+    if (
+        (current_time - progress_bar_param->time_last_update) < MIN_UPDATE_INTERVAL_SECOND
+        && !is_end
+    )
     {
         return;
     }
