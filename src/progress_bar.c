@@ -16,12 +16,12 @@
 #include "progress_bar.h"
 
 #define PROGRESS_BAR_LENGTH 40
-#define MIN_PRINT_INTERVAL_SECOND 0.1
+#define MIN_UPDATE_INTERVAL_SECOND 0.1
 
 #define BULLET "\u2022"
 #define BAR "\u2501"
 
-/* 8-bit color codes */
+/* Color codes */
 #define RESET "\033[0m"
 #define DEEP_GREEN "\033[0;32m"
 #define MOCHA_GREEN "\033[38;5;106m"
@@ -90,23 +90,23 @@ IN_FILE void print_progress_bar(
         seconds_elapsed = 0;
     }
 
-    if (hours_elapsed > 99)
+    if (hours_elapsed > 99999)
     {
-        hours_elapsed = 99;
+        hours_elapsed = 99999;
         minutes_elapsed = 59;
         seconds_elapsed = 59;
     }
 
     /* Remaining time */
-    char remaining_time_str[9];
+    char remaining_time_str[15];
     const time_t estimated_time_remaining_time_t = (time_t) estimated_time_remaining;
     time_t hours_remaining = estimated_time_remaining_time_t / 3600;
     time_t minutes_remaining = (estimated_time_remaining_time_t % 3600) / 60;
     time_t seconds_remaining = estimated_time_remaining_time_t % 60;
 
-    if (hours_remaining > 99)
+    if (hours_remaining > 99999)
     {
-        hours_remaining = 99;
+        hours_remaining = 99999;
         minutes_remaining = 59;
         seconds_remaining = 59;
     }
@@ -127,7 +127,7 @@ IN_FILE void print_progress_bar(
     {
         snprintf(
             remaining_time_str,
-            9,
+            15,
             "%02d:%02d:%02d",
             (int) hours_remaining,
             (int) minutes_remaining,
@@ -177,6 +177,8 @@ IN_FILE void print_progress_bar(
         fputs("\n", stdout); // New line
         fputs("\033[?25h", stdout); // Show cursor
     }
+
+    fflush(stdout);
 }
 
 ErrorStatus start_progress_bar(
@@ -187,7 +189,8 @@ ErrorStatus start_progress_bar(
     ErrorStatus error_status;
 
     progress_bar_param->start = get_current_time();
-    progress_bar_param->current = 0.0;
+    progress_bar_param->time_last_update = progress_bar_param->start;
+    progress_bar_param->current_progress = 0.0;
     progress_bar_param->total = total;
     if (progress_bar_param->total <= 0.0)
     {
@@ -195,10 +198,8 @@ ErrorStatus start_progress_bar(
         goto error;
     }
 
-    progress_bar_param->time_last_print = progress_bar_param->start;
-
     progress_bar_param->last_five_progress_percent[0] = 0.0;
-    progress_bar_param->time_last_five_update[0] = 0.0;
+    progress_bar_param->diff_time_last_five_update[0] = 0.0;
     progress_bar_param->at_least_four_count = 0;
 
     print_progress_bar(progress_bar_param, 0.0, 0, false);
@@ -223,11 +224,11 @@ IN_FILE time_t least_squares_regression_remaining_time(
         progress_bar_param->last_five_progress_percent[4]
     };
     const double y[5] = {
-        progress_bar_param->time_last_five_update[0],
-        progress_bar_param->time_last_five_update[1],
-        progress_bar_param->time_last_five_update[2],
-        progress_bar_param->time_last_five_update[3],
-        progress_bar_param->time_last_five_update[4]
+        progress_bar_param->diff_time_last_five_update[0],
+        progress_bar_param->diff_time_last_five_update[1],
+        progress_bar_param->diff_time_last_five_update[2],
+        progress_bar_param->diff_time_last_five_update[3],
+        progress_bar_param->diff_time_last_five_update[4]
     };
 
     double sum_x = 0.0;
@@ -253,17 +254,19 @@ IN_FILE time_t least_squares_regression_remaining_time(
 
 void update_progress_bar(
     ProgressBarParam *__restrict progress_bar_param,
-    double current,
+    double current_progress,
     bool is_end
 )
 {
     const double current_time = get_current_time();
-    if (current > progress_bar_param->current)
+    if (current_time - progress_bar_param->time_last_update < MIN_UPDATE_INTERVAL_SECOND)
     {
-        progress_bar_param->current = current;    
+        return;
     }
-
-    double percent = progress_bar_param->current / progress_bar_param->total;
+    
+    progress_bar_param->time_last_update = current_time;
+    progress_bar_param->current_progress = current_progress;
+    double percent = progress_bar_param->current_progress / progress_bar_param->total;
     if (percent > 1.0)
     {
         percent = 1.0;
@@ -274,7 +277,7 @@ void update_progress_bar(
     if (progress_bar_param->at_least_four_count < 4)
     {
         progress_bar_param->last_five_progress_percent[progress_bar_param->at_least_four_count] = percent;
-        progress_bar_param->time_last_five_update[progress_bar_param->at_least_four_count] = diff_now_start;
+        progress_bar_param->diff_time_last_five_update[progress_bar_param->at_least_four_count] = diff_now_start;
         (progress_bar_param->at_least_four_count)++;
     }
     else
@@ -285,11 +288,11 @@ void update_progress_bar(
         progress_bar_param->last_five_progress_percent[3] = progress_bar_param->last_five_progress_percent[4];
         progress_bar_param->last_five_progress_percent[4] = percent;
 
-        progress_bar_param->time_last_five_update[0] = progress_bar_param->time_last_five_update[1];
-        progress_bar_param->time_last_five_update[1] = progress_bar_param->time_last_five_update[2];
-        progress_bar_param->time_last_five_update[2] = progress_bar_param->time_last_five_update[3];
-        progress_bar_param->time_last_five_update[3] = progress_bar_param->time_last_five_update[4];
-        progress_bar_param->time_last_five_update[4] = diff_now_start;
+        progress_bar_param->diff_time_last_five_update[0] = progress_bar_param->diff_time_last_five_update[1];
+        progress_bar_param->diff_time_last_five_update[1] = progress_bar_param->diff_time_last_five_update[2];
+        progress_bar_param->diff_time_last_five_update[2] = progress_bar_param->diff_time_last_five_update[3];
+        progress_bar_param->diff_time_last_five_update[3] = progress_bar_param->diff_time_last_five_update[4];
+        progress_bar_param->diff_time_last_five_update[4] = diff_now_start;
     }
         
     if (is_end)
@@ -301,9 +304,9 @@ void update_progress_bar(
         time_t estimated_time_remaining = (least_squares_regression_remaining_time(progress_bar_param, diff_now_start));
         print_progress_bar(progress_bar_param, percent, estimated_time_remaining, true);
     }
-    else if (current_time - progress_bar_param->time_last_print >= MIN_PRINT_INTERVAL_SECOND)
+    else
     {
-        progress_bar_param->time_last_print = current_time;
+        progress_bar_param->time_last_update = current_time;
 
         if (progress_bar_param->at_least_four_count < 4)
         {
@@ -315,6 +318,4 @@ void update_progress_bar(
             print_progress_bar(progress_bar_param, percent, estimated_time_remaining, false);
         }
     }
-
-    fflush(stdout);
 }
