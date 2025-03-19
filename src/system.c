@@ -4,7 +4,7 @@
  * \brief Functions related to the hydrodynamics system.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-18
+ * \date 2025-03-19
  */
 
 #include <math.h>
@@ -48,21 +48,36 @@ System get_new_system_struct(void)
         .dx_ = -1.0,
         .dy_ = -1.0,
         .dz_ = -1.0,
-        .interface_density_x_ = NULL,
-        .interface_density_y_ = NULL,
-        .interface_density_z_ = NULL,
-        .interface_velocity_x_x_ = NULL,
-        .interface_velocity_x_y_ = NULL,
-        .interface_velocity_x_z_ = NULL,
-        .interface_velocity_y_x_ = NULL,
-        .interface_velocity_y_y_ = NULL,
-        .interface_velocity_y_z_ = NULL,
-        .interface_velocity_z_x_ = NULL,
-        .interface_velocity_z_y_ = NULL,
-        .interface_velocity_z_z_ = NULL,
-        .interface_pressure_x_ = NULL,
-        .interface_pressure_y_ = NULL,
-        .interface_pressure_z_ = NULL,
+        .interface_density_x_L_ = NULL,
+        .interface_density_x_R_ = NULL,
+        .interface_density_y_B_ = NULL,
+        .interface_density_y_T_ = NULL,
+        .interface_density_z_B_ = NULL,
+        .interface_density_z_F_ = NULL,
+        .interface_velocity_x_x_L_ = NULL,
+        .interface_velocity_x_x_R_ = NULL,
+        .interface_velocity_x_y_L_ = NULL,
+        .interface_velocity_x_y_R_ = NULL,
+        .interface_velocity_x_z_L_ = NULL,
+        .interface_velocity_x_z_R_ = NULL,
+        .interface_velocity_y_x_B_ = NULL,
+        .interface_velocity_y_x_T_ = NULL,
+        .interface_velocity_y_y_B_ = NULL,
+        .interface_velocity_y_y_T_ = NULL,
+        .interface_velocity_y_z_B_ = NULL,
+        .interface_velocity_y_z_T_ = NULL,
+        .interface_velocity_z_x_B_ = NULL,
+        .interface_velocity_z_x_F_ = NULL,
+        .interface_velocity_z_y_B_ = NULL,
+        .interface_velocity_z_y_F_ = NULL,
+        .interface_velocity_z_z_B_ = NULL,
+        .interface_velocity_z_z_F_ = NULL,
+        .interface_pressure_x_L_ = NULL,
+        .interface_pressure_x_R_ = NULL,
+        .interface_pressure_y_B_ = NULL,
+        .interface_pressure_y_T_ = NULL,
+        .interface_pressure_z_B_ = NULL,
+        .interface_pressure_z_F_ = NULL,
         .density_ = NULL,
         .velocity_x_ = NULL,
         .velocity_y_ = NULL,
@@ -110,65 +125,125 @@ IN_FILE ErrorStatus check_init_system_input(const System *__restrict system)
     }
 
     /* Array pointers */
-    if (system->interface_density_x_)
+    if (system->interface_density_x_L_)
     {
-        return WRAP_RAISE_ERROR(POINTER_ERROR, "Density interface (x-direction) array pointer (system->interface_density_x_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Density (x-interface, left) array pointer (system->interface_density_x_L_) is not NULL.");
     }
-    if (system->interface_density_y_)
+    if (system->interface_density_x_R_)
     {
-        return WRAP_RAISE_ERROR(POINTER_ERROR, "Density interface (y-direction) array pointer (system->interface_density_y_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Density (x-interface, right) array pointer (system->interface_density_x_R_) is not NULL.");
     }
-    if (system->interface_density_z_)
+    if (system->interface_density_y_B_)
     {
-        return WRAP_RAISE_ERROR(POINTER_ERROR, "Density interface (z-direction) array pointer (system->interface_density_z_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Density (y-interface, bottom) array pointer (system->interface_density_y_B_) is not NULL.");
     }
-    if (system->interface_velocity_x_x_)
+    if (system->interface_density_y_T_)
     {
-        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (x-component) interface (x-direction) array pointer (system->interface_velocity_x_x_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Density (y-interface, top) array pointer (system->interface_density_y_T_) is not NULL.");
     }
-    if (system->interface_velocity_x_y_)
+    if (system->interface_density_z_B_)
     {
-        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (x-component) interface (y-direction) array pointer (system->interface_velocity_x_y_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Density (z-interface, back) array pointer (system->interface_density_z_B_) is not NULL.");
     }
-    if (system->interface_velocity_x_z_)
+    if (system->interface_density_z_F_)
     {
-        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (x-component) interface (z-direction) array pointer (system->interface_velocity_x_z_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Density (z-interface, front) array pointer (system->interface_density_z_F_) is not NULL.");
     }
-    if (system->interface_velocity_y_x_)
+    if (system->interface_velocity_x_x_L_)
     {
-        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (y-component) interface (x-direction) array pointer (system->interface_velocity_y_x_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (x-component, x-interface, left) array pointer (system->interface_velocity_x_x_L_) is not NULL.");
     }
-    if (system->interface_velocity_y_y_)
+    if (system->interface_velocity_x_x_R_)
     {
-        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (y-component) interface (y-direction) array pointer (system->interface_velocity_y_y_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (x-component, x-interface, right) array pointer (system->interface_velocity_x_x_R_) is not NULL.");
     }
-    if (system->interface_velocity_y_z_)
+    if (system->interface_velocity_x_y_L_)
     {
-        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (y-component) interface (z-direction) array pointer (system->interface_velocity_y_z_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (y-component, x-interface, left) array pointer (system->interface_velocity_x_y_L_) is not NULL.");
     }
-    if (system->interface_velocity_z_x_)
+    if (system->interface_velocity_x_y_R_)
     {
-        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (z-component) interface (x-direction) array pointer (system->interface_velocity_z_x_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (y-component, x-interface, right) array pointer (system->interface_velocity_x_y_R_) is not NULL.");
     }
-    if (system->interface_velocity_z_y_)
+    if (system->interface_velocity_x_z_L_)
     {
-        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (z-component) interface (y-direction) array pointer (system->interface_velocity_z_y_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (z-component, x-interface, left) array pointer (system->interface_velocity_x_z_L_) is not NULL.");
     }
-    if (system->interface_velocity_z_z_)
+    if (system->interface_velocity_x_z_R_)
     {
-        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (z-component) interface (z-direction) array pointer (system->interface_velocity_z_z_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (z-component, x-interface, right) array pointer (system->interface_velocity_x_z_R_) is not NULL.");
     }
-    if (system->interface_pressure_x_)
+    if (system->interface_velocity_y_x_B_)
     {
-        return WRAP_RAISE_ERROR(POINTER_ERROR, "Pressure interface (x-direction) array pointer (system->interface_pressure_x_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (x-component, y-interface, bottom) array pointer (system->interface_velocity_y_x_B_) is not NULL.");
     }
-    if (system->interface_pressure_y_)
+    if (system->interface_velocity_y_x_T_)
     {
-        return WRAP_RAISE_ERROR(POINTER_ERROR, "Pressure interface (y-direction) array pointer (system->interface_pressure_y_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (x-component, y-interface, top) array pointer (system->interface_velocity_y_x_T_) is not NULL.");
     }
-    if (system->interface_pressure_z_)
+    if (system->interface_velocity_y_y_B_)
     {
-        return WRAP_RAISE_ERROR(POINTER_ERROR, "Pressure interface (z-direction) array pointer (system->interface_pressure_z_) is not NULL.");
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (y-component, y-interface, bottom) array pointer (system->interface_velocity_y_y_B_) is not NULL.");
+    }
+    if (system->interface_velocity_y_y_T_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (y-component, y-interface, top) array pointer (system->interface_velocity_y_y_T_) is not NULL.");
+    }
+    if (system->interface_velocity_y_z_B_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (z-component, y-interface, bottom) array pointer (system->interface_velocity_y_z_B_) is not NULL.");
+    }
+    if (system->interface_velocity_y_z_T_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (z-component, y-interface, top) array pointer (system->interface_velocity_y_z_T_) is not NULL.");
+    }
+    if (system->interface_velocity_z_x_B_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (x-component, z-interface, back) array pointer (system->interface_velocity_z_x_B_) is not NULL.");
+    }
+    if (system->interface_velocity_z_x_F_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (x-component, z-interface, front) array pointer (system->interface_velocity_z_x_F_) is not NULL.");
+    }
+    if (system->interface_velocity_z_y_B_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (y-component, z-interface, back) array pointer (system->interface_velocity_z_y_B_) is not NULL.");
+    }
+    if (system->interface_velocity_z_y_F_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (y-component, z-interface, front) array pointer (system->interface_velocity_z_y_F_) is not NULL.");
+    }
+    if (system->interface_velocity_z_z_B_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (z-component, z-interface, back) array pointer (system->interface_velocity_z_z_B_) is not NULL.");
+    }
+    if (system->interface_velocity_z_z_F_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Velocity (z-component, z-interface, front) array pointer (system->interface_velocity_z_z_F_) is not NULL.");
+    }
+    if (system->interface_pressure_x_L_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Pressure (x-interface, left) array pointer (system->interface_pressure_x_L_) is not NULL.");
+    }
+    if (system->interface_pressure_x_R_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Pressure (x-interface, right) array pointer (system->interface_pressure_x_R_) is not NULL.");
+    }
+    if (system->interface_pressure_y_B_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Pressure (y-interface, bottom) array pointer (system->interface_pressure_y_B_) is not NULL.");
+    }
+    if (system->interface_pressure_y_T_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Pressure (y-interface, top) array pointer (system->interface_pressure_y_T_) is not NULL.");
+    }
+    if (system->interface_pressure_z_B_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Pressure (z-interface, back) array pointer (system->interface_pressure_z_B_) is not NULL.");
+    }
+    if (system->interface_pressure_z_F_)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Pressure (z-interface, front) array pointer (system->interface_pressure_z_F_) is not NULL.");
     }
     if (system->density_)
     {
@@ -913,11 +988,13 @@ ErrorStatus system_init(System *__restrict system)
 
     /* Calculate total number of cells */
     int total_num_cells;
+    int total_num_interfaces;
 
     switch (system->coord_sys_flag_)
     {
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
             total_num_cells = system->num_cells_x + 2 * system->num_ghost_cells_side;
+            total_num_interfaces = total_num_cells + 1;
             break;
         case COORD_SYS_CARTESIAN_2D:
             total_num_cells = (
@@ -925,6 +1002,7 @@ ErrorStatus system_init(System *__restrict system)
             ) * (
                 system->num_cells_y + 2 * system->num_ghost_cells_side
             );
+            total_num_interfaces = (system->num_cells_x + 1) * (system->num_cells_y + 1);
             break;
         case COORD_SYS_CARTESIAN_3D:
             total_num_cells = (
@@ -933,6 +1011,9 @@ ErrorStatus system_init(System *__restrict system)
                 system->num_cells_y + 2 * system->num_ghost_cells_side
             ) * (
                 system->num_cells_z + 2 * system->num_ghost_cells_side
+            );
+            total_num_interfaces = (
+                (system->num_cells_x + 1) * (system->num_cells_y + 1) * (system->num_cells_z + 1)
             );
             break;
         default:
@@ -964,25 +1045,39 @@ ErrorStatus system_init(System *__restrict system)
         case COORD_SYS_CARTESIAN_3D:
         {
             const int total_num_cells_z = system->num_cells_z + 2 * system->num_ghost_cells_side;
-            system->interface_density_z_ = malloc(total_num_cells * sizeof(double));
-            system->interface_velocity_x_z_ = malloc(total_num_cells * sizeof(double));
-            system->interface_velocity_y_z_ = malloc(total_num_cells * sizeof(double));
-            system->interface_velocity_z_x_ = malloc(total_num_cells * sizeof(double));
-            system->interface_velocity_z_y_ = malloc(total_num_cells * sizeof(double));
-            system->interface_velocity_z_z_ = malloc(total_num_cells * sizeof(double));
-            system->interface_pressure_z_ = malloc(total_num_cells * sizeof(double));
+            system->interface_density_z_B_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_density_z_F_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_x_z_L_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_x_z_R_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_y_z_B_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_y_z_T_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_z_x_B_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_z_x_F_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_z_y_B_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_z_y_F_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_z_z_B_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_z_z_F_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_pressure_z_B_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_pressure_z_F_ = malloc(total_num_interfaces * sizeof(double));
             system->mid_points_z_ = malloc(total_num_cells_z * sizeof(double));
             system->surface_area_z_ = malloc((total_num_cells_z + 1) * sizeof(double));
             system->velocity_z_ = calloc(total_num_cells, sizeof(double));
             system->momentum_z_ = calloc(total_num_cells, sizeof(double));
             if (
-                !system->interface_density_z_
-                || !system->interface_velocity_x_z_
-                || !system->interface_velocity_y_z_
-                || !system->interface_velocity_z_x_
-                || !system->interface_velocity_z_y_
-                || !system->interface_velocity_z_z_
-                || !system->interface_pressure_z_
+                !system->interface_density_z_B_
+                || !system->interface_density_z_F_
+                || !system->interface_velocity_x_z_L_
+                || !system->interface_velocity_x_z_R_
+                || !system->interface_velocity_y_z_B_
+                || !system->interface_velocity_y_z_T_
+                || !system->interface_velocity_z_x_B_
+                || !system->interface_velocity_z_x_F_
+                || !system->interface_velocity_z_y_B_
+                || !system->interface_velocity_z_y_F_
+                || !system->interface_velocity_z_z_B_
+                || !system->interface_velocity_z_z_F_
+                || !system->interface_pressure_z_B_
+                || !system->interface_pressure_z_F_
                 || !system->mid_points_z_
                 || !system->surface_area_z_
                 || !system->velocity_z_
@@ -997,21 +1092,31 @@ ErrorStatus system_init(System *__restrict system)
         case COORD_SYS_CARTESIAN_2D:
         {
             const int total_num_cells_y = system->num_cells_y + 2 * system->num_ghost_cells_side;
-            system->interface_density_y_ = malloc(total_num_cells * sizeof(double));
-            system->interface_velocity_x_y_ = malloc(total_num_cells * sizeof(double));
-            system->interface_velocity_y_x_ = malloc(total_num_cells * sizeof(double));
-            system->interface_velocity_y_y_ = malloc(total_num_cells * sizeof(double));
-            system->interface_pressure_y_ = malloc(total_num_cells * sizeof(double));
+            system->interface_density_y_B_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_density_y_T_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_x_y_L_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_x_y_R_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_y_x_B_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_y_x_T_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_y_y_B_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_y_y_T_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_pressure_y_B_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_pressure_y_T_ = malloc(total_num_interfaces * sizeof(double));
             system->mid_points_y_ = malloc(total_num_cells_y * sizeof(double));
             system->surface_area_y_ = malloc((total_num_cells_y + 1) * sizeof(double));
             system->velocity_y_ = calloc(total_num_cells, sizeof(double));
             system->momentum_y_ = calloc(total_num_cells, sizeof(double));
             if (
-                !system->interface_density_y_
-                || !system->interface_velocity_x_y_
-                || !system->interface_velocity_y_x_
-                || !system->interface_velocity_y_y_
-                || !system->interface_pressure_y_
+                !system->interface_density_y_B_
+                || !system->interface_density_y_T_
+                || !system->interface_velocity_x_y_L_
+                || !system->interface_velocity_x_y_R_
+                || !system->interface_velocity_y_x_B_
+                || !system->interface_velocity_y_x_T_
+                || !system->interface_velocity_y_y_B_
+                || !system->interface_velocity_y_y_T_
+                || !system->interface_pressure_y_B_
+                || !system->interface_pressure_y_T_
                 || !system->mid_points_y_
                 || !system->surface_area_y_
                 || !system->velocity_y_
@@ -1026,17 +1131,23 @@ ErrorStatus system_init(System *__restrict system)
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
         {
             const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
-            system->interface_density_x_ = malloc(total_num_cells * sizeof(double));
-            system->interface_velocity_x_x_ = malloc(total_num_cells * sizeof(double));
-            system->interface_pressure_x_ = malloc(total_num_cells * sizeof(double));
+            system->interface_density_x_L_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_density_x_R_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_x_x_L_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_velocity_x_x_R_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_pressure_x_L_ = malloc(total_num_interfaces * sizeof(double));
+            system->interface_pressure_x_R_ = malloc(total_num_interfaces * sizeof(double));
             system->mid_points_x_ = malloc(total_num_cells_x * sizeof(double));
             system->surface_area_x_ = malloc((total_num_cells_x + 1) * sizeof(double));
             system->velocity_x_ = calloc(total_num_cells, sizeof(double));
             system->momentum_x_ = calloc(total_num_cells, sizeof(double));
             if (
-                !system->interface_density_x_
-                || !system->interface_velocity_x_x_
-                || !system->interface_pressure_x_
+                !system->interface_density_x_L_
+                || !system->interface_density_x_R_
+                || !system->interface_velocity_x_x_L_
+                || !system->interface_velocity_x_x_R_
+                || !system->interface_pressure_x_L_
+                || !system->interface_pressure_x_R_
                 || !system->mid_points_x_
                 || !system->surface_area_x_
                 || !system->velocity_x_
@@ -1079,31 +1190,46 @@ ErrorStatus system_init(System *__restrict system)
 
 err_init_sys_attr:
 err_init_memory_alloc_z:
-    free(system->interface_density_z_);
-    free(system->interface_velocity_x_z_);
-    free(system->interface_velocity_y_z_);
-    free(system->interface_velocity_z_x_);
-    free(system->interface_velocity_z_y_);
-    free(system->interface_velocity_z_z_);
-    free(system->interface_pressure_z_);
+    free(system->interface_density_z_B_);
+    free(system->interface_density_z_F_);
+    free(system->interface_velocity_x_z_L_);
+    free(system->interface_velocity_x_z_R_);
+    free(system->interface_velocity_y_z_B_);
+    free(system->interface_velocity_y_z_T_);
+    free(system->interface_velocity_z_x_B_);
+    free(system->interface_velocity_z_x_F_);
+    free(system->interface_velocity_z_y_B_);
+    free(system->interface_velocity_z_y_F_);
+    free(system->interface_velocity_z_z_B_);
+    free(system->interface_velocity_z_z_F_);
+    free(system->interface_pressure_z_B_);
+    free(system->interface_pressure_z_F_);
     free(system->mid_points_z_);
     free(system->surface_area_z_);
     free(system->velocity_z_);
     free(system->momentum_z_);
 err_init_memory_alloc_y:
-    free(system->interface_density_y_);
-    free(system->interface_velocity_x_y_);
-    free(system->interface_velocity_y_x_);
-    free(system->interface_velocity_y_y_);
-    free(system->interface_pressure_y_);
+    free(system->interface_density_y_B_);
+    free(system->interface_density_y_T_);
+    free(system->interface_velocity_x_y_L_);
+    free(system->interface_velocity_x_y_R_);
+    free(system->interface_velocity_y_x_B_);
+    free(system->interface_velocity_y_x_T_);
+    free(system->interface_velocity_y_y_B_);
+    free(system->interface_velocity_y_y_T_);
+    free(system->interface_pressure_y_B_);
+    free(system->interface_pressure_y_T_);
     free(system->mid_points_y_);
     free(system->surface_area_y_);
     free(system->velocity_y_);
     free(system->momentum_y_);
 err_init_memory_alloc_x:
-    free(system->interface_density_x_);
-    free(system->interface_velocity_x_x_);
-    free(system->interface_pressure_x_);
+    free(system->interface_density_x_L_);
+    free(system->interface_density_x_R_);
+    free(system->interface_velocity_x_x_L_);
+    free(system->interface_velocity_x_x_R_);
+    free(system->interface_pressure_x_L_);
+    free(system->interface_pressure_x_R_);
     free(system->mid_points_x_);
     free(system->surface_area_x_);
     free(system->velocity_x_);
@@ -1124,21 +1250,36 @@ err_coord_sys_flag:
 
 void free_system_memory(System *__restrict system)
 {
-    free(system->interface_density_x_);
-    free(system->interface_density_y_);
-    free(system->interface_density_z_);
-    free(system->interface_velocity_x_x_);
-    free(system->interface_velocity_x_y_);
-    free(system->interface_velocity_x_z_);
-    free(system->interface_velocity_y_x_);
-    free(system->interface_velocity_y_y_);
-    free(system->interface_velocity_y_z_);
-    free(system->interface_velocity_z_x_);
-    free(system->interface_velocity_z_y_);
-    free(system->interface_velocity_z_z_);
-    free(system->interface_pressure_x_);
-    free(system->interface_pressure_y_);
-    free(system->interface_pressure_z_);
+    free(system->interface_density_x_L_);
+    free(system->interface_density_x_R_);
+    free(system->interface_density_y_B_);
+    free(system->interface_density_y_T_);
+    free(system->interface_density_z_B_);
+    free(system->interface_density_z_F_);
+    free(system->interface_velocity_x_x_L_);
+    free(system->interface_velocity_x_x_R_);
+    free(system->interface_velocity_x_y_L_);
+    free(system->interface_velocity_x_y_R_);
+    free(system->interface_velocity_x_z_L_);
+    free(system->interface_velocity_x_z_R_);
+    free(system->interface_velocity_y_x_B_);
+    free(system->interface_velocity_y_x_T_);
+    free(system->interface_velocity_y_y_B_);
+    free(system->interface_velocity_y_y_T_);
+    free(system->interface_velocity_y_z_B_);
+    free(system->interface_velocity_y_z_T_);
+    free(system->interface_velocity_z_x_B_);
+    free(system->interface_velocity_z_x_F_);
+    free(system->interface_velocity_z_y_B_);
+    free(system->interface_velocity_z_y_F_);
+    free(system->interface_velocity_z_z_B_);
+    free(system->interface_velocity_z_z_F_);
+    free(system->interface_pressure_x_L_);
+    free(system->interface_pressure_x_R_);
+    free(system->interface_pressure_y_B_);
+    free(system->interface_pressure_y_T_);
+    free(system->interface_pressure_z_B_);
+    free(system->interface_pressure_z_F_);
     free(system->density_);
     free(system->velocity_x_);
     free(system->velocity_y_);

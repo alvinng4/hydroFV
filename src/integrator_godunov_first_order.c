@@ -4,7 +4,7 @@
  * \brief First-order Godunov scheme for the Euler equations.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-18
+ * \date 2025-03-19
  */
 
 #include <stdbool.h>
@@ -73,14 +73,18 @@ ErrorStatus godunov_first_order_1d(
     double *__restrict energy = system->energy_;
     double *__restrict surface_area_x = system->surface_area_x_;
 
-    double *__restrict interface_density = system->interface_density_x_;
-    double *__restrict interface_velocity_x = system->interface_velocity_x_x_;
-    double *__restrict interface_pressure = system->interface_pressure_x_;
+    double *__restrict interface_density_L = system->interface_density_x_L_;
+    double *__restrict interface_density_R = system->interface_density_x_R_;
+    double *__restrict interface_velocity_x_L = system->interface_velocity_x_x_L_;
+    double *__restrict interface_velocity_x_R = system->interface_velocity_x_x_R_;
+    double *__restrict interface_pressure_L = system->interface_pressure_x_L_;
+    double *__restrict interface_pressure_R = system->interface_pressure_x_R_;
 
     /* System parameters */
     const double gamma = system->gamma;
     const int num_cells = system->num_cells_x;
     const int num_ghost_cells_side = system->num_ghost_cells_side;
+    const int num_interfaces = num_cells + 1;
 
     /* Integrator parameters */
     const double cfl = integrator_param->cfl;
@@ -159,7 +163,7 @@ ErrorStatus godunov_first_order_1d(
 #ifdef USE_OPENMP
         #pragma omp parallel for
 #endif
-        for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells + 1); i++)
+        for (int i = 0; i < num_interfaces; i++)
         {
             double flux_mass;
             double flux_momentum_x;
@@ -171,12 +175,12 @@ ErrorStatus godunov_first_order_1d(
                 &flux_momentum_x,
                 &flux_energy,
                 gamma,
-                interface_density[i - 1],
-                interface_velocity_x[i - 1],
-                interface_pressure[i - 1],
-                interface_density[i],
-                interface_velocity_x[i],
-                interface_pressure[i]
+                interface_density_L[i],
+                interface_velocity_x_L[i],
+                interface_pressure_L[i],
+                interface_density_R[i],
+                interface_velocity_x_R[i],
+                interface_pressure_R[i]
             ));
             if (local_error_status.return_code != SUCCESS)
             {
@@ -187,13 +191,14 @@ ErrorStatus godunov_first_order_1d(
             const double d_rho_u = flux_momentum_x * dt;
             const double d_energy_density = flux_energy * dt;
 
-            mass[i - 1] -= d_rho * surface_area_x[i - 1];
-            momentum_x[i - 1] -= d_rho_u * surface_area_x[i - 1];
-            energy[i - 1] -= d_energy_density * surface_area_x[i - 1];
+            const int idx = num_ghost_cells_side + i;
+            mass[idx - 1] -= d_rho * surface_area_x[idx - 1];
+            momentum_x[idx - 1] -= d_rho_u * surface_area_x[idx - 1];
+            energy[idx - 1] -= d_energy_density * surface_area_x[idx - 1];
 
-            mass[i] += d_rho * surface_area_x[i];
-            momentum_x[i] += d_rho_u * surface_area_x[i];
-            energy[i] += d_energy_density * surface_area_x[i];
+            mass[idx] += d_rho * surface_area_x[idx];
+            momentum_x[idx] += d_rho_u * surface_area_x[idx];
+            energy[idx] += d_energy_density * surface_area_x[idx];
         }
 
         if (error_status.return_code != SUCCESS)
@@ -305,14 +310,22 @@ ErrorStatus godunov_first_order_2d(
     double *__restrict surface_area_x = system->surface_area_x_;
     double *__restrict surface_area_y = system->surface_area_y_;
 
-    double *__restrict interface_density_x = system->interface_density_x_;
-    double *__restrict interface_density_y = system->interface_density_y_;
-    double *__restrict interface_velocity_x_x = system->interface_velocity_x_x_;
-    double *__restrict interface_velocity_x_y = system->interface_velocity_x_y_;
-    double *__restrict interface_velocity_y_x = system->interface_velocity_y_x_;
-    double *__restrict interface_velocity_y_y = system->interface_velocity_y_y_;
-    double *__restrict interface_pressure_x = system->interface_pressure_x_;
-    double *__restrict interface_pressure_y = system->interface_pressure_y_;
+    double *__restrict interface_density_x_L = system->interface_density_x_L_;
+    double *__restrict interface_density_x_R = system->interface_density_x_R_;
+    double *__restrict interface_density_y_B = system->interface_density_y_B_;
+    double *__restrict interface_density_y_T = system->interface_density_y_T_;
+    double *__restrict interface_velocity_x_x_L = system->interface_velocity_x_x_L_;
+    double *__restrict interface_velocity_x_x_R = system->interface_velocity_x_x_R_;
+    double *__restrict interface_velocity_x_y_L = system->interface_velocity_x_y_L_;
+    double *__restrict interface_velocity_x_y_R = system->interface_velocity_x_y_R_;
+    double *__restrict interface_velocity_y_x_B = system->interface_velocity_y_x_B_;
+    double *__restrict interface_velocity_y_x_T = system->interface_velocity_y_x_T_;
+    double *__restrict interface_velocity_y_y_B = system->interface_velocity_y_y_B_;
+    double *__restrict interface_velocity_y_y_T = system->interface_velocity_y_y_T_;
+    double *__restrict interface_pressure_x_L = system->interface_pressure_x_L_;
+    double *__restrict interface_pressure_x_R = system->interface_pressure_x_R_;
+    double *__restrict interface_pressure_y_B = system->interface_pressure_y_B_;
+    double *__restrict interface_pressure_y_T = system->interface_pressure_y_T_;
 
     /* System parameters */
     const double gamma = system->gamma;
@@ -320,6 +333,8 @@ ErrorStatus godunov_first_order_2d(
     const int num_cells_x = system->num_cells_x;
     const int num_cells_y = system->num_cells_y;
     const int total_num_cells_x = num_cells_x + 2 * num_ghost_cells_side;
+    const int num_interfaces_x = num_cells_x + 1;
+    const int num_interfaces_y = num_cells_y + 1;
 
     /* Integrator parameters */
     const double cfl = integrator_param->cfl;
@@ -396,9 +411,9 @@ ErrorStatus godunov_first_order_2d(
 #ifdef USE_OPENMP
         #pragma omp parallel for
 #endif
-        for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x + 1); i++)
+        for (int i = 0; i < num_interfaces_x; i++)
         {
-            for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y + 1); j++)
+            for (int j = 0; j < num_interfaces_y; j++)
             {
                 ErrorStatus local_error_status;
 
@@ -408,6 +423,7 @@ ErrorStatus godunov_first_order_2d(
                 double flux_momentum_x_y;
                 double flux_energy_x;
 
+                const int idx_interface_x = j * num_interfaces_x + i;
                 local_error_status = WRAP_TRACEBACK(solve_flux_2d(
                     integrator_param,
                     settings,
@@ -416,14 +432,14 @@ ErrorStatus godunov_first_order_2d(
                     &flux_momentum_x_y,
                     &flux_energy_x,
                     gamma,
-                    interface_density_x[j * total_num_cells_x + (i - 1)],
-                    interface_velocity_x_x[j * total_num_cells_x + (i - 1)],
-                    interface_velocity_x_y[j * total_num_cells_x + (i - 1)],
-                    interface_pressure_x[j * total_num_cells_x + (i - 1)],
-                    interface_density_x[j * total_num_cells_x + i],
-                    interface_velocity_x_x[j * total_num_cells_x + i],
-                    interface_velocity_x_y[j * total_num_cells_x + i],
-                    interface_pressure_x[j * total_num_cells_x + i]
+                    interface_density_x_L[idx_interface_x],
+                    interface_velocity_x_x_L[idx_interface_x],
+                    interface_velocity_x_y_L[idx_interface_x],
+                    interface_pressure_x_L[idx_interface_x],
+                    interface_density_x_R[idx_interface_x],
+                    interface_velocity_x_x_R[idx_interface_x],
+                    interface_velocity_x_y_R[idx_interface_x],
+                    interface_pressure_x_R[idx_interface_x]
                 ));
                 if (local_error_status.return_code != SUCCESS)
                 {
@@ -435,6 +451,7 @@ ErrorStatus godunov_first_order_2d(
                 double flux_momentum_y_x;
                 double flux_momentum_y_y;
                 double flux_energy_y;
+                const int idx_interface_y = j * num_interfaces_x + i;
                 local_error_status = WRAP_TRACEBACK(solve_flux_2d(
                     integrator_param,
                     settings,
@@ -443,34 +460,36 @@ ErrorStatus godunov_first_order_2d(
                     &flux_momentum_y_x,
                     &flux_energy_y,
                     gamma,
-                    interface_density_y[(j - 1) * total_num_cells_x + i],
-                    interface_velocity_y_y[(j - 1) * total_num_cells_x + i],
-                    interface_velocity_y_x[(j - 1) * total_num_cells_x + i],
-                    interface_pressure_y[(j - 1) * total_num_cells_x + i],
-                    interface_density_y[j * total_num_cells_x + i],
-                    interface_velocity_y_y[j * total_num_cells_x + i],
-                    interface_velocity_y_x[j * total_num_cells_x + i],
-                    interface_pressure_y[j * total_num_cells_x + i]
+                    interface_density_y_B[idx_interface_y],
+                    interface_velocity_y_y_B[idx_interface_y],
+                    interface_velocity_y_x_B[idx_interface_y],
+                    interface_pressure_y_B[idx_interface_y],
+                    interface_density_y_T[idx_interface_y],
+                    interface_velocity_y_y_T[idx_interface_y],
+                    interface_velocity_y_x_T[idx_interface_y],
+                    interface_pressure_y_T[idx_interface_y]
                 ));
                 if (local_error_status.return_code != SUCCESS)
                 {
                     error_status = local_error_status;
                 }
 
-                mass[j * total_num_cells_x + (i - 1)] -= dt * flux_mass_x * surface_area_x[i - 1];
-                momentum_x[j * total_num_cells_x + (i - 1)] -= dt * flux_momentum_x_x * surface_area_x[i - 1];
-                momentum_y[j * total_num_cells_x + (i - 1)] -= dt * flux_momentum_x_y * surface_area_x[i - 1];
-                energy[j * total_num_cells_x + (i - 1)] -= dt * flux_energy_x * surface_area_x[i - 1];
+                const int idx_i = num_ghost_cells_side + i;
+                const int idx_j = num_ghost_cells_side + j;
+                mass[idx_j * total_num_cells_x + (idx_i - 1)] -= dt * flux_mass_x * surface_area_x[idx_i - 1];
+                momentum_x[idx_j * total_num_cells_x + (idx_i - 1)] -= dt * flux_momentum_x_x * surface_area_x[idx_i - 1];
+                momentum_y[idx_j * total_num_cells_x + (idx_i - 1)] -= dt * flux_momentum_x_y * surface_area_x[idx_i - 1];
+                energy[idx_j * total_num_cells_x + (idx_i - 1)] -= dt * flux_energy_x * surface_area_x[idx_i - 1];
 
-                mass[(j - 1) * total_num_cells_x + i] -= dt * flux_mass_y * surface_area_y[j - 1];
-                momentum_x[(j - 1) * total_num_cells_x + i] -= dt * flux_momentum_y_x * surface_area_y[j - 1];
-                momentum_y[(j - 1) * total_num_cells_x + i] -= dt * flux_momentum_y_y * surface_area_y[j - 1];
-                energy[(j - 1) * total_num_cells_x + i] -= dt * flux_energy_y * surface_area_y[j - 1];
+                mass[(idx_j - 1) * total_num_cells_x + idx_i] -= dt * flux_mass_y * surface_area_y[idx_j - 1];
+                momentum_x[(idx_j - 1) * total_num_cells_x + idx_i] -= dt * flux_momentum_y_x * surface_area_y[idx_j - 1];
+                momentum_y[(idx_j - 1) * total_num_cells_x + idx_i] -= dt * flux_momentum_y_y * surface_area_y[idx_j - 1];
+                energy[(idx_j - 1) * total_num_cells_x + idx_i] -= dt * flux_energy_y * surface_area_y[idx_j - 1];
 
-                mass[j * total_num_cells_x + i] += dt * (flux_mass_x * surface_area_x[i] + flux_mass_y * surface_area_y[j]);
-                momentum_x[j * total_num_cells_x + i] += dt * (flux_momentum_x_x * surface_area_x[i] + flux_momentum_y_x * surface_area_y[j]);
-                momentum_y[j * total_num_cells_x + i] += dt * (flux_momentum_x_y * surface_area_x[i] + flux_momentum_y_y * surface_area_y[j]);
-                energy[j * total_num_cells_x + i] += dt * (flux_energy_x * surface_area_x[i] + flux_energy_y * surface_area_y[j]);
+                mass[idx_j * total_num_cells_x + idx_i] += dt * (flux_mass_x * surface_area_x[idx_i] + flux_mass_y * surface_area_y[idx_j]);
+                momentum_x[idx_j * total_num_cells_x + idx_i] += dt * (flux_momentum_x_x * surface_area_x[idx_i] + flux_momentum_y_x * surface_area_y[idx_j]);
+                momentum_y[idx_j * total_num_cells_x + idx_i] += dt * (flux_momentum_x_y * surface_area_x[idx_i] + flux_momentum_y_y * surface_area_y[idx_j]);
+                energy[idx_j * total_num_cells_x + idx_i] += dt * (flux_energy_x * surface_area_x[idx_i] + flux_energy_y * surface_area_y[idx_j]);
             }
         }
 
