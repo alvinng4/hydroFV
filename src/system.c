@@ -12,6 +12,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef USE_OPENMP
+#include <omp.h>
+#endif
+
 #include "common.h"
 #include "error.h"
 #include "system.h"
@@ -1631,6 +1635,9 @@ ErrorStatus convert_conserved_to_primitive(System *__restrict system)
     switch(system->coord_sys_flag_)
     {
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
+#ifdef USE_OPENMP
+            #pragma omp parallel for schedule(static)
+#endif
             for (int i = 0; i < (system->num_cells_x + 2 * num_ghost_cells_side); i++)
             {
                 const double mass_i = mass[i];
@@ -1643,6 +1650,9 @@ ErrorStatus convert_conserved_to_primitive(System *__restrict system)
             }
             break;
         case COORD_SYS_CARTESIAN_2D:
+            #ifdef USE_OPENMP
+            #pragma omp parallel for schedule(static)
+            #endif
             for (int i = 0; i < (system->num_cells_x + 2 * num_ghost_cells_side); i++)
             {
                 for (int j = 0; j < (system->num_cells_y + 2 * num_ghost_cells_side); j++)
@@ -1693,6 +1703,9 @@ ErrorStatus convert_primitive_to_conserved(System *__restrict system)
     switch(system->coord_sys_flag_)
     {
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
+#ifdef USE_OPENMP
+            #pragma omp parallel for schedule(static)
+#endif
             for (int i = 0; i < (system->num_cells_x + 2 * num_ghost_cells_side); i++)
             {
                 const double density_i = density[i];
@@ -1707,6 +1720,9 @@ ErrorStatus convert_primitive_to_conserved(System *__restrict system)
             }
             break;
         case COORD_SYS_CARTESIAN_2D:
+#ifdef USE_OPENMP
+            #pragma omp parallel for schedule(static)
+#endif
             for (int i = 0; i < (system->num_cells_x + 2 * num_ghost_cells_side); i++)
             {
                 for (int j = 0; j < (system->num_cells_y + 2 * num_ghost_cells_side); j++)

@@ -408,6 +408,7 @@ ErrorStatus godunov_first_order_2d(
         {
             goto err_reconstruct_cell_interface;
         }
+
 #ifdef USE_OPENMP
         #pragma omp parallel for
 #endif
@@ -492,7 +493,6 @@ ErrorStatus godunov_first_order_2d(
                 energy[idx_j * total_num_cells_x + idx_i] += dt * (flux_energy_x * surface_area_x[idx_i] + flux_energy_y * surface_area_y[idx_j]);
             }
         }
-
         if (error_status.return_code != SUCCESS)
         {
             goto err_solve_flux;
@@ -503,6 +503,7 @@ ErrorStatus godunov_first_order_2d(
         {
             goto err_convert_conserved_to_primitive;
         }
+
         error_status = WRAP_TRACEBACK(set_boundary_condition(system));
         if (error_status.return_code != SUCCESS)
         {

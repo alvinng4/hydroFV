@@ -4,7 +4,7 @@
  * \brief Source term calculation for the hydrodynamics simulation
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-11
+ * \date 2025-03-19
  */
 
 #include "hydro.h"
@@ -81,7 +81,7 @@ ErrorStatus add_geometry_source_term(
 
     /* Compute the source term with RK4 */
 #ifdef USE_OPENMP
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(static)
 #endif
     for (int i = num_ghost_cells_side; i < (num_cells_x + num_ghost_cells_side); i++)
     {

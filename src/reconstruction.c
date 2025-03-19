@@ -9,6 +9,10 @@
 
 #include <string.h>
 
+#ifdef USE_OPENMP
+#include <omp.h>
+#endif
+
 #include "hydro.h"
 #include "reconstruction.h"
 
@@ -44,19 +48,54 @@ IN_FILE ErrorStatus reconstruct_cell_interface_piecewise_constant_1d(System *__r
 {
     const int num_ghost_cells_side = system->num_ghost_cells_side;
     const int num_interfaces = system->num_cells_x + 1;
+
+#ifdef USE_OPENMP
+    #pragma omp parallel num_threads(6)
+    {
+        int thread_id = omp_get_thread_num();
+        
+        switch(thread_id) {
+            case 0:
+                memcpy(system->interface_density_x_L_, &(system->density_[num_ghost_cells_side - 1]), 
+                       num_interfaces * sizeof(double));
+                break;
+            case 1:
+                memcpy(system->interface_density_x_R_, &(system->density_[num_ghost_cells_side]), 
+                       num_interfaces * sizeof(double));
+                break;
+            case 2:
+                memcpy(system->interface_velocity_x_x_L_, &(system->velocity_x_[num_ghost_cells_side - 1]), 
+                       num_interfaces * sizeof(double));
+                break;
+            case 3:
+                memcpy(system->interface_velocity_x_x_R_, &(system->velocity_x_[num_ghost_cells_side]), 
+                       num_interfaces * sizeof(double));
+                break;
+            case 4:
+                memcpy(system->interface_pressure_x_L_, &(system->pressure_[num_ghost_cells_side - 1]), 
+                       num_interfaces * sizeof(double));
+                break;
+            case 5:
+                memcpy(system->interface_pressure_x_R_, &(system->pressure_[num_ghost_cells_side]), 
+                       num_interfaces * sizeof(double));
+                break;
+        }
+    }
+#else
     memcpy(system->interface_density_x_L_, &(system->density_[num_ghost_cells_side - 1]), num_interfaces * sizeof(double));
     memcpy(system->interface_density_x_R_, &(system->density_[num_ghost_cells_side]), num_interfaces * sizeof(double));
     memcpy(system->interface_velocity_x_x_L_, &(system->velocity_x_[num_ghost_cells_side - 1]), num_interfaces * sizeof(double));
     memcpy(system->interface_velocity_x_x_R_, &(system->velocity_x_[num_ghost_cells_side]), num_interfaces * sizeof(double));
     memcpy(system->interface_pressure_x_L_, &(system->pressure_[num_ghost_cells_side - 1]), num_interfaces * sizeof(double));
     memcpy(system->interface_pressure_x_R_, &(system->pressure_[num_ghost_cells_side]), num_interfaces * sizeof(double));
+#endif
+
     return make_success_error_status();
 }
 
 IN_FILE ErrorStatus reconstruct_cell_interface_piecewise_constant_2d(System *__restrict system)
 {
     const int total_num_cells_x = system->num_cells_x + 2 * system->num_ghost_cells_side;
-    const int total_num_cells_y = system->num_cells_y + 2 * system->num_ghost_cells_side;
     const int num_interfaces_x = system->num_cells_x + 1;
     const int num_interfaces_y = system->num_cells_y + 1;
     const int num_ghost_cells_side = system->num_ghost_cells_side;
@@ -83,6 +122,9 @@ IN_FILE ErrorStatus reconstruct_cell_interface_piecewise_constant_2d(System *__r
     double *__restrict interface_pressure_y_B = system->interface_pressure_y_B_;
     double *__restrict interface_pressure_y_T = system->interface_pressure_y_T_;
 
+#ifdef USE_OPENMP
+    #pragma omp parallel for schedule(static)
+#endif
     for (int i = 0; i < num_interfaces_x; i++)
     {
         for (int j = 0; j < num_interfaces_y; j++)
@@ -98,7 +140,19 @@ IN_FILE ErrorStatus reconstruct_cell_interface_piecewise_constant_2d(System *__r
             interface_velocity_x_y_R[idx_interface] = velocity_y[idx_j * total_num_cells_x + idx_i];
             interface_pressure_x_L[idx_interface] = pressure[idx_j * total_num_cells_x + (idx_i - 1)];
             interface_pressure_x_R[idx_interface] = pressure[idx_j * total_num_cells_x + idx_i];
+        }
+    }
 
+#ifdef USE_OPENMP
+    #pragma omp parallel for schedule(static)
+#endif
+    for (int i = 0; i < num_interfaces_x; i++)
+    {
+        for (int j = 0; j < num_interfaces_y; j++)
+        {
+            const int idx_i = num_ghost_cells_side + i;
+            const int idx_j = num_ghost_cells_side + j;
+            const int idx_interface = j * num_interfaces_x + i;
             interface_density_y_B[idx_interface] = density[(idx_j - 1) * total_num_cells_x + idx_i];
             interface_density_y_T[idx_interface] = density[idx_j * total_num_cells_x + idx_i];
             interface_velocity_y_x_B[idx_interface] = velocity_x[(idx_j - 1) * total_num_cells_x + idx_i];
