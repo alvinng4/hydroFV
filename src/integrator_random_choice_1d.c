@@ -4,7 +4,7 @@
  * \brief Random choice method for the 1D Euler equations.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-18
+ * \date 2025-03-19
  */
 
 #include <stdbool.h>
@@ -52,61 +52,15 @@ ErrorStatus random_choice_1d(
 )
 {
     /* Declare variables */
-    ErrorStatus error_status;
+    ErrorStatus error_status = make_success_error_status();
 
-    if (
-        system->coord_sys_flag_ != COORD_SYS_CARTESIAN_1D
-        && system->coord_sys_flag_ != COORD_SYS_CYLINDRICAL_1D
-        && system->coord_sys_flag_ != COORD_SYS_SPHERICAL_1D
-    )
-    {
-        size_t error_message_size = strlen(
-            "Wrong coordinate system. Supported coordinate system: \"cartesian_1d\", \"cylindrical_1d\" and \"spherical_1d\", got: \"\""
-        ) + strlen(system->coord_sys) + 1;
-        char *__restrict error_message = malloc(error_message_size * sizeof(char));
-        if (!error_message)
-        {
-            error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation for error message failed.");
-            goto err_coord_sys;
-        }
-        snprintf(
-            error_message,
-            error_message_size,
-            "Wrong coordinate system. Supported coordinate system: \"cartesian_1d\", \"cylindrical_1d\" and \"spherical_1d\", got: \"%s\"",
-            system->coord_sys
-        );
-        error_status = WRAP_RAISE_ERROR(VALUE_ERROR, error_message);
-        goto err_coord_sys;
-    }
-
-    if (integrator_param->riemann_solver_flag_ != RIEMANN_SOLVER_EXACT)
-    {
-        size_t error_message_size = strlen(
-            "Wrong Riemann solver for random choice method 1D. Supported Riemann solver: \"riemann_solver_exact\", got: \"\""
-        ) + strlen(integrator_param->riemann_solver) + 1;
-        char *__restrict error_message = malloc(error_message_size * sizeof(char));
-        if (!error_message)
-        {
-            error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Memory allocation for error message failed.");
-            goto err_riemann_solver;
-        }
-        snprintf(
-            error_message,
-            error_message_size,
-            "Wrong Riemann solver for random choice method 1D. Supported Riemann solver: \"riemann_solver_exact\", got: \"%s\"",
-            integrator_param->riemann_solver
-        );
-        error_status = WRAP_RAISE_ERROR(VALUE_ERROR, error_message);
-        goto err_riemann_solver;
-    }
-
-    if (integrator_param->cfl > 0.5)
-    {
-        size_t error_message_size = strlen("For random choice method, CFL value should be less than or equal to 0.5. Got: ") + 1 + 128;
-        char error_message[error_message_size];
-        snprintf(error_message, error_message_size, "For random choice method, CFL value should be less than or equal to 0.5. Got: %.3g", integrator_param->cfl);
-        WRAP_RAISE_WARNING(error_message);
-    }
+    // if (integrator_param->cfl > 0.5)
+    // {
+    //     size_t error_message_size = strlen("For random choice method, CFL value should be less than or equal to 0.5. Got: ") + 1 + 128;
+    //     char error_message[error_message_size];
+    //     snprintf(error_message, error_message_size, "For random choice method, CFL value should be less than or equal to 0.5. Got: %.3g", integrator_param->cfl);
+    //     WRAP_RAISE_WARNING(error_message);
+    // }
 
     bool is_compute_geometry_source_term = true;
     if (system->coord_sys_flag_ == COORD_SYS_CARTESIAN_1D)
@@ -207,7 +161,6 @@ ErrorStatus random_choice_1d(
         memcpy(temp_density, density, num_total_cells * sizeof(double));
         memcpy(temp_velocity_x, velocity_x, num_total_cells * sizeof(double));
         memcpy(temp_pressure, pressure, num_total_cells * sizeof(double));
-        error_status = make_success_error_status();
 #ifdef USE_OPENMP
         #pragma omp parallel for
 #endif
@@ -261,7 +214,6 @@ ErrorStatus random_choice_1d(
                 error_status = local_error_status;
             }
         }
-
         if (error_status.return_code != SUCCESS)
         {
             goto err_solve_flux;
@@ -333,7 +285,5 @@ err_memory:
     free(temp_density);
     free(temp_velocity_x);
     free(temp_pressure);
-err_riemann_solver:
-err_coord_sys:
     return error_status;
 }
