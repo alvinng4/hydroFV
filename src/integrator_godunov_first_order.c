@@ -200,7 +200,6 @@ ErrorStatus godunov_first_order_1d(
             momentum_x[idx] += d_rho_u * surface_area_x[idx];
             energy[idx] += d_energy_density * surface_area_x[idx];
         }
-
         if (error_status.return_code != SUCCESS)
         {
             goto err_solve_flux;

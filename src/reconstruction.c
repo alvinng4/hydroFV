@@ -28,11 +28,11 @@ ErrorStatus get_reconstruction_flag(IntegratorParam *__restrict integrator_param
         integrator_param->reconstruction_flag_ = RECONSTRUCTION_PIECEWISE_CONSTANT;
         return make_success_error_status();
     }
-    // else if (strcmp(integrator_param->reconstruction, "piecewise_linear") == 0)
-    // {
-    //     integrator_param->reconstruction_flag_ = RECONSTRUCTION_PIECEWISE_LINEAR;
-    //     return make_success_error_status();
-    // }
+    else if (strcmp(integrator_param->reconstruction, "piecewise_linear") == 0)
+    {
+        integrator_param->reconstruction_flag_ = RECONSTRUCTION_PIECEWISE_LINEAR;
+        return make_success_error_status();
+    }
     // else if (strcmp(integrator_param->reconstruction, "piecewise_parabolic") == 0)
     // {
     //     integrator_param->reconstruction_flag_ = RECONSTRUCTION_PIECEWISE_PARABOLIC;
@@ -100,10 +100,10 @@ IN_FILE ErrorStatus reconstruct_cell_interface_piecewise_constant_2d(System *__r
     const int num_interfaces_y = system->num_cells_y + 1;
     const int num_ghost_cells_side = system->num_ghost_cells_side;
 
-    double *__restrict density = system->density_;
-    double *__restrict velocity_x = system->velocity_x_;
-    double *__restrict velocity_y = system->velocity_y_;
-    double *__restrict pressure = system->pressure_;
+    const double *__restrict density = system->density_;
+    const double *__restrict velocity_x = system->velocity_x_;
+    const double *__restrict velocity_y = system->velocity_y_;
+    const double *__restrict pressure = system->pressure_;
 
     double *__restrict interface_density_x_L = system->interface_density_x_L_;
     double *__restrict interface_density_x_R = system->interface_density_x_R_;
@@ -167,6 +167,73 @@ IN_FILE ErrorStatus reconstruct_cell_interface_piecewise_constant_2d(System *__r
     return make_success_error_status();
 }
 
+IN_FILE double van_leer(double a, double b)
+{
+    if (a * b <= 0.0)
+    {
+        return 0.0;
+    }
+    else
+    {
+        return 2.0 * a * b / (a + b + 1e-10);
+    }
+}
+
+IN_FILE ErrorStatus reconstruct_cell_interface_piecewise_linear_1d(System *__restrict system)
+{
+    const int num_ghost_cells_side = system->num_ghost_cells_side;
+    const int num_cells = system->num_cells_x;
+    const int num_cells_plus_two = num_cells + 2;
+
+    const double *__restrict density = system->density_;
+    const double *__restrict velocity_x = system->velocity_x_;
+    const double *__restrict pressure = system->pressure_;
+
+    double *__restrict interface_density_L = system->interface_density_x_L_;
+    double *__restrict interface_density_R = system->interface_density_x_R_;
+    double *__restrict interface_velocity_x_L = system->interface_velocity_x_x_L_;
+    double *__restrict interface_velocity_x_R = system->interface_velocity_x_x_R_;
+    double *__restrict interface_pressure_L = system->interface_pressure_x_L_;
+    double *__restrict interface_pressure_R = system->interface_pressure_x_R_;
+
+    #ifdef USE_OPENMP
+        #pragma omp parallel for schedule(static)
+    #endif
+    for (int i = 0; i < num_cells_plus_two; i++)
+    {
+        const int idx_i = num_ghost_cells_side + i - 1;
+        
+        // Calculate left and right differences
+        const double delta_density_left = density[idx_i] - density[idx_i - 1];
+        const double delta_density_right = density[idx_i + 1] - density[idx_i];
+        const double delta_velocity_left = velocity_x[idx_i] - velocity_x[idx_i - 1];
+        const double delta_velocity_right = velocity_x[idx_i + 1] - velocity_x[idx_i];
+        const double delta_pressure_left = pressure[idx_i] - pressure[idx_i - 1];
+        const double delta_pressure_right = pressure[idx_i + 1] - pressure[idx_i];
+
+        // Apply slope limiter
+        double delta_density = van_leer(delta_density_left, delta_density_right);
+        double delta_velocity_x = van_leer(delta_velocity_left, delta_velocity_right);
+        double delta_pressure = van_leer(delta_pressure_left, delta_pressure_right);
+
+        if (i > 0)
+        {
+            interface_density_R[i - 1] = density[idx_i] - 0.5 * delta_density;
+            interface_velocity_x_R[i - 1] = velocity_x[idx_i] - 0.5 * delta_velocity_x;
+            interface_pressure_R[i - 1] = pressure[idx_i] - 0.5 * delta_pressure;
+        }
+        if (i < num_cells + 1)
+        {
+            interface_density_L[i] = density[idx_i] + 0.5 * delta_density;
+            interface_velocity_x_L[i] = velocity_x[idx_i] + 0.5 * delta_velocity_x;
+            interface_pressure_L[i] = pressure[idx_i] + 0.5 * delta_pressure;
+        }
+    }
+
+    return make_success_error_status();
+}
+
+
 ErrorStatus reconstruct_cell_interface_1d(
     System *__restrict system,
     IntegratorParam *__restrict integrator_param
@@ -175,9 +242,17 @@ ErrorStatus reconstruct_cell_interface_1d(
     switch (integrator_param->reconstruction_flag_)
     {
         case RECONSTRUCTION_PIECEWISE_CONSTANT:
+            if (system->num_ghost_cells_side < 1)
+            {
+                return WRAP_RAISE_ERROR(VALUE_ERROR, "Number of ghost cells per side must be at least 1.");
+            }
             return reconstruct_cell_interface_piecewise_constant_1d(system);
-        // case RECONSTRUCTION_PIECEWISE_LINEAR:
-        //     return reconstruct_cell_interface_piecewise_linear_1d(system);
+        case RECONSTRUCTION_PIECEWISE_LINEAR:
+            if (system->num_ghost_cells_side < 2)
+            {
+                return WRAP_RAISE_ERROR(VALUE_ERROR, "Number of ghost cells per side must be at least 2.");
+            }
+            return reconstruct_cell_interface_piecewise_linear_1d(system);
         // case RECONSTRUCTION_PIECEWISE_PARABOLIC:
         //     return reconstruct_cell_interface_piecewise_parabolic_1d(system, interface_field);
         default:
@@ -193,6 +268,10 @@ ErrorStatus reconstruct_cell_interface_2d(
     switch (integrator_param->reconstruction_flag_)
     {
         case RECONSTRUCTION_PIECEWISE_CONSTANT:
+            if (system->num_ghost_cells_side < 1)
+            {
+                return WRAP_RAISE_ERROR(VALUE_ERROR, "Number of ghost cells per side must be at least 1.");
+            }
             return reconstruct_cell_interface_piecewise_constant_2d(system);
         // case RECONSTRUCTION_PIECEWISE_LINEAR:
         //     return reconstruct_cell_interface_piecewise_linear_1d(system, interface_field);
