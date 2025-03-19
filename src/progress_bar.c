@@ -297,15 +297,22 @@ void update_progress_bar(
         progress_bar_param->diff_time_last_five_update[3] = progress_bar_param->diff_time_last_five_update[4];
         progress_bar_param->diff_time_last_five_update[4] = diff_now_start;
     }
-        
+
     if (is_end)
     {
         // We still need to estimate the remaining time
         // even when the progress bar ends since it could
         // be triggered by an error rather than the actual
         // completion of the task.
-        time_t estimated_time_remaining = (least_squares_regression_remaining_time(progress_bar_param, diff_now_start));
-        print_progress_bar(progress_bar_param, percent, estimated_time_remaining, true);
+        if (progress_bar_param->at_least_four_count < 4)
+        {
+            print_progress_bar(progress_bar_param, percent, -1.0, true);
+        }
+        else 
+        {
+            time_t estimated_time_remaining = (least_squares_regression_remaining_time(progress_bar_param, diff_now_start));
+            print_progress_bar(progress_bar_param, percent, estimated_time_remaining, true);
+        }
     }
     else
     {
