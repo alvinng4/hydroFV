@@ -9,8 +9,9 @@
 #define NUM_GHOST_CELLS_SIDE 3
 #define NUM_CELLS NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
 #define INTEGRATOR "godunov_first_order_1d" // "godunov_first_order_1d" or "random_choice_1d"
-#define RECONSTRUCTION "piecewise_linear" // "piecewise_constant", "piecewise_linear" or "piecewise_parabolic"
-#define LIMITER "minmod" // "minmod", "van_leer" or "monotonized_center"
+#define RECONSTRUCTION "piecewise_parabolic" // "piecewise_constant", "piecewise_linear" or "piecewise_parabolic"
+#define LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
+#define TIME_INTEGRATOR "ssp_rk3" // "euler", "ssp_rk2" or "ssp_rk3"
 
 #define CFL 0.4
 #define TF 1.0
@@ -122,6 +123,7 @@ int main(void)
     integrator_param.riemann_solver = RIEMANN_SOLVER;
     integrator_param.reconstruction = RECONSTRUCTION;
     integrator_param.reconstruction_limiter = LIMITER;
+    integrator_param.time_integrator = TIME_INTEGRATOR;
     integrator_param.cfl = CFL;
 
     /* Storing parameters */

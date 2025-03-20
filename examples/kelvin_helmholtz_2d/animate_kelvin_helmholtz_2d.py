@@ -64,12 +64,13 @@ def main() -> None:
                 vmax=2.0,
                 cmap="gist_gray",
             )
-            colorbar = plt.colorbar(ax.images[0], ax=ax)
+            colorbar = plt.colorbar(ax.images[0], ax=ax, shrink=0.75)
             colorbar.set_label("Density")
             plt.xlabel("x")
             plt.ylabel("y")
             plt.title(f"Kelvin-Helmholtz Instability (t={t:.2f})")
 
+            plt.tight_layout()
             
             plt.savefig(FRAME_FOLDER / f"frame_{i:04d}.png")
             plt.close("all")
@@ -89,6 +90,8 @@ def main() -> None:
 
     for i in range(len(snapshot_files)):
         (FRAME_FOLDER / f"frame_{i:04d}.png").unlink()
+
+    FRAME_FOLDER.rmdir()
 
     print(f"Output completed! Please check {FILE_PATH}")
     print()

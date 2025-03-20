@@ -12,11 +12,12 @@
 #define NUM_CELLS_X NUM_TOTAL_CELLS_X - 2 * NUM_GHOST_CELLS_SIDE
 #define NUM_CELLS_Y NUM_TOTAL_CELLS_Y - 2 * NUM_GHOST_CELLS_SIDE
 #define INTEGRATOR "godunov_first_order_2d"
-#define RECONSTRUCTION "piecewise_linear" // "piecewise_constant", "piecewise_linear" or "piecewise_parabolic"
-#define LIMITER "minmod" // "minmod", "van_leer" or "monotonized_center"
+#define RECONSTRUCTION "piecewise_parabolic" // "piecewise_constant", "piecewise_linear" or "piecewise_parabolic"
+#define LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
+#define TIME_INTEGRATOR "ssp_rk3" // "euler", "ssp_rk2" or "ssp_rk3"
 
-#define CFL 0.4
-#define TF 3.0
+#define CFL 0.5
+#define TF 4.0
 #define TOL 1e-6 // For the riemann solver
 
 /* Parameters */
@@ -141,6 +142,7 @@ int main(void)
     integrator_param.riemann_solver = RIEMANN_SOLVER;
     integrator_param.reconstruction = RECONSTRUCTION;
     integrator_param.reconstruction_limiter = LIMITER;
+    integrator_param.time_integrator = TIME_INTEGRATOR;
     integrator_param.cfl = CFL;
 
     /* Storing parameters */
