@@ -4,7 +4,7 @@
  * \brief Common definitions for the hydrodynamics simulation
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-18
+ * \date 2025-03-20
  */
 
 #ifndef COMMON_H
@@ -32,6 +32,7 @@ typedef struct IntegratorParam
     char *riemann_solver;
     char *reconstruction;
     char *reconstruction_limiter;
+    char *time_integrator;
     double cfl;
     double cfl_initial_shrink_factor;
     int cfl_initial_shrink_num_steps;
@@ -40,6 +41,7 @@ typedef struct IntegratorParam
     int riemann_solver_flag_;
     int reconstruction_flag_;
     int reconstruction_limiter_flag_;
+    int time_integrator_flag_;
 } IntegratorParam;
 
 typedef struct StoringParam

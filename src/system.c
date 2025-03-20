@@ -4,7 +4,7 @@
  * \brief Functions related to the hydrodynamics system.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-19
+ * \date 2025-03-20
  */
 
 #include <math.h>
@@ -1027,23 +1027,19 @@ void free_system_memory(System *__restrict system)
     free(system->volume_);
 }
 
-/**
- * \brief Set the boundary condition for 1D system.
- * 
- * \param system Pointer to the system struct.
- * 
- * \return Error status.
- */
-IN_FILE ErrorStatus set_boundary_condition_1d(System *__restrict system)
+ErrorStatus set_boundary_condition_1d(
+    double *__restrict density,
+    double *__restrict velocity_x,
+    double *__restrict pressure,
+    const int num_ghost_cells_side,
+    const int num_cells_x,
+    const int boundary_condition_flag_x_min,
+    const int boundary_condition_flag_x_max
+)
 {
     ErrorStatus error_status;
 
-    double *__restrict density = system->density_;
-    double *__restrict velocity_x = system->velocity_x_;
-    double *__restrict pressure = system->pressure_;
-    const int num_ghost_cells_side = system->num_ghost_cells_side;
-
-    switch (system->boundary_condition_flag_x_min_)
+    switch (boundary_condition_flag_x_min)
     {
         case BOUNDARY_CONDITION_NONE:
             break;
@@ -1071,36 +1067,36 @@ IN_FILE ErrorStatus set_boundary_condition_1d(System *__restrict system)
             goto err_unknown_boundary_condition_flag;
     }
 
-    switch (system->boundary_condition_flag_x_max_)
+    switch (boundary_condition_flag_x_max)
     {
         case BOUNDARY_CONDITION_NONE:
             break;
         case BOUNDARY_CONDITION_REFLECTIVE:
             for (int i = 0; i < num_ghost_cells_side; i++)
             {
-                density[num_ghost_cells_side + system->num_cells_x + i] = density[num_ghost_cells_side + system->num_cells_x - 1 - i];
-                velocity_x[num_ghost_cells_side + system->num_cells_x + i] = -velocity_x[num_ghost_cells_side + system->num_cells_x - 1 - i];
-                pressure[num_ghost_cells_side + system->num_cells_x + i] = pressure[num_ghost_cells_side + system->num_cells_x - 1 - i];
+                density[num_ghost_cells_side + num_cells_x + i] = density[num_ghost_cells_side + num_cells_x - 1 - i];
+                velocity_x[num_ghost_cells_side + num_cells_x + i] = -velocity_x[num_ghost_cells_side + num_cells_x - 1 - i];
+                pressure[num_ghost_cells_side + num_cells_x + i] = pressure[num_ghost_cells_side + num_cells_x - 1 - i];
             }
             break;
         case BOUNDARY_CONDITION_TRANSMISSIVE:
             for (int i = 0; i < num_ghost_cells_side; i++)
             {
-                density[num_ghost_cells_side + system->num_cells_x + i] = density[num_ghost_cells_side + system->num_cells_x - 1 - i];
-                velocity_x[num_ghost_cells_side + system->num_cells_x + i] = velocity_x[num_ghost_cells_side + system->num_cells_x - 1 - i];
-                pressure[num_ghost_cells_side + system->num_cells_x + i] = pressure[num_ghost_cells_side + system->num_cells_x - 1 - i];
+                density[num_ghost_cells_side + num_cells_x + i] = density[num_ghost_cells_side + num_cells_x - 1 - i];
+                velocity_x[num_ghost_cells_side + num_cells_x + i] = velocity_x[num_ghost_cells_side + num_cells_x - 1 - i];
+                pressure[num_ghost_cells_side + num_cells_x + i] = pressure[num_ghost_cells_side + num_cells_x - 1 - i];
             }
             break;
         case BOUNDARY_CONDITION_PERIODIC:
             for (int i = 0; i < num_ghost_cells_side; i++)
             {
-                density[num_ghost_cells_side + system->num_cells_x + i] = density[num_ghost_cells_side + i];
-                velocity_x[num_ghost_cells_side + system->num_cells_x + i] = velocity_x[num_ghost_cells_side + i];
-                pressure[num_ghost_cells_side + system->num_cells_x + i] = pressure[num_ghost_cells_side + i];
+                density[num_ghost_cells_side + num_cells_x + i] = density[num_ghost_cells_side + i];
+                velocity_x[num_ghost_cells_side + num_cells_x + i] = velocity_x[num_ghost_cells_side + i];
+                pressure[num_ghost_cells_side + num_cells_x + i] = pressure[num_ghost_cells_side + i];
 
-                density[num_ghost_cells_side - 1 - i] = density[num_ghost_cells_side + system->num_cells_x - 1 - i];
-                velocity_x[num_ghost_cells_side - 1 - i] = velocity_x[num_ghost_cells_side + system->num_cells_x - 1 - i];
-                pressure[num_ghost_cells_side - 1 - i] = pressure[num_ghost_cells_side + system->num_cells_x - 1 - i];
+                density[num_ghost_cells_side - 1 - i] = density[num_ghost_cells_side + num_cells_x - 1 - i];
+                velocity_x[num_ghost_cells_side - 1 - i] = velocity_x[num_ghost_cells_side + num_cells_x - 1 - i];
+                pressure[num_ghost_cells_side - 1 - i] = pressure[num_ghost_cells_side + num_cells_x - 1 - i];
             }
             break;
         default:
@@ -1114,27 +1110,24 @@ err_unknown_boundary_condition_flag:
     return error_status;
 }
 
-/**
- * \brief Set the boundary condition for 2D Cartesian system.
- * 
- * \param system Pointer to the system struct.
- * 
- * \return Error status.
- */
-IN_FILE ErrorStatus set_boundary_condition_cartesian_2d(System *__restrict system)
+ErrorStatus set_boundary_condition_cartesian_2d(
+    double *__restrict density,
+    double *__restrict velocity_x,
+    double *__restrict velocity_y,
+    double *__restrict pressure,
+    const int num_ghost_cells_side,
+    const int num_cells_x,
+    const int num_cells_y,
+    const int boundary_condition_flag_x_min,
+    const int boundary_condition_flag_x_max,
+    const int boundary_condition_flag_y_min,
+    const int boundary_condition_flag_y_max
+)
 {
     ErrorStatus error_status;
 
-    double *__restrict density = system->density_;
-    double *__restrict velocity_x = system->velocity_x_;
-    double *__restrict velocity_y = system->velocity_y_;
-    double *__restrict pressure = system->pressure_;
-    const int num_ghost_cells_side = system->num_ghost_cells_side;
-    const int num_cells_x = system->num_cells_x;
-    const int num_cells_y = system->num_cells_y;
     const int total_num_cells_x = num_cells_x + 2 * num_ghost_cells_side;
-
-    switch (system->boundary_condition_flag_x_min_)
+    switch (boundary_condition_flag_x_min)
     {
         case BOUNDARY_CONDITION_NONE:
             break;
@@ -1170,7 +1163,7 @@ IN_FILE ErrorStatus set_boundary_condition_cartesian_2d(System *__restrict syste
             goto err_unknown_boundary_condition_flag;
     }
 
-    switch (system->boundary_condition_flag_x_max_)
+    switch (boundary_condition_flag_x_max)
     {
         case BOUNDARY_CONDITION_NONE:
             break;
@@ -1220,7 +1213,7 @@ IN_FILE ErrorStatus set_boundary_condition_cartesian_2d(System *__restrict syste
             goto err_unknown_boundary_condition_flag;
     }
 
-    switch (system->boundary_condition_flag_y_min_)
+    switch (boundary_condition_flag_y_min)
     {
         case BOUNDARY_CONDITION_NONE:
             break;
@@ -1256,7 +1249,7 @@ IN_FILE ErrorStatus set_boundary_condition_cartesian_2d(System *__restrict syste
             goto err_unknown_boundary_condition_flag;
     }
 
-    switch (system->boundary_condition_flag_y_max_)
+    switch (boundary_condition_flag_y_max)
     {
         case BOUNDARY_CONDITION_NONE:
             break;
@@ -1330,9 +1323,29 @@ ErrorStatus set_boundary_condition(System *__restrict system)
     switch (system->coord_sys_flag_)
     {
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
-            return WRAP_TRACEBACK(set_boundary_condition_1d(system));
+            return WRAP_TRACEBACK(set_boundary_condition_1d(
+                system->density_,
+                system->velocity_x_,
+                system->pressure_,
+                system->num_ghost_cells_side,
+                system->num_cells_x,
+                system->boundary_condition_flag_x_min_,
+                system->boundary_condition_flag_x_max_
+            ));
         case COORD_SYS_CARTESIAN_2D:
-            return WRAP_TRACEBACK(set_boundary_condition_cartesian_2d(system));
+            return WRAP_TRACEBACK(set_boundary_condition_cartesian_2d(
+                system->density_,
+                system->velocity_x_,
+                system->velocity_y_,
+                system->pressure_,
+                system->num_ghost_cells_side,
+                system->num_cells_x,
+                system->num_cells_y,
+                system->boundary_condition_flag_x_min_,
+                system->boundary_condition_flag_x_max_,
+                system->boundary_condition_flag_y_min_,
+                system->boundary_condition_flag_y_max_
+            ));
         case COORD_SYS_CARTESIAN_3D:
             return WRAP_TRACEBACK(set_boundary_condition_cartesian_3d(system));
         default:
@@ -1340,63 +1353,109 @@ ErrorStatus set_boundary_condition(System *__restrict system)
     }
 }
 
+void convert_conserved_to_primitive_1d(
+    const int num_cells_x,
+    const int num_ghost_cells_side,
+    const double gamma,
+    const double *__restrict volume,
+    const double *__restrict mass,
+    const double *__restrict momentum_x,
+    const double *__restrict energy,
+    double *__restrict density,
+    double *__restrict velocity_x,
+    double *__restrict pressure
+)
+{
+#ifdef USE_OPENMP
+    #pragma omp parallel for schedule(static)
+#endif
+    for (int i = 0; i < (num_cells_x + 2 * num_ghost_cells_side); i++)
+    {
+        const double mass_i = mass[i];
+        const double momentum_x_i = momentum_x[i];
+        const double energy_i = energy[i];
+        const double volume_i = volume[i];
+        density[i] = mass_i / volume_i;
+        velocity_x[i] = momentum_x_i / mass_i;
+        pressure[i] = (gamma - 1.0) * (energy_i - 0.5 * mass_i * velocity_x[i] * velocity_x[i]) / volume_i;
+    }
+}
+
+void convert_conserved_to_primitive_2d(
+    const int num_cells_x,
+    const int num_cells_y,
+    const int num_ghost_cells_side,
+    const double gamma,
+    const double *__restrict volume,
+    const double *__restrict mass,
+    const double *__restrict momentum_x,
+    const double *__restrict momentum_y,
+    const double *__restrict energy,
+    double *__restrict density,
+    double *__restrict velocity_x,
+    double *__restrict velocity_y,
+    double *__restrict pressure
+)
+{
+#ifdef USE_OPENMP
+    #pragma omp parallel for schedule(static)
+#endif
+    for (int i = 0; i < (num_cells_x + 2 * num_ghost_cells_side); i++)
+    {
+        for (int j = 0; j < (num_cells_y + 2 * num_ghost_cells_side); j++)
+        {
+            const int index = j * (num_cells_x + 2 * num_ghost_cells_side) + i;
+            const double mass_ij = mass[index];
+            const double momentum_x_ij = momentum_x[index];
+            const double momentum_y_ij = momentum_y[index];
+            const double energy_ij = energy[index];
+            const double volume_ij = volume[index];
+            density[index] = mass_ij / volume_ij;
+            velocity_x[index] = momentum_x_ij / mass_ij;
+            velocity_y[index] = momentum_y_ij / mass_ij;
+            pressure[index] = (gamma - 1.0) * (
+                energy_ij - 0.5 * mass_ij * (
+                    velocity_x[index] * velocity_x[index] + velocity_y[index] * velocity_y[index]
+                )
+            ) / volume_ij;
+        }
+    }
+}
+
 ErrorStatus convert_conserved_to_primitive(System *__restrict system)
 {
-    const int num_ghost_cells_side = system->num_ghost_cells_side;
-    const double gamma = system->gamma;
-    const double *__restrict volume = system->volume_;
-    const double *__restrict mass = system->mass_;
-    const double *__restrict momentum_x = system->momentum_x_;
-    const double *__restrict momentum_y = system->momentum_y_;
-    // const double *__restrict momentum_z = system->momentum_z_;
-    const double *__restrict energy = system->energy_;
-    double *__restrict density = system->density_;
-    double *__restrict velocity_x = system->velocity_x_;
-    double *__restrict velocity_y = system->velocity_y_;
-    // double *__restrict velocity_z = system->velocity_z_;
-    double *__restrict pressure = system->pressure_;
-
     switch(system->coord_sys_flag_)
     {
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
-#ifdef USE_OPENMP
-            #pragma omp parallel for schedule(static)
-#endif
-            for (int i = 0; i < (system->num_cells_x + 2 * num_ghost_cells_side); i++)
-            {
-                const double mass_i = mass[i];
-                const double momentum_x_i = momentum_x[i];
-                const double energy_i = energy[i];
-                const double volume_i = volume[i];
-                density[i] = mass_i / volume_i;
-                velocity_x[i] = momentum_x_i / mass_i;
-                pressure[i] = (gamma - 1.0) * (energy_i - 0.5 * mass_i * velocity_x[i] * velocity_x[i]) / volume_i;
-            }
+            convert_conserved_to_primitive_1d(
+                system->num_cells_x,
+                system->num_ghost_cells_side,
+                system->gamma,
+                system->volume_,
+                system->mass_,
+                system->momentum_x_,
+                system->energy_,
+                system->density_,
+                system->velocity_x_,
+                system->pressure_
+            );
             break;
         case COORD_SYS_CARTESIAN_2D:
-            #ifdef USE_OPENMP
-            #pragma omp parallel for schedule(static)
-            #endif
-            for (int i = 0; i < (system->num_cells_x + 2 * num_ghost_cells_side); i++)
-            {
-                for (int j = 0; j < (system->num_cells_y + 2 * num_ghost_cells_side); j++)
-                {
-                    const int index = j * (system->num_cells_x + 2 * num_ghost_cells_side) + i;
-                    const double mass_ij = mass[index];
-                    const double momentum_x_ij = momentum_x[index];
-                    const double momentum_y_ij = momentum_y[index];
-                    const double energy_ij = energy[index];
-                    const double volume_ij = volume[index];
-                    density[index] = mass_ij / volume_ij;
-                    velocity_x[index] = momentum_x_ij / mass_ij;
-                    velocity_y[index] = momentum_y_ij / mass_ij;
-                    pressure[index] = (gamma - 1.0) * (
-                        energy_ij - 0.5 * mass_ij * (
-                            velocity_x[index] * velocity_x[index] + velocity_y[index] * velocity_y[index]
-                        )
-                    ) / volume_ij;
-                }
-            }
+            convert_conserved_to_primitive_2d(
+                system->num_cells_x,
+                system->num_cells_y,
+                system->num_ghost_cells_side,
+                system->gamma,
+                system->volume_,
+                system->mass_,
+                system->momentum_x_,
+                system->momentum_y_,
+                system->energy_,
+                system->density_,
+                system->velocity_x_,
+                system->velocity_y_,
+                system->pressure_
+            );
             break;
         case COORD_SYS_CARTESIAN_3D:
             return WRAP_RAISE_ERROR(NOT_IMPLEMENTED_ERROR, "");

@@ -4,7 +4,7 @@
  * \brief Header file for definition and prototypes related to the hydrodynamics system.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-19
+ * \date 2025-03-20
  */
 
 #ifndef SYSTEM_H
@@ -99,6 +99,30 @@ ErrorStatus system_init(System *__restrict system);
  */
 void free_system_memory(System *__restrict system);
 
+ErrorStatus set_boundary_condition_1d(
+    double *__restrict density,
+    double *__restrict velocity_x,
+    double *__restrict pressure,
+    const int num_ghost_cells_side,
+    const int num_cells_x,
+    const int boundary_condition_flag_x_min,
+    const int boundary_condition_flag_x_max
+);
+
+ErrorStatus set_boundary_condition_cartesian_2d(
+    double *__restrict density,
+    double *__restrict velocity_x,
+    double *__restrict velocity_y,
+    double *__restrict pressure,
+    const int num_ghost_cells_side,
+    const int num_cells_x,
+    const int num_cells_y,
+    const int boundary_condition_flag_x_min,
+    const int boundary_condition_flag_x_max,
+    const int boundary_condition_flag_y_min,
+    const int boundary_condition_flag_y_max
+);
+
 /**
  * \brief Set the boundary conditions.
  * 
@@ -107,6 +131,35 @@ void free_system_memory(System *__restrict system);
  * \return Error status.
  */
 ErrorStatus set_boundary_condition(System *__restrict system);
+
+void convert_conserved_to_primitive_1d(
+    const int num_cells_x,
+    const int num_ghost_cells_side,
+    const double gamma,
+    const double *__restrict volume,
+    const double *__restrict mass,
+    const double *__restrict momentum_x,
+    const double *__restrict energy,
+    double *__restrict density,
+    double *__restrict velocity_x,
+    double *__restrict pressure
+);
+
+void convert_conserved_to_primitive_2d(
+    const int num_cells_x,
+    const int num_cells_y,
+    const int num_ghost_cells_side,
+    const double gamma,
+    const double *__restrict volume,
+    const double *__restrict mass,
+    const double *__restrict momentum_x,
+    const double *__restrict momentum_y,
+    const double *__restrict energy,
+    double *__restrict density,
+    double *__restrict velocity_x,
+    double *__restrict velocity_y,
+    double *__restrict pressure
+);
 
 /**
  * \brief Convert the conserved variables to primitive variables.

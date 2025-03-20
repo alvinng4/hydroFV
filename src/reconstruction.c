@@ -4,7 +4,7 @@
  * \brief Reconstruction functions for the cell interface for the finite volume method.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-19
+ * \date 2025-03-20
  */
 
 #include <math.h>
@@ -242,7 +242,7 @@ void reconstruct_cell_interface(
     const int num_ghost_cells_side
 )
 {
-    reconstruction_limiter_func limiter;
+    reconstruction_limiter_func limiter = NULL;
     switch (integrator_param->reconstruction_limiter_flag_)
     {
         case RECONSTRUCTION_LIMITER_MINMOD:

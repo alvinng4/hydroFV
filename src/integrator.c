@@ -4,9 +4,10 @@
  * \brief Integrator related functions for the hydrodynamics simulation.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-19
+ * \date 2025-03-20
  */
 
+#include <stdio.h>
 #include <string.h>
 
 #include "hydro.h"
@@ -19,6 +20,7 @@ IntegratorParam get_new_integrator_param(void)
     integrator_param.riemann_solver = NULL;
     integrator_param.reconstruction = NULL;
     integrator_param.reconstruction_limiter = NULL;
+    integrator_param.time_integrator = NULL;
     integrator_param.cfl = 0.5;
     integrator_param.cfl_initial_shrink_factor = 0.2;
     integrator_param.cfl_initial_shrink_num_steps = 10;
@@ -27,11 +29,13 @@ IntegratorParam get_new_integrator_param(void)
     integrator_param.riemann_solver_flag_ = -1;
     integrator_param.reconstruction_flag_ = -1;
     integrator_param.reconstruction_limiter_flag_ = -1;
+    integrator_param.time_integrator_flag_ = -1;
     return integrator_param;
 }
 
 IN_FILE ErrorStatus get_integrator_flag(IntegratorParam *__restrict integrator_param)
 {
+    /* Integrator */
     if (!integrator_param->integrator)
     {
         return WRAP_RAISE_ERROR(POINTER_ERROR, "Integrator is not set.");
@@ -40,22 +44,44 @@ IN_FILE ErrorStatus get_integrator_flag(IntegratorParam *__restrict integrator_p
     if (strcmp(integrator_param->integrator, "random_choice_1d") == 0)
     {
         integrator_param->integrator_flag_ = INTEGRATOR_RANDOM_CHOICE_1D;
-        return make_success_error_status();
     }
     else if (strcmp(integrator_param->integrator, "godunov_first_order_1d") == 0)
     {
         integrator_param->integrator_flag_ = INTEGRATOR_GODUNOV_FIRST_ORDER_1D;
-        return make_success_error_status();
     }
     else if (strcmp(integrator_param->integrator, "godunov_first_order_2d") == 0)
     {
         integrator_param->integrator_flag_ = INTEGRATOR_GODUNOV_FIRST_ORDER_2D;
-        return make_success_error_status();
     }
     else
     {
         return WRAP_RAISE_ERROR(VALUE_ERROR, "Integrator not recognized.");
     }
+
+    /* Time integrator */
+    if (!integrator_param->time_integrator)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Time integrator is not set.");
+    }
+
+    if (strcmp(integrator_param->time_integrator, "euler") == 0)
+    {
+        integrator_param->time_integrator_flag_ = TIME_INTEGRATOR_EULER;
+    }
+    else if (strcmp(integrator_param->time_integrator, "ssp_rk2") == 0)
+    {
+        integrator_param->time_integrator_flag_ = TIME_INTEGRATOR_SSP_RK2;
+    }
+    else if (strcmp(integrator_param->time_integrator, "ssp_rk3") == 0)
+    {
+        integrator_param->time_integrator_flag_ = TIME_INTEGRATOR_SSP_RK3;
+    }
+    else
+    {
+        return WRAP_RAISE_ERROR(VALUE_ERROR, "Time integrator not recognized.");
+    }
+
+    return make_success_error_status();
 }
 
 ErrorStatus finalize_integrator_param(IntegratorParam *__restrict integrator_param)
@@ -118,9 +144,9 @@ ErrorStatus integrator_launch_simulation(
                 system, integrator_param, storing_param, settings, simulation_param, simulation_status
             ));
         case INTEGRATOR_GODUNOV_FIRST_ORDER_2D:
-            return WRAP_TRACEBACK(godunov_first_order_2d(
-                system, integrator_param, storing_param, settings, simulation_param, simulation_status
-            ));
+            // return WRAP_TRACEBACK(godunov_first_order_2d(
+            //     system, integrator_param, storing_param, settings, simulation_param, simulation_status
+            // ));
         default:
             return WRAP_RAISE_ERROR(VALUE_ERROR, "Integrator flag not recognized.");
     }
