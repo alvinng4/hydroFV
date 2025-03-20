@@ -186,7 +186,14 @@ IN_FILE ErrorStatus time_integrator_euler_1d(
         ));
         if (local_error_status.return_code != SUCCESS)
         {
-            error_status = local_error_status;
+#ifdef USE_OPENMP
+            #pragma omp critical
+            {
+#endif
+                error_status = local_error_status;
+#ifdef USE_OPENMP
+            }
+#endif
         }
 
         const double d_rho = flux_mass * dt;
@@ -276,7 +283,7 @@ IN_FILE ErrorStatus time_integrator_ssp_rk2_1d(
     int stage;
     const int num_stages = 2;
     const int num_stages_minus_one = num_stages - 1;
-    const double coeff[num_stages * 2] = {1.0, 1.0, 0.5, 0.5};
+    const double coeff[2 * 2] = {1.0, 1.0, 0.5, 0.5};
 
     const int total_num_cells = num_cells + 2 * num_ghost_cells_side;
 
@@ -367,7 +374,14 @@ IN_FILE ErrorStatus time_integrator_ssp_rk2_1d(
         ));
         if (local_error_status.return_code != SUCCESS)
         {
-            error_status = local_error_status;
+#ifdef USE_OPENMP
+            #pragma omp critical
+            {
+#endif
+                error_status = local_error_status;
+#ifdef USE_OPENMP
+            }
+#endif
         }
 
         const double d_rho = coeff[stage * 2 + 1] * flux_mass * dt;
@@ -465,7 +479,14 @@ IN_FILE ErrorStatus time_integrator_ssp_rk2_1d(
         ));
         if (local_error_status.return_code != SUCCESS)
         {
-            error_status = local_error_status;
+#ifdef USE_OPENMP
+            #pragma omp critical
+            {
+#endif
+                error_status = local_error_status;
+#ifdef USE_OPENMP
+            }
+#endif
         }
 
         const double d_rho = coeff[stage * 2 + 1] * flux_mass * dt;
@@ -569,7 +590,7 @@ IN_FILE ErrorStatus time_integrator_ssp_rk3_1d(
     int stage;
     const int num_stages = 3;
     const int num_stages_minus_one = num_stages - 1;
-    const double coeff[num_stages * 2] = {
+    const double coeff[3 * 2] = {
         1.0, 1.0,
         0.75, 0.25,
         1.0 / 3.0, 2.0 / 3.0
@@ -664,7 +685,14 @@ IN_FILE ErrorStatus time_integrator_ssp_rk3_1d(
         ));
         if (local_error_status.return_code != SUCCESS)
         {
-            error_status = local_error_status;
+#ifdef USE_OPENMP
+            #pragma omp critical
+            {
+#endif
+                error_status = local_error_status;
+#ifdef USE_OPENMP
+            }
+#endif
         }
 
         const double d_rho = coeff[stage * 2 + 1] * flux_mass * dt;
@@ -762,7 +790,14 @@ IN_FILE ErrorStatus time_integrator_ssp_rk3_1d(
         ));
         if (local_error_status.return_code != SUCCESS)
         {
-            error_status = local_error_status;
+#ifdef USE_OPENMP
+            #pragma omp critical
+            {
+#endif
+                error_status = local_error_status;
+#ifdef USE_OPENMP
+            }
+#endif
         }
 
         const double d_rho = coeff[stage * 2 + 1] * flux_mass * dt;
@@ -860,7 +895,14 @@ IN_FILE ErrorStatus time_integrator_ssp_rk3_1d(
         ));
         if (local_error_status.return_code != SUCCESS)
         {
-            error_status = local_error_status;
+#ifdef USE_OPENMP
+            #pragma omp critical
+            {
+#endif
+                error_status = local_error_status;
+#ifdef USE_OPENMP
+            }
+#endif
         }
 
         const double d_rho = coeff[stage * 2 + 1] * flux_mass * dt;

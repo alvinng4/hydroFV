@@ -107,34 +107,12 @@ IN_FILE ErrorStatus time_integrator_euler_2d(
     const int total_num_cells_x = num_cells_x + 2 * num_ghost_cells_side;
     const int total_num_cells_y = num_cells_y + 2 * num_ghost_cells_side;
 
-    double *__restrict temp_density_y = NULL;
-    double *__restrict temp_velocity_y_x = NULL;
-    double *__restrict temp_velocity_y_y = NULL;
-    double *__restrict temp_pressure_y = NULL;
-
-    double *__restrict interface_density_x_L = NULL;
-    double *__restrict interface_density_x_R = NULL;
-    double *__restrict interface_velocity_x_x_L = NULL;
-    double *__restrict interface_velocity_x_x_R = NULL;
-    double *__restrict interface_velocity_x_y_L = NULL;
-    double *__restrict interface_velocity_x_y_R = NULL;
-    double *__restrict interface_pressure_x_L = NULL;
-    double *__restrict interface_pressure_x_R = NULL;
-
-    double *__restrict interface_density_y_B = NULL;
-    double *__restrict interface_density_y_T = NULL;
-    double *__restrict interface_velocity_y_x_B = NULL;
-    double *__restrict interface_velocity_y_x_T = NULL;
-    double *__restrict interface_velocity_y_y_B = NULL;
-    double *__restrict interface_velocity_y_y_T = NULL;
-    double *__restrict interface_pressure_y_B = NULL;
-    double *__restrict interface_pressure_y_T = NULL;
-
+#ifndef USE_OPENMP
     /* Allocate memory for temporary arrays */
-    temp_density_y = malloc(total_num_cells_y * sizeof(double));
-    temp_velocity_y_x = malloc(total_num_cells_y * sizeof(double));
-    temp_velocity_y_y = malloc(total_num_cells_y * sizeof(double));
-    temp_pressure_y = malloc(total_num_cells_y * sizeof(double));
+    double *__restrict temp_density_y = malloc(total_num_cells_y * sizeof(double));
+    double *__restrict temp_velocity_y_x = malloc(total_num_cells_y * sizeof(double));
+    double *__restrict temp_velocity_y_y = malloc(total_num_cells_y * sizeof(double));
+    double *__restrict temp_pressure_y = malloc(total_num_cells_y * sizeof(double));
     if (
         !temp_density_y
         || !temp_velocity_y_x
@@ -147,23 +125,23 @@ IN_FILE ErrorStatus time_integrator_euler_2d(
     }
 
     /* Allocate memory for interface arrays */
-    interface_density_x_L = malloc(num_interfaces_x * sizeof(double));
-    interface_density_x_R = malloc(num_interfaces_x * sizeof(double));
-    interface_velocity_x_x_L = malloc(num_interfaces_x * sizeof(double));
-    interface_velocity_x_x_R = malloc(num_interfaces_x * sizeof(double));
-    interface_velocity_x_y_L = malloc(num_interfaces_x * sizeof(double));
-    interface_velocity_x_y_R = malloc(num_interfaces_x * sizeof(double));
-    interface_pressure_x_L = malloc(num_interfaces_x * sizeof(double));
-    interface_pressure_x_R = malloc(num_interfaces_x * sizeof(double));
+    double *__restrict interface_density_x_L = malloc(num_interfaces_x * sizeof(double));
+    double *__restrict interface_density_x_R = malloc(num_interfaces_x * sizeof(double));
+    double *__restrict interface_velocity_x_x_L = malloc(num_interfaces_x * sizeof(double));
+    double *__restrict interface_velocity_x_x_R = malloc(num_interfaces_x * sizeof(double));
+    double *__restrict interface_velocity_x_y_L = malloc(num_interfaces_x * sizeof(double));
+    double *__restrict interface_velocity_x_y_R = malloc(num_interfaces_x * sizeof(double));
+    double *__restrict interface_pressure_x_L = malloc(num_interfaces_x * sizeof(double));
+    double *__restrict interface_pressure_x_R = malloc(num_interfaces_x * sizeof(double));
 
-    interface_density_y_B = malloc(num_interfaces_y * sizeof(double));
-    interface_density_y_T = malloc(num_interfaces_y * sizeof(double));
-    interface_velocity_y_x_B = malloc(num_interfaces_y * sizeof(double));
-    interface_velocity_y_x_T = malloc(num_interfaces_y * sizeof(double));
-    interface_velocity_y_y_B = malloc(num_interfaces_y * sizeof(double));
-    interface_velocity_y_y_T = malloc(num_interfaces_y * sizeof(double));
-    interface_pressure_y_B = malloc(num_interfaces_y * sizeof(double));
-    interface_pressure_y_T = malloc(num_interfaces_y * sizeof(double));
+    double *__restrict interface_density_y_B = malloc(num_interfaces_y * sizeof(double));
+    double *__restrict interface_density_y_T = malloc(num_interfaces_y * sizeof(double));
+    double *__restrict interface_velocity_y_x_B = malloc(num_interfaces_y * sizeof(double));
+    double *__restrict interface_velocity_y_x_T = malloc(num_interfaces_y * sizeof(double));
+    double *__restrict interface_velocity_y_y_B = malloc(num_interfaces_y * sizeof(double));
+    double *__restrict interface_velocity_y_y_T = malloc(num_interfaces_y * sizeof(double));
+    double *__restrict interface_pressure_y_B = malloc(num_interfaces_y * sizeof(double));
+    double *__restrict interface_pressure_y_T = malloc(num_interfaces_y * sizeof(double));
 
     if (
         !interface_density_x_L
@@ -187,153 +165,344 @@ IN_FILE ErrorStatus time_integrator_euler_2d(
         error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Failed to allocate memory for interface arrays.");
         goto err_memory_interface;
     }
+#endif
 
-    for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
+#ifdef USE_OPENMP
+    bool shared_malloc_error_flag = false;
+    #pragma omp parallel
     {
-        /* Reconstruct interface */
-        reconstruct_interface_2d(
-            integrator_param,
-            &(density[j * total_num_cells_x]),
-            &(velocity_x[j * total_num_cells_x]),
-            &(velocity_y[j * total_num_cells_x]),
-            &(pressure[j * total_num_cells_x]),
-            interface_density_x_L,
-            interface_density_x_R,
-            interface_velocity_x_x_L,
-            interface_velocity_x_x_R,
-            interface_velocity_x_y_L,
-            interface_velocity_x_y_R,
-            interface_pressure_x_L,
-            interface_pressure_x_R,
-            num_cells_x,
-            num_ghost_cells_side
-        );
+        bool local_malloc_error_flag = false;
 
-        /* Compute fluxes and update step (x-direction) */
-        for (int i = 0; i < num_interfaces_x; i++)
+        /* Allocate memory for interface arrays */
+        double *__restrict interface_density_x_L = malloc(num_interfaces_x * sizeof(double));
+        double *__restrict interface_density_x_R = malloc(num_interfaces_x * sizeof(double));
+        double *__restrict interface_velocity_x_x_L = malloc(num_interfaces_x * sizeof(double));
+        double *__restrict interface_velocity_x_x_R = malloc(num_interfaces_x * sizeof(double));
+        double *__restrict interface_velocity_x_y_L = malloc(num_interfaces_x * sizeof(double));
+        double *__restrict interface_velocity_x_y_R = malloc(num_interfaces_x * sizeof(double));
+        double *__restrict interface_pressure_x_L = malloc(num_interfaces_x * sizeof(double));
+        double *__restrict interface_pressure_x_R = malloc(num_interfaces_x * sizeof(double));
+
+        if (
+            !interface_density_x_L
+            || !interface_density_x_R
+            || !interface_velocity_x_x_L
+            || !interface_velocity_x_x_R
+            || !interface_velocity_x_y_L
+            || !interface_velocity_x_y_R
+            || !interface_pressure_x_L
+            || !interface_pressure_x_R
+        )
         {
-            ErrorStatus local_error_status;
+            local_malloc_error_flag = true;
+        }
 
-            /* x-direction */
-            double flux_mass_x;
-            double flux_momentum_x_x;
-            double flux_momentum_x_y;
-            double flux_energy_x;
-
-            local_error_status = WRAP_TRACEBACK(solve_flux_2d(
-                integrator_param,
-                settings,
-                &flux_mass_x,
-                &flux_momentum_x_x,
-                &flux_momentum_x_y,
-                &flux_energy_x,
-                gamma,
-                interface_density_x_L[i],
-                interface_velocity_x_x_L[i],
-                interface_velocity_x_y_L[i],
-                interface_pressure_x_L[i],
-                interface_density_x_R[i],
-                interface_velocity_x_x_R[i],
-                interface_velocity_x_y_R[i],
-                interface_pressure_x_R[i]
-            ));
-            if (local_error_status.return_code != SUCCESS)
+        // Update shared flag
+        #pragma omp critical
+        {
+            if (local_malloc_error_flag)
             {
-                error_status = local_error_status;
+                shared_malloc_error_flag = true;
             }
-
-            const int idx_i = num_ghost_cells_side + i;
-            mass[j * total_num_cells_x + (idx_i - 1)] -= dt * flux_mass_x * surface_area_x[idx_i - 1];
-            momentum_x[j * total_num_cells_x + (idx_i - 1)] -= dt * flux_momentum_x_x * surface_area_x[idx_i - 1];
-            momentum_y[j * total_num_cells_x + (idx_i - 1)] -= dt * flux_momentum_x_y * surface_area_x[idx_i - 1];
-            energy[j * total_num_cells_x + (idx_i - 1)] -= dt * flux_energy_x * surface_area_x[idx_i - 1];
-
-            mass[j * total_num_cells_x + idx_i] += dt * flux_mass_x * surface_area_x[idx_i];
-            momentum_x[j * total_num_cells_x + idx_i] += dt * flux_momentum_x_x * surface_area_x[idx_i];
-            momentum_y[j * total_num_cells_x + idx_i] += dt * flux_momentum_x_y * surface_area_x[idx_i];
-            energy[j * total_num_cells_x + idx_i] += dt * flux_energy_x * surface_area_x[idx_i];
         }
-    }
-    if (error_status.return_code != SUCCESS)
-    {
-        goto err_compute_fluxes_x;
-    }
+        // Wait for all threads to update shared flag
+        #pragma omp barrier
 
-    /* Compute fluxes and update step (y-direction) */
-    for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x); i++)
-    {
-        // Reconstruct interface
-        for (int j = 0; j < total_num_cells_y; j++)
+        // All threads free memory if there is an error
+        if (shared_malloc_error_flag)
         {
-            temp_density_y[j] = density[j * total_num_cells_x + i];
-            temp_velocity_y_x[j] = velocity_x[j * total_num_cells_x + i];
-            temp_velocity_y_y[j] = velocity_y[j * total_num_cells_x + i];
-            temp_pressure_y[j] = pressure[j * total_num_cells_x + i];
+            free(interface_density_x_L);
+            free(interface_density_x_R);
+            free(interface_velocity_x_x_L);
+            free(interface_velocity_x_x_R);
+            free(interface_velocity_x_y_L);
+            free(interface_velocity_x_y_R);
+            free(interface_pressure_x_L);
+            free(interface_pressure_x_R);
         }
-        reconstruct_interface_2d(
-            integrator_param,
-            temp_density_y,
-            temp_velocity_y_y,
-            temp_velocity_y_x,
-            temp_pressure_y,
-            interface_density_y_B,
-            interface_density_y_T,
-            interface_velocity_y_y_B,
-            interface_velocity_y_y_T,
-            interface_velocity_y_x_B,
-            interface_velocity_y_x_T,
-            interface_pressure_y_B,
-            interface_pressure_y_T,
-            num_cells_y,
-            num_ghost_cells_side
-        );
 
-        // Compute fluxes and update step
-        for (int j = 0; j < num_interfaces_y; j++)
+        // Only one thread raises the error
+        #pragma omp single
         {
-            ErrorStatus local_error_status;
-
-            /* y-direction */
-            double flux_mass_y;
-            double flux_momentum_y_x;
-            double flux_momentum_y_y;
-            double flux_energy_y;
-
-            local_error_status = WRAP_TRACEBACK(solve_flux_2d(
-                integrator_param,
-                settings,
-                &flux_mass_y,
-                &flux_momentum_y_y,
-                &flux_momentum_y_x,
-                &flux_energy_y,
-                gamma,
-                interface_density_y_B[j],
-                interface_velocity_y_y_B[j],
-                interface_velocity_y_x_B[j],
-                interface_pressure_y_B[j],
-                interface_density_y_T[j],
-                interface_velocity_y_y_T[j],
-                interface_velocity_y_x_T[j],
-                interface_pressure_y_T[j]
-            ));
-            if (local_error_status.return_code != SUCCESS)
+            if (shared_malloc_error_flag)
             {
-                error_status = local_error_status;
+                error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Failed to allocate memory for interface arrays.");
             }
-
-            const int idx_j = num_ghost_cells_side + j;
-
-            mass[(idx_j - 1) * total_num_cells_x + i] -= dt * flux_mass_y * surface_area_y[idx_j - 1];
-            momentum_x[(idx_j - 1) * total_num_cells_x + i] -= dt * flux_momentum_y_x * surface_area_y[idx_j - 1];
-            momentum_y[(idx_j - 1) * total_num_cells_x + i] -= dt * flux_momentum_y_y * surface_area_y[idx_j - 1];
-            energy[(idx_j - 1) * total_num_cells_x + i] -= dt * flux_energy_y * surface_area_y[idx_j - 1];
-
-            mass[idx_j * total_num_cells_x + i] += dt * flux_mass_y * surface_area_y[idx_j];
-            momentum_x[idx_j * total_num_cells_x + i] += dt * flux_momentum_y_x * surface_area_y[idx_j];
-            momentum_y[idx_j * total_num_cells_x + i] += dt * flux_momentum_y_y * surface_area_y[idx_j];
-            energy[idx_j * total_num_cells_x + i] += dt * flux_energy_y * surface_area_y[idx_j];
         }
+    
+        if (!shared_malloc_error_flag)
+        {
+            #pragma omp for
+#endif
+            for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
+            {
+                /* Reconstruct interface */
+                reconstruct_interface_2d(
+                    integrator_param,
+                    &(density[j * total_num_cells_x]),
+                    &(velocity_x[j * total_num_cells_x]),
+                    &(velocity_y[j * total_num_cells_x]),
+                    &(pressure[j * total_num_cells_x]),
+                    interface_density_x_L,
+                    interface_density_x_R,
+                    interface_velocity_x_x_L,
+                    interface_velocity_x_x_R,
+                    interface_velocity_x_y_L,
+                    interface_velocity_x_y_R,
+                    interface_pressure_x_L,
+                    interface_pressure_x_R,
+                    num_cells_x,
+                    num_ghost_cells_side
+                );
+
+                /* Compute fluxes and update step (x-direction) */
+                for (int i = 0; i < num_interfaces_x; i++)
+                {
+                    ErrorStatus local_error_status;
+
+                    /* x-direction */
+                    double flux_mass_x;
+                    double flux_momentum_x_x;
+                    double flux_momentum_x_y;
+                    double flux_energy_x;
+
+                    local_error_status = WRAP_TRACEBACK(solve_flux_2d(
+                        integrator_param,
+                        settings,
+                        &flux_mass_x,
+                        &flux_momentum_x_x,
+                        &flux_momentum_x_y,
+                        &flux_energy_x,
+                        gamma,
+                        interface_density_x_L[i],
+                        interface_velocity_x_x_L[i],
+                        interface_velocity_x_y_L[i],
+                        interface_pressure_x_L[i],
+                        interface_density_x_R[i],
+                        interface_velocity_x_x_R[i],
+                        interface_velocity_x_y_R[i],
+                        interface_pressure_x_R[i]
+                    ));
+                    if (local_error_status.return_code != SUCCESS)
+                    {
+#ifdef USE_OPENMP
+                        #pragma omp critical
+                        {
+#endif
+                            error_status = local_error_status;
+#ifdef USE_OPENMP
+                        }
+#endif
+                    }
+
+                    const int idx_i = num_ghost_cells_side + i;
+                    mass[j * total_num_cells_x + (idx_i - 1)] -= dt * flux_mass_x * surface_area_x[idx_i - 1];
+                    momentum_x[j * total_num_cells_x + (idx_i - 1)] -= dt * flux_momentum_x_x * surface_area_x[idx_i - 1];
+                    momentum_y[j * total_num_cells_x + (idx_i - 1)] -= dt * flux_momentum_x_y * surface_area_x[idx_i - 1];
+                    energy[j * total_num_cells_x + (idx_i - 1)] -= dt * flux_energy_x * surface_area_x[idx_i - 1];
+
+                    mass[j * total_num_cells_x + idx_i] += dt * flux_mass_x * surface_area_x[idx_i];
+                    momentum_x[j * total_num_cells_x + idx_i] += dt * flux_momentum_x_x * surface_area_x[idx_i];
+                    momentum_y[j * total_num_cells_x + idx_i] += dt * flux_momentum_x_y * surface_area_x[idx_i];
+                    energy[j * total_num_cells_x + idx_i] += dt * flux_energy_x * surface_area_x[idx_i];
+                }
+            }
+#ifdef USE_OPENMP
+        }
+
+        free(interface_density_x_L);
+        free(interface_density_x_R);
+        free(interface_velocity_x_x_L);
+        free(interface_velocity_x_x_R);
+        free(interface_velocity_x_y_L);
+        free(interface_velocity_x_y_R);
+        free(interface_pressure_x_L);
+        free(interface_pressure_x_R);
     }
+#endif
+
+        if (error_status.return_code != SUCCESS)
+        {
+            goto err_compute_fluxes_x;
+        }
+
+        /* Compute fluxes and update step (y-direction) */
+#ifdef USE_OPENMP
+    shared_malloc_error_flag = false;
+    #pragma omp parallel
+    {
+        bool local_malloc_error_flag = false;
+
+        /* Allocate memory for temporary arrays */
+        double *__restrict temp_density_y = malloc(total_num_cells_y * sizeof(double));
+        double *__restrict temp_velocity_y_x = malloc(total_num_cells_y * sizeof(double));
+        double *__restrict temp_velocity_y_y = malloc(total_num_cells_y * sizeof(double));
+        double *__restrict temp_pressure_y = malloc(total_num_cells_y * sizeof(double));
+
+        /* Allocate memory for interface arrays */
+        double *__restrict interface_density_y_B = malloc(num_interfaces_y * sizeof(double));
+        double *__restrict interface_density_y_T = malloc(num_interfaces_y * sizeof(double));
+        double *__restrict interface_velocity_y_x_B = malloc(num_interfaces_y * sizeof(double));
+        double *__restrict interface_velocity_y_x_T = malloc(num_interfaces_y * sizeof(double));
+        double *__restrict interface_velocity_y_y_B = malloc(num_interfaces_y * sizeof(double));
+        double *__restrict interface_velocity_y_y_T = malloc(num_interfaces_y * sizeof(double));
+        double *__restrict interface_pressure_y_B = malloc(num_interfaces_y * sizeof(double));
+        double *__restrict interface_pressure_y_T = malloc(num_interfaces_y * sizeof(double));
+
+        if (
+            !temp_density_y
+            || !temp_velocity_y_x
+            || !temp_velocity_y_y
+            || !temp_pressure_y
+            || !interface_density_y_B
+            || !interface_density_y_T
+            || !interface_velocity_y_x_B
+            || !interface_velocity_y_x_T
+            || !interface_velocity_y_y_B
+            || !interface_velocity_y_y_T
+            || !interface_pressure_y_B
+            || !interface_pressure_y_T
+        )
+        {
+            local_malloc_error_flag = true;
+        }
+
+        // Update shared flag
+        #pragma omp critical
+        {
+            if (local_malloc_error_flag)
+            {
+                shared_malloc_error_flag = true;
+            }
+        }
+
+        // Wait for all threads to update shared flag
+        #pragma omp barrier
+
+        // All threads free memory if there is an error
+        if (shared_malloc_error_flag)
+        {
+            free(temp_density_y);
+            free(temp_velocity_y_x);
+            free(temp_velocity_y_y);
+            free(temp_pressure_y);
+
+            free(interface_density_y_B);
+            free(interface_density_y_T);
+            free(interface_velocity_y_x_B);
+            free(interface_velocity_y_x_T);
+            free(interface_velocity_y_y_B);
+            free(interface_velocity_y_y_T);
+            free(interface_pressure_y_B);
+            free(interface_pressure_y_T);
+        }
+
+        // Only one thread raises the error
+        #pragma omp single
+        {
+            if (shared_malloc_error_flag)
+            {
+                error_status = WRAP_RAISE_ERROR(MEMORY_ERROR, "Failed to allocate memory for temporary arrays.");
+            }
+        }
+
+        if (!shared_malloc_error_flag)
+        {
+            #pragma omp for
+#endif
+            for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x); i++)
+            {
+                // Reconstruct interface
+                for (int j = 0; j < total_num_cells_y; j++)
+                {
+                    temp_density_y[j] = density[j * total_num_cells_x + i];
+                    temp_velocity_y_x[j] = velocity_x[j * total_num_cells_x + i];
+                    temp_velocity_y_y[j] = velocity_y[j * total_num_cells_x + i];
+                    temp_pressure_y[j] = pressure[j * total_num_cells_x + i];
+                }
+                reconstruct_interface_2d(
+                    integrator_param,
+                    temp_density_y,
+                    temp_velocity_y_y,
+                    temp_velocity_y_x,
+                    temp_pressure_y,
+                    interface_density_y_B,
+                    interface_density_y_T,
+                    interface_velocity_y_y_B,
+                    interface_velocity_y_y_T,
+                    interface_velocity_y_x_B,
+                    interface_velocity_y_x_T,
+                    interface_pressure_y_B,
+                    interface_pressure_y_T,
+                    num_cells_y,
+                    num_ghost_cells_side
+                );
+
+                // Compute fluxes and update step
+                for (int j = 0; j < num_interfaces_y; j++)
+                {
+                    ErrorStatus local_error_status;
+
+                    /* y-direction */
+                    double flux_mass_y;
+                    double flux_momentum_y_x;
+                    double flux_momentum_y_y;
+                    double flux_energy_y;
+
+                    local_error_status = WRAP_TRACEBACK(solve_flux_2d(
+                        integrator_param,
+                        settings,
+                        &flux_mass_y,
+                        &flux_momentum_y_y,
+                        &flux_momentum_y_x,
+                        &flux_energy_y,
+                        gamma,
+                        interface_density_y_B[j],
+                        interface_velocity_y_y_B[j],
+                        interface_velocity_y_x_B[j],
+                        interface_pressure_y_B[j],
+                        interface_density_y_T[j],
+                        interface_velocity_y_y_T[j],
+                        interface_velocity_y_x_T[j],
+                        interface_pressure_y_T[j]
+                    ));
+                    if (local_error_status.return_code != SUCCESS)
+                    {
+                        error_status = local_error_status;
+                    }
+
+                    const int idx_j = num_ghost_cells_side + j;
+
+                    mass[(idx_j - 1) * total_num_cells_x + i] -= dt * flux_mass_y * surface_area_y[idx_j - 1];
+                    momentum_x[(idx_j - 1) * total_num_cells_x + i] -= dt * flux_momentum_y_x * surface_area_y[idx_j - 1];
+                    momentum_y[(idx_j - 1) * total_num_cells_x + i] -= dt * flux_momentum_y_y * surface_area_y[idx_j - 1];
+                    energy[(idx_j - 1) * total_num_cells_x + i] -= dt * flux_energy_y * surface_area_y[idx_j - 1];
+
+                    mass[idx_j * total_num_cells_x + i] += dt * flux_mass_y * surface_area_y[idx_j];
+                    momentum_x[idx_j * total_num_cells_x + i] += dt * flux_momentum_y_x * surface_area_y[idx_j];
+                    momentum_y[idx_j * total_num_cells_x + i] += dt * flux_momentum_y_y * surface_area_y[idx_j];
+                    energy[idx_j * total_num_cells_x + i] += dt * flux_energy_y * surface_area_y[idx_j];
+                }
+            }
+#ifdef USE_OPENMP
+        }
+
+        free(temp_density_y);
+        free(temp_velocity_y_x);
+        free(temp_velocity_y_y);
+        free(temp_pressure_y);
+
+        free(interface_density_y_B);
+        free(interface_density_y_T);
+        free(interface_velocity_y_x_B);
+        free(interface_velocity_y_x_T);
+        free(interface_velocity_y_y_B);
+        free(interface_velocity_y_y_T);
+        free(interface_pressure_y_B);
+        free(interface_pressure_y_T);
+    }
+#endif
+
     if (error_status.return_code != SUCCESS)
     {
         goto err_compute_fluxes_y;
@@ -371,6 +540,7 @@ IN_FILE ErrorStatus time_integrator_euler_2d(
         boundary_condition_flag_y_max
     );
 
+#ifndef USE_OPENMP
     free(temp_density_y);
     free(temp_velocity_y_x);
     free(temp_velocity_y_y);
@@ -393,11 +563,14 @@ IN_FILE ErrorStatus time_integrator_euler_2d(
     free(interface_velocity_y_y_T);
     free(interface_pressure_y_B);
     free(interface_pressure_y_T);
+#endif
 
     return error_status;
 
 err_compute_fluxes_y:
 err_compute_fluxes_x:
+
+#ifndef USE_OPENMP
 err_memory_interface:
     free(interface_density_x_L);
     free(interface_density_x_R);
@@ -421,6 +594,7 @@ err_memory_temp:
     free(temp_velocity_y_x);
     free(temp_velocity_y_y);
     free(temp_pressure_y);
+#endif
 
     return error_status;
 }
