@@ -6,10 +6,11 @@
 #define RIEMANN_SOLVER "riemann_solver_exact" // "riemann_solver_exact" or "riemann_solver_hllc"
 #define COORD_SYS "cartesian_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
 #define NUM_TOTAL_CELLS 64
-#define NUM_GHOST_CELLS_SIDE 1
+#define NUM_GHOST_CELLS_SIDE 3
 #define NUM_CELLS NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
 #define INTEGRATOR "godunov_first_order_1d" // "godunov_first_order_1d" or "random_choice_1d"
-#define RECONSTRUCTION "piecewise_constant" // "piecewise_constant", "piecewise_linear" or "piecewise_parabolic"
+#define RECONSTRUCTION "piecewise_linear" // "piecewise_constant", "piecewise_linear" or "piecewise_parabolic"
+#define LIMITER "minmod" // "minmod", "van_leer" or "monotonized_center"
 
 #define CFL 0.4
 #define TF 0.2
@@ -97,6 +98,7 @@ int main(void)
     integrator_param.integrator = INTEGRATOR;
     integrator_param.riemann_solver = RIEMANN_SOLVER;
     integrator_param.reconstruction = RECONSTRUCTION;
+    integrator_param.reconstruction_limiter = LIMITER;
     integrator_param.cfl = CFL;
 
     /* Storing parameters */
