@@ -31,7 +31,8 @@ set(
     error.c
     hydro.c
     integrator_random_choice_1d.c
-    integrator_godunov_first_order.c
+    integrator_godunov_first_order_1d.c
+    integrator_godunov_first_order_2d.c
     integrator.c
     progress_bar.c
     reconstruction.c

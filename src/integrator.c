@@ -144,9 +144,9 @@ ErrorStatus integrator_launch_simulation(
                 system, integrator_param, storing_param, settings, simulation_param, simulation_status
             ));
         case INTEGRATOR_GODUNOV_FIRST_ORDER_2D:
-            // return WRAP_TRACEBACK(godunov_first_order_2d(
-            //     system, integrator_param, storing_param, settings, simulation_param, simulation_status
-            // ));
+            return WRAP_TRACEBACK(godunov_first_order_2d(
+                system, integrator_param, storing_param, settings, simulation_param, simulation_status
+            ));
         default:
             return WRAP_RAISE_ERROR(VALUE_ERROR, "Integrator flag not recognized.");
     }

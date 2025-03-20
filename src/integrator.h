@@ -4,7 +4,7 @@
  * \brief Header file for integrator related definitions and prototypes.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-11
+ * \date 2025-03-20
  */
 
 #ifndef INTEGRATOR_H
@@ -61,6 +61,27 @@ ErrorStatus integrator_launch_simulation(
 );
 
 /**
+ * \brief Random choice method for the 1D Euler equations.
+ * 
+ * \param system Pointer to the hydrodynamic system.
+ * \param integrator_param Pointer to the integrator parameters.
+ * \param storing_param Pointer to the storing parameters.
+ * \param settings Pointer to the settings.
+ * \param simulation_param Pointer to the simulation parameters.
+ * \param simulation_status Pointer to the simulation status.
+ * 
+ * \return Error status.
+ */
+ErrorStatus random_choice_1d(
+    System *__restrict system,
+    IntegratorParam *__restrict integrator_param,
+    StoringParam *__restrict storing_param,
+    Settings *__restrict settings,
+    SimulationParam *__restrict simulation_param,
+    SimulationStatus *__restrict simulation_status
+);
+
+/**
  * \brief First-order Godunov scheme for the 1D Euler equations.
  * 
  * \param system Pointer to the hydrodynamic system.
@@ -94,27 +115,6 @@ ErrorStatus godunov_first_order_1d(
  * \return Error status.
  */
 ErrorStatus godunov_first_order_2d(
-    System *__restrict system,
-    IntegratorParam *__restrict integrator_param,
-    StoringParam *__restrict storing_param,
-    Settings *__restrict settings,
-    SimulationParam *__restrict simulation_param,
-    SimulationStatus *__restrict simulation_status
-);
-
-/**
- * \brief Random choice method for the 1D Euler equations.
- * 
- * \param system Pointer to the hydrodynamic system.
- * \param integrator_param Pointer to the integrator parameters.
- * \param storing_param Pointer to the storing parameters.
- * \param settings Pointer to the settings.
- * \param simulation_param Pointer to the simulation parameters.
- * \param simulation_status Pointer to the simulation status.
- * 
- * \return Error status.
- */
-ErrorStatus random_choice_1d(
     System *__restrict system,
     IntegratorParam *__restrict integrator_param,
     StoringParam *__restrict storing_param,
