@@ -31,6 +31,7 @@ typedef struct IntegratorParam
     char *integrator;
     char *riemann_solver;
     char *reconstruction;
+    char *reconstruction_limiter;
     double cfl;
     double cfl_initial_shrink_factor;
     int cfl_initial_shrink_num_steps;
@@ -38,6 +39,7 @@ typedef struct IntegratorParam
     int integrator_flag_;
     int riemann_solver_flag_;
     int reconstruction_flag_;
+    int reconstruction_limiter_flag_;
 } IntegratorParam;
 
 typedef struct StoringParam

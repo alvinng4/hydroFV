@@ -18,6 +18,7 @@ IntegratorParam get_new_integrator_param(void)
     integrator_param.integrator = NULL;
     integrator_param.riemann_solver = NULL;
     integrator_param.reconstruction = NULL;
+    integrator_param.reconstruction_limiter = NULL;
     integrator_param.cfl = 0.5;
     integrator_param.cfl_initial_shrink_factor = 0.2;
     integrator_param.cfl_initial_shrink_num_steps = 10;
@@ -25,6 +26,7 @@ IntegratorParam get_new_integrator_param(void)
     integrator_param.integrator_flag_ = -1;
     integrator_param.riemann_solver_flag_ = -1;
     integrator_param.reconstruction_flag_ = -1;
+    integrator_param.reconstruction_limiter_flag_ = -1;
     return integrator_param;
 }
 

@@ -17,6 +17,10 @@
 #define RECONSTRUCTION_PIECEWISE_LINEAR 2
 #define RECONSTRUCTION_PIECEWISE_PARABOLIC 3
 
+#define RECONSTRUCTION_LIMITER_MINMOD 1
+#define RECONSTRUCTION_LIMITER_VAN_LEER 2
+#define RECONSTRUCTION_LIMITER_MONOTONIZED_CENTER 3
+
 ErrorStatus get_reconstruction_flag(IntegratorParam *__restrict integrator_param);
 
 void reconstruct_cell_interface(

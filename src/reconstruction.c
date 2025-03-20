@@ -7,6 +7,7 @@
  * \date 2025-03-19
  */
 
+#include <math.h>
 #include <string.h>
 
 #ifdef USE_OPENMP
@@ -15,6 +16,8 @@
 
 #include "hydro.h"
 #include "reconstruction.h"
+
+typedef double (*reconstruction_limiter_func)(const double, const double);
 
 
 ErrorStatus get_reconstruction_flag(IntegratorParam *__restrict integrator_param)
@@ -26,25 +29,58 @@ ErrorStatus get_reconstruction_flag(IntegratorParam *__restrict integrator_param
     if (strcmp(integrator_param->reconstruction, "piecewise_constant") == 0)
     {
         integrator_param->reconstruction_flag_ = RECONSTRUCTION_PIECEWISE_CONSTANT;
-        return make_success_error_status();
     }
     else if (strcmp(integrator_param->reconstruction, "piecewise_linear") == 0)
     {
         integrator_param->reconstruction_flag_ = RECONSTRUCTION_PIECEWISE_LINEAR;
-        return make_success_error_status();
     }
     // else if (strcmp(integrator_param->reconstruction, "piecewise_parabolic") == 0)
     // {
     //     integrator_param->reconstruction_flag_ = RECONSTRUCTION_PIECEWISE_PARABOLIC;
-    //     return make_success_error_status();
     // }
     else
     {
         return WRAP_RAISE_ERROR(VALUE_ERROR, "Reconstruction not recognized.");
     }
+
+    if (!integrator_param->reconstruction_limiter)
+    {
+        return WRAP_RAISE_ERROR(POINTER_ERROR, "Reconstruction limiter is not set.");
+    }
+
+    if (strcmp(integrator_param->reconstruction_limiter, "minmod") == 0)
+    {
+        integrator_param->reconstruction_limiter_flag_ = RECONSTRUCTION_LIMITER_MINMOD;
+        return make_success_error_status();
+    }
+    else if (strcmp(integrator_param->reconstruction_limiter, "van_leer") == 0)
+    {
+        integrator_param->reconstruction_limiter_flag_ = RECONSTRUCTION_LIMITER_VAN_LEER;
+        return make_success_error_status();
+    }
+    else
+    {
+        return WRAP_RAISE_ERROR(VALUE_ERROR, "Reconstruction limiter not recognized.");
+    }
 }
 
-IN_FILE double van_leer(double a, double b)
+IN_FILE double minmod(const double a, const double b)
+{
+    if (a * b <= 0.0)
+    {
+        return 0.0;
+    }
+    else if (fabs(a) < fabs(b))
+    {
+        return a;
+    }
+    else
+    {
+        return b;
+    }
+}
+
+IN_FILE double van_leer(const double a, const double b)
 {
     if (a * b <= 0.0)
     {
@@ -61,9 +97,12 @@ IN_FILE void reconstruct_cell_interface_piecewise_constant(
     double *__restrict interface_field_L,
     double *__restrict interface_field_R,
     const int num_cells,
-    const int num_ghost_cells_side
+    const int num_ghost_cells_side,
+    reconstruction_limiter_func limiter
 )
 {
+    (void) limiter;
+
     const int num_interfaces = num_cells + 1;
     memcpy(interface_field_L, &(field[num_ghost_cells_side - 1]), num_interfaces * sizeof(double));
     memcpy(interface_field_R, &(field[num_ghost_cells_side]), num_interfaces * sizeof(double));
@@ -74,7 +113,8 @@ IN_FILE void reconstruct_cell_interface_piecewise_linear(
     double *__restrict interface_field_L,
     double *__restrict interface_field_R,
     const int num_cells,
-    const int num_ghost_cells_side
+    const int num_ghost_cells_side,
+    reconstruction_limiter_func limiter
 )
 {
     const int num_cells_plus_two = num_cells + 2;
@@ -82,13 +122,13 @@ IN_FILE void reconstruct_cell_interface_piecewise_linear(
     for (int i = 0; i < num_cells_plus_two; i++)
     {
         const int idx_i = num_ghost_cells_side + i - 1;
-        
-        // Calculate left and right differences
-        const double delta_field_left = field[idx_i] - field[idx_i - 1];
-        const double delta_field_right = field[idx_i + 1] - field[idx_i];
+
+        // Calculate the field difference
+        const double delta_field_L = field[idx_i] - field[idx_i - 1];
+        const double delta_field_R = field[idx_i + 1] - field[idx_i];
 
         // Apply slope limiter
-        const double delta_field = van_leer(delta_field_left, delta_field_right);
+        const double delta_field = limiter(delta_field_L, delta_field_R);
 
         if (i > 0)
         {
@@ -110,6 +150,17 @@ void reconstruct_cell_interface(
     const int num_ghost_cells_side
 )
 {
+    reconstruction_limiter_func limiter;
+    switch (integrator_param->reconstruction_limiter_flag_)
+    {
+        case RECONSTRUCTION_LIMITER_MINMOD:
+            limiter = minmod;
+            break;
+        case RECONSTRUCTION_LIMITER_VAN_LEER:
+            limiter = van_leer;
+            break;
+    }
+
     switch (integrator_param->reconstruction_flag_)
     {
         case RECONSTRUCTION_PIECEWISE_CONSTANT:
@@ -118,7 +169,8 @@ void reconstruct_cell_interface(
                 interface_field_L,
                 interface_field_R,
                 num_cells,
-                num_ghost_cells_side
+                num_ghost_cells_side,
+                limiter
             );
             break;
         case RECONSTRUCTION_PIECEWISE_LINEAR:
@@ -127,7 +179,8 @@ void reconstruct_cell_interface(
                 interface_field_L,
                 interface_field_R,
                 num_cells,
-                num_ghost_cells_side
+                num_ghost_cells_side,
+                limiter
             );
             break;
         // case RECONSTRUCTION_PIECEWISE_PARABOLIC:
