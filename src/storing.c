@@ -11,9 +11,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>  // For mkdir
-#include <sys/stat.h>   // For mkdir
 #include <time.h>
+
+/* For mkdir */
+#ifndef _WIN32
+#include <sys/types.h>
+#include <sys/stat.h>
+#else
+#include <direct.h>
+#include <windows.h>
+#endif
 
 #include "hydro.h"
 
@@ -84,6 +91,58 @@ ErrorStatus finalize_storing_param(StoringParam *__restrict storing_param)
     }
 
     /* Create directory */
+#ifdef _WIN32
+    if (_mkdir(storing_param->output_dir) == -1)
+    {
+        if (GetFileAttributes(storing_param->output_dir) == INVALID_FILE_ATTRIBUTES)
+        {
+            size_t buffer_size = (
+                strlen("Failed to access path for storing snapshots: \"\".")
+                + strlen(storing_param->output_dir)
+                + 1  // Null terminator
+            );
+            char *error_message = malloc(buffer_size * sizeof(char));
+            if (!error_message)
+            {
+                return WRAP_RAISE_ERROR(MEMORY_ERROR, "Failed to allocate memory for error message.");
+            }
+            snprintf(
+                error_message,
+                buffer_size,
+                "Failed to access path for storing snapshots: \"%s\".",
+                storing_param->output_dir
+            );
+            return WRAP_RAISE_ERROR(OS_ERROR, error_message);
+        }
+        else if (GetFileAttributes(storing_param->output_dir) & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            int buffer_size = (
+                strlen("Directory for storing snapshots already exists. The files will be overwritten. Directory: \"\".")
+                + strlen(storing_param->output_dir)
+                + 1  // Null terminator
+            );
+            char *warning_message = malloc(buffer_size * sizeof(char));
+            if (!warning_message)
+            {
+                return WRAP_RAISE_ERROR(MEMORY_ERROR, "Failed to allocate memory for warning message.");
+            }
+            const int actual_warning_message_length = snprintf(
+                warning_message,
+                buffer_size,
+                "Directory for storing snapshots already exists. The files will be overwritten. Directory: \"%s\".",
+                storing_param->output_dir
+            );
+            if (actual_warning_message_length < 0)
+            {
+                return WRAP_RAISE_ERROR(VALUE_ERROR, "Failed to get warning message string.");
+            }
+            else if (actual_warning_message_length >= buffer_size)
+            {
+                return WRAP_RAISE_ERROR(VALUE_ERROR, "Warning message string is truncated.");
+            }
+            WRAP_RAISE_WARNING(warning_message);
+        }
+#else
     struct stat st = {0};
     if (mkdir(storing_param->output_dir, 0777) == -1)
     {
@@ -136,6 +195,7 @@ ErrorStatus finalize_storing_param(StoringParam *__restrict storing_param)
             }
             WRAP_RAISE_WARNING(warning_message);
         }
+#endif
 
         else 
         {

@@ -18,8 +18,13 @@
 #define PROGRESS_BAR_LENGTH 40
 #define MIN_UPDATE_INTERVAL_SECOND 0.1
 
-#define BULLET "\u2022"
-#define BAR "\u2501"
+#ifdef _WIN32
+    #define BULLET " "
+    #define BAR "-"
+#else
+    #define BULLET "\u2022"
+    #define BAR "\u2501"
+#endif
 
 /* Color codes */
 #define RESET "\033[0m"
