@@ -3172,6 +3172,17 @@ ErrorStatus godunov_first_order_2d(
         (*t_ptr) += dt;
         (*num_steps_ptr)++;
 
+        /* Add gravity source term */
+        error_status = add_gravity_source_term_2d(
+            boundary_condition_param,
+            system,
+            dt
+        );
+        if (error_status.return_code != SUCCESS)
+        {
+            goto err_gravity_source_term;
+        }
+
         /* Store snapshot */
         if (is_storing && ((*t_ptr) >= storing_interval * (*store_count_ptr - store_initial_offset + 1)))
         {
@@ -3195,6 +3206,7 @@ ErrorStatus godunov_first_order_2d(
 
     return make_success_error_status();
 
+err_gravity_source_term:
 err_store_snapshot:
 err_advance_step:
 err_dt_zero:

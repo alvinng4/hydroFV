@@ -24,4 +24,10 @@ ErrorStatus add_geometry_source_term(
     const double dt
 );
 
+ErrorStatus add_gravity_source_term_2d(
+    const BoundaryConditionParam *__restrict boundary_condition_param,
+    System *__restrict system,
+    const double dt
+);
+
 #endif

@@ -182,3 +182,79 @@ error_coord_sys:
     return error_status;
 }
 
+ErrorStatus add_gravity_source_term_2d(
+    const BoundaryConditionParam *__restrict boundary_condition_param,
+    System *__restrict system,
+    const double dt
+)
+{
+    ErrorStatus error_status = make_success_error_status();
+
+    const double gravity = system->gravity;
+
+    if (gravity == 0.0)
+    {
+        return error_status;
+    }
+
+    const int num_ghost_cells_side = system->num_ghost_cells_side;
+    const int num_cells_x = system->num_cells_x;
+    const int num_cells_y = system->num_cells_y;
+    const int total_num_cells_x = num_cells_x + 2 * num_ghost_cells_side;
+
+    const double *__restrict mass = system->mass_;
+    double *__restrict momentum_y = system->momentum_y_;
+    double *__restrict energy = system->energy_;
+
+    /* Compute the gravity term with RK4 */
+#ifdef USE_OPENMP
+    #pragma omp parallel for schedule(static)
+#endif
+    for (int i = num_ghost_cells_side; i < (num_cells_x + num_ghost_cells_side); i++)
+    {
+        for (int j = num_ghost_cells_side; j < (num_cells_y + num_ghost_cells_side); j++)
+        {
+            const int idx = j * total_num_cells_x + i;
+
+            double k_momentum_y;
+            double k1_energy;
+            double k2_energy;
+            double k3_energy;
+            double k4_energy;
+
+            const double mass_ij = mass[idx];
+            const double momentum_y_ij = momentum_y[idx];
+
+            const double pre_factor = - dt * gravity;
+
+            // change of momentum is constant since mass is unchanged
+            k_momentum_y = pre_factor * mass_ij;
+
+            k1_energy = pre_factor * momentum_y_ij;
+            k2_energy = pre_factor * (momentum_y_ij + 0.5 * k_momentum_y);
+            k3_energy = k2_energy;
+            k4_energy = pre_factor * (momentum_y_ij + k_momentum_y);
+
+            momentum_y[idx] += k_momentum_y;
+            energy[idx] += (k1_energy + 2.0 * k2_energy + 2.0 * k3_energy + k4_energy) / 6.0;
+        }
+    }
+
+    error_status = WRAP_TRACEBACK(convert_conserved_to_primitive(system));
+    if (error_status.return_code != SUCCESS)
+    {
+        goto err_convert_conserved_to_primitive;
+    }
+    error_status = WRAP_TRACEBACK(set_boundary_condition(boundary_condition_param, system));
+    if (error_status.return_code != SUCCESS)
+    {
+        goto err_set_boundary_condition;
+    }
+
+    return make_success_error_status();
+
+err_set_boundary_condition:
+err_convert_conserved_to_primitive:
+    return error_status;
+}
+

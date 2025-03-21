@@ -23,6 +23,7 @@ typedef struct System
 {
     const char *coord_sys;
     double gamma;
+    double gravity;
     double x_min;
     double x_max;
     double y_min;

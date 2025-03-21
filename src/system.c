@@ -25,6 +25,7 @@ System get_new_system_struct(void)
     System system = {
         .coord_sys = NULL,
         .gamma = -1.0,
+        .gravity = 0.0,
         .x_min = -1.0,
         .x_max = -1.0,
         .y_min = -1.0,
