@@ -19,7 +19,7 @@ SNAPSHOT_FOLDER = Path(__file__).parent / "snapshots/"
 FRAME_FOLDER = Path(__file__).parent / "frames/"
 FILE_PATH = Path(__file__).parent / "kelvin_helmholtz_2d.gif"
 
-FPS = 30
+LENGTH = 13.0
 
 
 def main() -> None:
@@ -85,7 +85,7 @@ def main() -> None:
         save_all=True,
         append_images=frames,
         loop=0,
-        duration=(1000 // FPS),
+        duration=(1000 // (len(snapshot_files) / LENGTH)),
     )
 
     for i in range(len(snapshot_files)):

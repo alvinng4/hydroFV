@@ -16,8 +16,8 @@
 #define LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
 #define TIME_INTEGRATOR "ssp_rk3" // "euler", "ssp_rk2" or "ssp_rk3"
 
-#define CFL 0.5
-#define TF 4.0
+#define CFL 0.4
+#define TF 20.0
 #define TOL 1e-6 // For the riemann solver
 
 /* Parameters */
@@ -162,7 +162,7 @@ int main(void)
     StoringParam storing_param = get_new_storing_param();
     storing_param.is_storing = true;
     storing_param.store_initial = true;
-    storing_param.storing_interval = 0.02;
+    storing_param.storing_interval = 0.05;
     storing_param.output_dir = "snapshots/";
 
     /* Settings */
