@@ -4,7 +4,7 @@
  * \brief Integrator related functions for the hydrodynamics simulation.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-20
+ * \date 2025-03-21
  */
 
 #include <stdio.h>
@@ -125,6 +125,7 @@ ErrorStatus finalize_integrator_param(IntegratorParam *__restrict integrator_par
 }
 
 ErrorStatus integrator_launch_simulation(
+    BoundaryConditionParam *__restrict boundary_condition_param,
     System *__restrict system,
     IntegratorParam *__restrict integrator_param,
     StoringParam *__restrict storing_param,
@@ -137,15 +138,15 @@ ErrorStatus integrator_launch_simulation(
     {
         case INTEGRATOR_RANDOM_CHOICE_1D:
             return WRAP_TRACEBACK(random_choice_1d(
-                system, integrator_param, storing_param, settings, simulation_param, simulation_status
+                boundary_condition_param, system, integrator_param, storing_param, settings, simulation_param, simulation_status
             ));
         case INTEGRATOR_GODUNOV_FIRST_ORDER_1D:
             return WRAP_TRACEBACK(godunov_first_order_1d(
-                system, integrator_param, storing_param, settings, simulation_param, simulation_status
+                boundary_condition_param, system, integrator_param, storing_param, settings, simulation_param, simulation_status
             ));
         case INTEGRATOR_GODUNOV_FIRST_ORDER_2D:
             return WRAP_TRACEBACK(godunov_first_order_2d(
-                system, integrator_param, storing_param, settings, simulation_param, simulation_status
+                boundary_condition_param, system, integrator_param, storing_param, settings, simulation_param, simulation_status
             ));
         default:
             return WRAP_RAISE_ERROR(VALUE_ERROR, "Integrator flag not recognized.");

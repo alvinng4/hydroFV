@@ -4,7 +4,7 @@
  * \brief Random choice method for the 1D Euler equations.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-19
+ * \date 2025-03-21
  */
 
 #include <stdbool.h>
@@ -43,6 +43,7 @@ IN_FILE double get_van_der_corput_sequence(int64 n)
 }
 
 ErrorStatus random_choice_1d(
+    BoundaryConditionParam *__restrict boundary_condition_param,
     System *__restrict system,
     IntegratorParam *__restrict integrator_param,
     StoringParam *__restrict storing_param,
@@ -127,7 +128,7 @@ ErrorStatus random_choice_1d(
     const int store_initial_offset = (is_storing && storing_param->store_initial) ? 1 : 0;
     if (is_storing && storing_param->store_initial)
     {
-        error_status = WRAP_TRACEBACK(store_snapshot(system, integrator_param, simulation_status, storing_param));
+        error_status = WRAP_TRACEBACK(store_snapshot(boundary_condition_param, system, integrator_param, simulation_status, storing_param));
         if (error_status.return_code != SUCCESS)
         {
             goto err_store_first_snapshot;
@@ -219,7 +220,7 @@ ErrorStatus random_choice_1d(
             goto err_solve_flux;
         }
 
-        error_status = WRAP_TRACEBACK(set_boundary_condition(system));
+        error_status = WRAP_TRACEBACK(set_boundary_condition(boundary_condition_param, system));
         if (error_status.return_code != SUCCESS)
         {
             goto err_set_boundary_condition;
@@ -233,7 +234,7 @@ ErrorStatus random_choice_1d(
 
         if (is_compute_geometry_source_term)
         {
-            error_status = WRAP_TRACEBACK(add_geometry_source_term(system, dt));
+            error_status = WRAP_TRACEBACK(add_geometry_source_term(boundary_condition_param, system, dt));
             if (error_status.return_code != SUCCESS)
             {
                 goto err_compute_geometry_source_term;
@@ -246,7 +247,7 @@ ErrorStatus random_choice_1d(
         /* Store snapshot */
         if (is_storing && ((*t_ptr) >= storing_interval * (*store_count_ptr - store_initial_offset + 1)))
         {
-            error_status = WRAP_TRACEBACK(store_snapshot(system, integrator_param, simulation_status, storing_param));
+            error_status = WRAP_TRACEBACK(store_snapshot(boundary_condition_param, system, integrator_param, simulation_status, storing_param));
             if (error_status.return_code != SUCCESS)
             {
                 goto err_store_snapshot;

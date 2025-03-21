@@ -4,7 +4,7 @@
  * \brief Header file for storing snapshots related functions.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-11
+ * \date 2025-03-21
  */
 
 #ifndef STORING_H
@@ -32,6 +32,7 @@ ErrorStatus finalize_storing_param(StoringParam *__restrict storing_param);
 /**
  * \brief Store a snapshot of the hydrodynamic system.
  * 
+ * \param boundary_condition_param Pointer to the boundary condition parameters.
  * \param system Pointer to the hydrodynamic system.
  * \param integrator_param Pointer to the integrator parameters.
  * \param simulation_status Pointer to the simulation status.
@@ -40,6 +41,7 @@ ErrorStatus finalize_storing_param(StoringParam *__restrict storing_param);
  * \return ErrorStatus.
  */
 ErrorStatus store_snapshot(
+    const BoundaryConditionParam *__restrict boundary_condition_param,
     const System *__restrict system,
     const IntegratorParam *__restrict integrator_param,
     const SimulationStatus *__restrict simulation_status,

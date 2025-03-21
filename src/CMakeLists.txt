@@ -28,6 +28,7 @@ endif()
 # List of source files
 set(
     SRCS
+    boundary.c
     error.c
     hydro.c
     integrator_random_choice_1d.c

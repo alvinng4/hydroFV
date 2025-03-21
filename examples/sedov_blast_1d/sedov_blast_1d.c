@@ -5,7 +5,7 @@
 
 #define RIEMANN_SOLVER "riemann_solver_hllc" // "riemann_solver_exact" or "riemann_solver_hllc"
 #define COORD_SYS "spherical_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
-#define NUM_TOTAL_CELLS 512
+#define NUM_TOTAL_CELLS 128
 #define NUM_GHOST_CELLS_SIDE 3
 #define NUM_CELLS NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
 #define INTEGRATOR "godunov_first_order_1d" // "godunov_first_order_1d" or "random_choice_1d"
@@ -29,9 +29,20 @@
 #define DOMAIN_MIN 0.0
 #define DOMAIN_MAX 1.2
 
-IN_FILE ErrorStatus get_initial_system(System *__restrict system)
+IN_FILE ErrorStatus get_initial_system(
+    BoundaryConditionParam *__restrict boundary_condition_param,
+    System *__restrict system
+)
 {
     ErrorStatus error_status;
+
+    boundary_condition_param->boundary_condition_x_min = LEFT_BOUNDARY_CONDITION;
+    boundary_condition_param->boundary_condition_x_max = RIGHT_BOUNDARY_CONDITION;
+    error_status = finalize_boundary_condition_param(system, boundary_condition_param);
+    if (error_status.return_code != SUCCESS)
+    {
+        return error_status;
+    }
     
     /* Initial condition */
     double E_0;
@@ -59,7 +70,7 @@ IN_FILE ErrorStatus get_initial_system(System *__restrict system)
         system->pressure_[i] = P_0;
     }
 
-    error_status = WRAP_TRACEBACK(set_boundary_condition(system));
+    error_status = WRAP_TRACEBACK(set_boundary_condition(boundary_condition_param, system));
     if (error_status.return_code != SUCCESS)
     {
         return error_status;
@@ -81,7 +92,7 @@ IN_FILE ErrorStatus get_initial_system(System *__restrict system)
     {
         return error_status;
     }
-    error_status = WRAP_TRACEBACK(set_boundary_condition(system));
+    error_status = WRAP_TRACEBACK(set_boundary_condition(boundary_condition_param, system));
     if (error_status.return_code != SUCCESS)
     {
         return error_status;
@@ -94,11 +105,12 @@ int main(void)
 {
     ErrorStatus error_status;
 
+    /* Boundary conditions */
+    BoundaryConditionParam boundary_condition_param = get_new_boundary_condition_param();
+
     /* System parameters */
     System system = get_new_system_struct();
     system.coord_sys = COORD_SYS;
-    system.boundary_condition_x_min = LEFT_BOUNDARY_CONDITION;
-    system.boundary_condition_x_max = RIGHT_BOUNDARY_CONDITION;
     system.gamma = GAMMA;
     system.x_min = DOMAIN_MIN;
     system.x_max = DOMAIN_MAX;
@@ -111,7 +123,7 @@ int main(void)
         goto error;
     }
 
-    error_status = WRAP_TRACEBACK(get_initial_system(&system));
+    error_status = WRAP_TRACEBACK(get_initial_system(&boundary_condition_param, &system));
     if (error_status.return_code != SUCCESS)
     {
         goto error;
@@ -150,6 +162,7 @@ int main(void)
     printf("Launching simulation...\n");
     time_t start = clock();
     error_status = WRAP_TRACEBACK(launch_simulation(
+        &boundary_condition_param,
         &system,
         &integrator_param,
         &storing_param,

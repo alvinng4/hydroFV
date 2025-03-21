@@ -4,7 +4,7 @@
  * \brief Header file for the source term calculation
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-11
+ * \date 2025-03-21
  */
 
 #ifndef SOURCE_TERM_H
@@ -19,6 +19,7 @@
  * \param dt Time step
  */
 ErrorStatus add_geometry_source_term(
+    const BoundaryConditionParam *__restrict boundary_condition_param,
     System *__restrict system,
     const double dt
 );

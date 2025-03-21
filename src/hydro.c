@@ -4,7 +4,7 @@
  * \brief Main functions for launching the hydrodynamics simulation.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-19
+ * \date 2025-03-21
  */
 
 #include <stdio.h>
@@ -17,6 +17,7 @@
 
 
 IN_FILE ErrorStatus final_check(
+    BoundaryConditionParam *__restrict boundary_condition_param,
     System *__restrict system,
     IntegratorParam *__restrict integrator_param,
     StoringParam *__restrict storing_param,
@@ -26,6 +27,7 @@ IN_FILE ErrorStatus final_check(
 );
 
 ErrorStatus launch_simulation(
+    BoundaryConditionParam *__restrict boundary_condition_param,
     System *__restrict system,
     IntegratorParam *__restrict integrator_param,
     StoringParam *__restrict storing_param,
@@ -35,6 +37,12 @@ ErrorStatus launch_simulation(
 )
 {
     ErrorStatus error_status;
+
+    error_status = WRAP_TRACEBACK(finalize_boundary_condition_param(system, boundary_condition_param));
+    if (error_status.return_code != SUCCESS)
+    {
+        goto error;
+    }
 
     error_status = WRAP_TRACEBACK(finalize_integrator_param(integrator_param));
     if (error_status.return_code != SUCCESS)
@@ -49,6 +57,7 @@ ErrorStatus launch_simulation(
     }
 
     error_status = WRAP_TRACEBACK(final_check(
+        boundary_condition_param,
         system,
         integrator_param,
         storing_param,
@@ -62,6 +71,7 @@ ErrorStatus launch_simulation(
     }
 
     error_status = WRAP_TRACEBACK(integrator_launch_simulation(
+        boundary_condition_param,
         system,
         integrator_param,
         storing_param,
@@ -81,6 +91,7 @@ error:
 }
 
 IN_FILE ErrorStatus final_check(
+    BoundaryConditionParam *__restrict boundary_condition_param,
     System *__restrict system,
     IntegratorParam *__restrict integrator_param,
     StoringParam *__restrict storing_param,
@@ -91,6 +102,7 @@ IN_FILE ErrorStatus final_check(
 {
     ErrorStatus error_status;
 
+    (void) boundary_condition_param;
     (void) storing_param;
     (void) settings;
     (void) simulation_param;

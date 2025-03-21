@@ -4,7 +4,7 @@
  * \brief Source term calculation for the hydrodynamics simulation
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-19
+ * \date 2025-03-21
  */
 
 #include "hydro.h"
@@ -43,6 +43,7 @@ IN_FILE void _compute_geometry_source_term(
 }
 
 ErrorStatus add_geometry_source_term(
+    const BoundaryConditionParam *__restrict boundary_condition_param,
     System *__restrict system,
     const double dt
 )
@@ -167,7 +168,7 @@ ErrorStatus add_geometry_source_term(
     {
         goto err_convert_conserved_to_primitive;
     }
-    error_status = WRAP_TRACEBACK(set_boundary_condition(system));
+    error_status = WRAP_TRACEBACK(set_boundary_condition(boundary_condition_param, system));
     if (error_status.return_code != SUCCESS)
     {
         goto err_set_boundary_condition;

@@ -4,7 +4,7 @@
  * \brief Header file for integrator related definitions and prototypes.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-20
+ * \date 2025-03-21
  */
 
 #ifndef INTEGRATOR_H
@@ -42,6 +42,7 @@ ErrorStatus finalize_integrator_param(IntegratorParam *__restrict integrator_par
 /**
  * \brief Launch the simulation with the specified integrator.
  * 
+ * \param boundary_condition_param Pointer to the boundary condition parameters.
  * \param system Pointer to the hydrodynamic system.
  * \param integrator_param Pointer to the integrator parameters.
  * \param storing_param Pointer to the storing parameters.
@@ -52,6 +53,7 @@ ErrorStatus finalize_integrator_param(IntegratorParam *__restrict integrator_par
  * \return Error status.
  */
 ErrorStatus integrator_launch_simulation(
+    BoundaryConditionParam *__restrict boundary_condition_param,
     System *__restrict system,
     IntegratorParam *__restrict integrator_param,
     StoringParam *__restrict storing_param,
@@ -63,6 +65,7 @@ ErrorStatus integrator_launch_simulation(
 /**
  * \brief Random choice method for the 1D Euler equations.
  * 
+ * \param boundary_condition_param Pointer to the boundary condition parameters.
  * \param system Pointer to the hydrodynamic system.
  * \param integrator_param Pointer to the integrator parameters.
  * \param storing_param Pointer to the storing parameters.
@@ -73,6 +76,7 @@ ErrorStatus integrator_launch_simulation(
  * \return Error status.
  */
 ErrorStatus random_choice_1d(
+    BoundaryConditionParam *__restrict boundary_condition_param,
     System *__restrict system,
     IntegratorParam *__restrict integrator_param,
     StoringParam *__restrict storing_param,
@@ -84,6 +88,7 @@ ErrorStatus random_choice_1d(
 /**
  * \brief First-order Godunov scheme for the 1D Euler equations.
  * 
+ * \param boundary_condition_param Pointer to the boundary condition parameters.
  * \param system Pointer to the hydrodynamic system.
  * \param integrator_param Pointer to the integrator parameters.
  * \param storing_param Pointer to the storing parameters.
@@ -94,6 +99,7 @@ ErrorStatus random_choice_1d(
  * \return Error status.
  */
 ErrorStatus godunov_first_order_1d(
+    BoundaryConditionParam *__restrict boundary_condition_param,
     System *__restrict system,
     IntegratorParam *__restrict integrator_param,
     StoringParam *__restrict storing_param,
@@ -105,6 +111,7 @@ ErrorStatus godunov_first_order_1d(
 /**
  * \brief First-order Godunov scheme for the 2D Euler equations.
  * 
+ * \param boundary_condition_param Pointer to the boundary condition parameters.
  * \param system Pointer to the hydrodynamic system.
  * \param integrator_param Pointer to the integrator parameters.
  * \param storing_param Pointer to the storing parameters.
@@ -115,6 +122,7 @@ ErrorStatus godunov_first_order_1d(
  * \return Error status.
  */
 ErrorStatus godunov_first_order_2d(
+    BoundaryConditionParam *__restrict boundary_condition_param,
     System *__restrict system,
     IntegratorParam *__restrict integrator_param,
     StoringParam *__restrict storing_param,

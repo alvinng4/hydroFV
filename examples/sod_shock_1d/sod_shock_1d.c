@@ -3,7 +3,7 @@
 
 #include "hydro.h"
 
-#define RIEMANN_SOLVER "riemann_solver_hllc" // "riemann_solver_exact" or "riemann_solver_hllc"
+#define RIEMANN_SOLVER "riemann_solver_exact" // "riemann_solver_exact" or "riemann_solver_hllc"
 #define COORD_SYS "cartesian_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
 #define NUM_TOTAL_CELLS 64
 #define NUM_GHOST_CELLS_SIDE 3
@@ -74,8 +74,6 @@ int main(void)
     /* System parameters */
     System system = get_new_system_struct();
     system.coord_sys = COORD_SYS;
-    system.boundary_condition_x_min = LEFT_BOUNDARY_CONDITION;
-    system.boundary_condition_x_max = RIGHT_BOUNDARY_CONDITION;
     system.gamma = GAMMA;
     system.x_min = DOMAIN_MIN;
     system.x_max = DOMAIN_MAX;
@@ -93,6 +91,11 @@ int main(void)
     {
         goto error;
     }
+
+    /* Boundary conditions */
+    BoundaryConditionParam boundary_condition_param = get_new_boundary_condition_param();
+    boundary_condition_param.boundary_condition_x_min = LEFT_BOUNDARY_CONDITION;
+    boundary_condition_param.boundary_condition_x_max = RIGHT_BOUNDARY_CONDITION;
 
     /* Integrator parameters */
     IntegratorParam integrator_param = get_new_integrator_param();
@@ -127,6 +130,7 @@ int main(void)
     printf("Launching simulation...\n");
     time_t start = clock();
     error_status = WRAP_TRACEBACK(launch_simulation(
+        &boundary_condition_param,
         &system,
         &integrator_param,
         &storing_param,

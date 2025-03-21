@@ -4,7 +4,7 @@
  * \brief 2D First-order Godunov scheme for the Euler equations.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-20
+ * \date 2025-03-21
  */
 
 #include <stdbool.h>
@@ -77,6 +77,7 @@ IN_FILE void reconstruct_interface_2d(
 }
 
 IN_FILE ErrorStatus time_integrator_euler_2d(
+    const BoundaryConditionParam *__restrict boundary_condition_param,
     IntegratorParam *__restrict integrator_param,
     Settings *__restrict settings,
     double *__restrict density,
@@ -96,11 +97,7 @@ IN_FILE ErrorStatus time_integrator_euler_2d(
     const int num_interfaces_x,
     const int num_interfaces_y,
     const double dt,
-    const double gamma,
-    const int boundary_condition_flag_x_min,
-    const int boundary_condition_flag_x_max,
-    const int boundary_condition_flag_y_min,
-    const int boundary_condition_flag_y_max
+    const double gamma
 )
 {
     ErrorStatus error_status = make_success_error_status();
@@ -537,17 +534,14 @@ IN_FILE ErrorStatus time_integrator_euler_2d(
 
     /* Set boundary conditions */
     error_status = set_boundary_condition_cartesian_2d(
+        boundary_condition_param,
         density,
         velocity_x,
         velocity_y,
         pressure,
         num_ghost_cells_side,
         num_cells_x,
-        num_cells_y,
-        boundary_condition_flag_x_min,
-        boundary_condition_flag_x_max,
-        boundary_condition_flag_y_min,
-        boundary_condition_flag_y_max
+        num_cells_y
     );
     if (error_status.return_code != SUCCESS)
     {
@@ -615,6 +609,7 @@ err_memory_temp:
 }
 
 IN_FILE ErrorStatus time_integrator_ssp_rk2_2d(
+    const BoundaryConditionParam *__restrict boundary_condition_param,
     IntegratorParam *__restrict integrator_param,
     Settings *__restrict settings,
     double *__restrict density,
@@ -634,11 +629,7 @@ IN_FILE ErrorStatus time_integrator_ssp_rk2_2d(
     const int num_interfaces_x,
     const int num_interfaces_y,
     const double dt,
-    const double gamma,
-    const int boundary_condition_flag_x_min,
-    const int boundary_condition_flag_x_max,
-    const int boundary_condition_flag_y_min,
-    const int boundary_condition_flag_y_max
+    const double gamma
 )
 {
     ErrorStatus error_status = make_success_error_status();
@@ -1113,17 +1104,14 @@ IN_FILE ErrorStatus time_integrator_ssp_rk2_2d(
 
     /* Set boundary conditions */
     error_status = set_boundary_condition_cartesian_2d(
+        boundary_condition_param,
         temp_density,
         temp_velocity_x,
         temp_velocity_y,
         temp_pressure,
         num_ghost_cells_side,
         num_cells_x,
-        num_cells_y,
-        boundary_condition_flag_x_min,
-        boundary_condition_flag_x_max,
-        boundary_condition_flag_y_min,
-        boundary_condition_flag_y_max
+        num_cells_y
     );
     if (error_status.return_code != SUCCESS)
     {
@@ -1519,17 +1507,14 @@ IN_FILE ErrorStatus time_integrator_ssp_rk2_2d(
 
     /* Set boundary conditions */
     error_status = set_boundary_condition_cartesian_2d(
+        boundary_condition_param,
         density,
         velocity_x,
         velocity_y,
         pressure,
         num_ghost_cells_side,
         num_cells_x,
-        num_cells_y,
-        boundary_condition_flag_x_min,
-        boundary_condition_flag_x_max,
-        boundary_condition_flag_y_min,
-        boundary_condition_flag_y_max
+        num_cells_y
     );
     if (error_status.return_code != SUCCESS)
     {
@@ -1616,6 +1601,7 @@ err_memory_temp_1:
 }
 
 IN_FILE ErrorStatus time_integrator_ssp_rk3_2d(
+    const BoundaryConditionParam *__restrict boundary_condition_param,
     IntegratorParam *__restrict integrator_param,
     Settings *__restrict settings,
     double *__restrict density,
@@ -1635,11 +1621,7 @@ IN_FILE ErrorStatus time_integrator_ssp_rk3_2d(
     const int num_interfaces_x,
     const int num_interfaces_y,
     const double dt,
-    const double gamma,
-    const int boundary_condition_flag_x_min,
-    const int boundary_condition_flag_x_max,
-    const int boundary_condition_flag_y_min,
-    const int boundary_condition_flag_y_max
+    const double gamma
 )
 {
     ErrorStatus error_status = make_success_error_status();
@@ -2118,17 +2100,14 @@ IN_FILE ErrorStatus time_integrator_ssp_rk3_2d(
 
     /* Set boundary conditions */
     error_status = set_boundary_condition_cartesian_2d(
+        boundary_condition_param,
         temp_density,
         temp_velocity_x,
         temp_velocity_y,
         temp_pressure,
         num_ghost_cells_side,
         num_cells_x,
-        num_cells_y,
-        boundary_condition_flag_x_min,
-        boundary_condition_flag_x_max,
-        boundary_condition_flag_y_min,
-        boundary_condition_flag_y_max
+        num_cells_y
     );
     if (error_status.return_code != SUCCESS)
     {
@@ -2524,17 +2503,14 @@ IN_FILE ErrorStatus time_integrator_ssp_rk3_2d(
     
         /* Set boundary conditions */
         error_status = set_boundary_condition_cartesian_2d(
+            boundary_condition_param,
             temp_density,
             temp_velocity_x,
             temp_velocity_y,
             temp_pressure,
             num_ghost_cells_side,
             num_cells_x,
-            num_cells_y,
-            boundary_condition_flag_x_min,
-            boundary_condition_flag_x_max,
-            boundary_condition_flag_y_min,
-            boundary_condition_flag_y_max
+            num_cells_y
         );
         if (error_status.return_code != SUCCESS)
         {
@@ -2931,17 +2907,14 @@ IN_FILE ErrorStatus time_integrator_ssp_rk3_2d(
     
         /* Set boundary conditions */
         error_status = set_boundary_condition_cartesian_2d(
+            boundary_condition_param,
             density,
             velocity_x,
             velocity_y,
             pressure,
             num_ghost_cells_side,
             num_cells_x,
-            num_cells_y,
-            boundary_condition_flag_x_min,
-            boundary_condition_flag_x_max,
-            boundary_condition_flag_y_min,
-            boundary_condition_flag_y_max
+            num_cells_y
         );
         if (error_status.return_code != SUCCESS)
         {
@@ -3028,6 +3001,7 @@ err_memory_temp_1:
 }
 
 ErrorStatus godunov_first_order_2d(
+    BoundaryConditionParam *__restrict boundary_condition_param,
     System *__restrict system,
     IntegratorParam *__restrict integrator_param,
     StoringParam *__restrict storing_param,
@@ -3046,10 +3020,6 @@ ErrorStatus godunov_first_order_2d(
     const int num_cells_y = system->num_cells_y;
     const int num_interfaces_x = num_cells_x + 1;
     const int num_interfaces_y = num_cells_y + 1;
-    const int boundary_condition_flag_x_min = system->boundary_condition_flag_x_min_;
-    const int boundary_condition_flag_x_max = system->boundary_condition_flag_x_max_;
-    const int boundary_condition_flag_y_min = system->boundary_condition_flag_y_min_;
-    const int boundary_condition_flag_y_max = system->boundary_condition_flag_y_max_;
 
     /* Integrator parameters */
     const double cfl = integrator_param->cfl;
@@ -3087,6 +3057,7 @@ ErrorStatus godunov_first_order_2d(
 
     /* Time integrator function */
     ErrorStatus (*time_integrator_2d_func)(
+        const BoundaryConditionParam *__restrict boundary_condition_param,
         IntegratorParam *__restrict integrator_param,
         Settings *__restrict settings,
         double *__restrict density,
@@ -3106,11 +3077,7 @@ ErrorStatus godunov_first_order_2d(
         const int num_interfaces_x,
         const int num_interfaces_y,
         const double dt,
-        const double gamma,
-        const int boundary_condition_flag_x_min,
-        const int boundary_condition_flag_x_max,
-        const int boundary_condition_flag_y_min,
-        const int boundary_condition_flag_y_max
+        const double gamma
     );
 
     switch (integrator_param->time_integrator_flag_)
@@ -3145,7 +3112,7 @@ ErrorStatus godunov_first_order_2d(
     const int store_initial_offset = (is_storing && storing_param->store_initial) ? 1 : 0;
     if (is_storing && storing_param->store_initial)
     {
-        error_status = WRAP_TRACEBACK(store_snapshot(system, integrator_param, simulation_status, storing_param));
+        error_status = WRAP_TRACEBACK(store_snapshot(boundary_condition_param, system, integrator_param, simulation_status, storing_param));
         if (error_status.return_code != SUCCESS)
         {
             goto err_store_first_snapshot;
@@ -3176,6 +3143,7 @@ ErrorStatus godunov_first_order_2d(
 
         /* Advance step */
         error_status = time_integrator_2d_func(
+            boundary_condition_param,
             integrator_param,
             settings,
             density,
@@ -3195,11 +3163,7 @@ ErrorStatus godunov_first_order_2d(
             num_interfaces_x,
             num_interfaces_y,
             dt,
-            gamma,
-            boundary_condition_flag_x_min,
-            boundary_condition_flag_x_max,
-            boundary_condition_flag_y_min,
-            boundary_condition_flag_y_max
+            gamma
         );
         if (error_status.return_code != SUCCESS)
         {
@@ -3211,7 +3175,7 @@ ErrorStatus godunov_first_order_2d(
         /* Store snapshot */
         if (is_storing && ((*t_ptr) >= storing_interval * (*store_count_ptr - store_initial_offset + 1)))
         {
-            error_status = WRAP_TRACEBACK(store_snapshot(system, integrator_param, simulation_status, storing_param));
+            error_status = WRAP_TRACEBACK(store_snapshot(boundary_condition_param, system, integrator_param, simulation_status, storing_param));
             if (error_status.return_code != SUCCESS)
             {
                 goto err_store_snapshot;

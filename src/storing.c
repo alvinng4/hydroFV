@@ -4,7 +4,7 @@
  * \brief Definitions of functions for storing snapshots of the hydrodynamic system.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-11
+ * \date 2025-03-21
  */
 
 #include <hdf5.h>
@@ -160,6 +160,7 @@ ErrorStatus finalize_storing_param(StoringParam *__restrict storing_param)
 /**
  * \brief Store a snapshot of the 1D hydrodynamic system to an HDF5 file.
  * 
+ * \param boundary_condition_param Pointer to the boundary condition parameters.
  * \param system Pointer to the 1D hydrodynamic system.
  * \param integrator_param Pointer to the integrator parameters.
  * \param simulation_status Pointer to the simulation status.
@@ -167,6 +168,7 @@ ErrorStatus finalize_storing_param(StoringParam *__restrict storing_param)
  * \param file_path Path to the HDF5 file.
  */
 IN_FILE ErrorStatus store_snapshot_1d(
+    const BoundaryConditionParam *__restrict boundary_condition_param,
     const System *__restrict system,
     const IntegratorParam *__restrict integrator_param,
     const SimulationStatus *__restrict simulation_status,
@@ -271,8 +273,8 @@ IN_FILE ErrorStatus store_snapshot_1d(
     H5Dwrite(dataset_dx, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &system->dx_);
     H5Dwrite(dataset_gamma, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &system->gamma);
     H5Dwrite(dataset_coordinate_system, variable_length_str, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(system->coord_sys));
-    H5Dwrite(dataset_boundary_condition_x_min, variable_length_str, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(system->boundary_condition_x_min));
-    H5Dwrite(dataset_boundary_condition_x_max, variable_length_str, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(system->boundary_condition_x_max));
+    H5Dwrite(dataset_boundary_condition_x_min, variable_length_str, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(boundary_condition_param->boundary_condition_x_min));
+    H5Dwrite(dataset_boundary_condition_x_max, variable_length_str, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(boundary_condition_param->boundary_condition_x_max));
 
     /* Close HDF5 dataset, dataspace, group, and file */
     H5Dclose(dataset_x_min);
@@ -402,6 +404,7 @@ err_create_hdf5_file:
 /**
  * \brief Store a snapshot of the 2D hydrodynamic system to an HDF5 file.
  * 
+ * \param boundary_condition_param Pointer to the boundary condition parameters.
  * \param system Pointer to the 2D hydrodynamic system.
  * \param integrator_param Pointer to the integrator parameters.
  * \param simulation_status Pointer to the simulation status.
@@ -409,6 +412,7 @@ err_create_hdf5_file:
  * \param file_path Path to the HDF5 file.
  */
 IN_FILE ErrorStatus store_snapshot_2d(
+    const BoundaryConditionParam *__restrict boundary_condition_param,
     const System *__restrict system,
     const IntegratorParam *__restrict integrator_param,
     const SimulationStatus *__restrict simulation_status,
@@ -535,10 +539,10 @@ IN_FILE ErrorStatus store_snapshot_2d(
     H5Dwrite(dataset_dy, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &system->dy_);
     H5Dwrite(dataset_gamma, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &system->gamma);
     H5Dwrite(dataset_coordinate_system, variable_length_str, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(system->coord_sys));
-    H5Dwrite(dataset_boundary_condition_x_min, variable_length_str, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(system->boundary_condition_x_min));
-    H5Dwrite(dataset_boundary_condition_x_max, variable_length_str, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(system->boundary_condition_x_max));
-    H5Dwrite(dataset_boundary_condition_y_min, variable_length_str, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(system->boundary_condition_y_min));
-    H5Dwrite(dataset_boundary_condition_y_max, variable_length_str, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(system->boundary_condition_y_max));
+    H5Dwrite(dataset_boundary_condition_x_min, variable_length_str, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(boundary_condition_param->boundary_condition_x_min));
+    H5Dwrite(dataset_boundary_condition_x_max, variable_length_str, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(boundary_condition_param->boundary_condition_x_max));
+    H5Dwrite(dataset_boundary_condition_y_min, variable_length_str, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(boundary_condition_param->boundary_condition_y_min));
+    H5Dwrite(dataset_boundary_condition_y_max, variable_length_str, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(boundary_condition_param->boundary_condition_y_max));
 
     /* Close HDF5 dataset, dataspace, group, and file */
     H5Dclose(dataset_x_min);
@@ -702,6 +706,7 @@ err_create_hdf5_file:
 
 
 ErrorStatus store_snapshot(
+    const BoundaryConditionParam *__restrict boundary_condition_param,
     const System *__restrict system,
     const IntegratorParam *__restrict integrator_param,
     const SimulationStatus *__restrict simulation_status,
@@ -745,14 +750,14 @@ ErrorStatus store_snapshot(
     switch (system->coord_sys_flag_)
     {
         case COORD_SYS_CARTESIAN_1D: case COORD_SYS_CYLINDRICAL_1D: case COORD_SYS_SPHERICAL_1D:
-            error_status = store_snapshot_1d(system, integrator_param, simulation_status, storing_param, file_path);
+            error_status = store_snapshot_1d(boundary_condition_param, system, integrator_param, simulation_status, storing_param, file_path);
             if (error_status.return_code != SUCCESS)
             {
                 goto err_store_snapshot;
             }
             break;
         case COORD_SYS_CARTESIAN_2D:
-            error_status = store_snapshot_2d(system, integrator_param, simulation_status, storing_param, file_path);
+            error_status = store_snapshot_2d(boundary_condition_param, system, integrator_param, simulation_status, storing_param, file_path);
             if (error_status.return_code != SUCCESS)
             {
                 goto err_store_snapshot;

@@ -4,7 +4,7 @@
  * \brief 1D First-order Godunov scheme for the Euler equations.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-20
+ * \date 2025-03-21
  */
 
 #include <stdbool.h>
@@ -105,6 +105,7 @@ IN_FILE void reconstruct_interface_1d(
 }
 
 IN_FILE ErrorStatus time_integrator_euler_1d(
+    const BoundaryConditionParam *__restrict boundary_condition_param,
     IntegratorParam *__restrict integrator_param,
     Settings *__restrict settings,
     double *__restrict density,
@@ -119,9 +120,7 @@ IN_FILE ErrorStatus time_integrator_euler_1d(
     const int num_ghost_cells_side,
     const int num_interfaces,
     const double dt,
-    const double gamma,
-    const int boundary_condition_flag_x_min,
-    const int boundary_condition_flag_x_max
+    const double gamma
 )
 {
     ErrorStatus error_status = make_success_error_status();
@@ -224,13 +223,12 @@ IN_FILE ErrorStatus time_integrator_euler_1d(
     );
 
     error_status = set_boundary_condition_1d(
+        boundary_condition_param,
         density,
         velocity_x,
         pressure,
         num_ghost_cells_side,
-        num_cells,
-        boundary_condition_flag_x_min,
-        boundary_condition_flag_x_max
+        num_cells
     );
     if (error_status.return_code != SUCCESS)
     {
@@ -259,6 +257,7 @@ err_memory:
 }
 
 IN_FILE ErrorStatus time_integrator_ssp_rk2_1d(
+    const BoundaryConditionParam *__restrict boundary_condition_param,
     IntegratorParam *__restrict integrator_param,
     Settings *__restrict settings,
     double *__restrict density,
@@ -273,9 +272,7 @@ IN_FILE ErrorStatus time_integrator_ssp_rk2_1d(
     const int num_ghost_cells_side,
     const int num_interfaces,
     const double dt,
-    const double gamma,
-    const int boundary_condition_flag_x_min,
-    const int boundary_condition_flag_x_max
+    const double gamma
 )
 {
     ErrorStatus error_status = make_success_error_status();
@@ -412,13 +409,12 @@ IN_FILE ErrorStatus time_integrator_ssp_rk2_1d(
     );
 
     error_status = set_boundary_condition_1d(
+        boundary_condition_param,
         temp_density,
         temp_velocity_x,
         temp_pressure,
         num_ghost_cells_side,
-        num_cells,
-        boundary_condition_flag_x_min,
-        boundary_condition_flag_x_max
+        num_cells
     );
     if (error_status.return_code != SUCCESS)
     {
@@ -517,13 +513,12 @@ IN_FILE ErrorStatus time_integrator_ssp_rk2_1d(
     );
 
     error_status = set_boundary_condition_1d(
+        boundary_condition_param,
         density,
         velocity_x,
         pressure,
         num_ghost_cells_side,
-        num_cells,
-        boundary_condition_flag_x_min,
-        boundary_condition_flag_x_max
+        num_cells
     );
     if (error_status.return_code != SUCCESS)
     {
@@ -566,6 +561,7 @@ err_memory_interface:
 }
 
 IN_FILE ErrorStatus time_integrator_ssp_rk3_1d(
+    const BoundaryConditionParam *__restrict boundary_condition_param,
     IntegratorParam *__restrict integrator_param,
     Settings *__restrict settings,
     double *__restrict density,
@@ -580,9 +576,7 @@ IN_FILE ErrorStatus time_integrator_ssp_rk3_1d(
     const int num_ghost_cells_side,
     const int num_interfaces,
     const double dt,
-    const double gamma,
-    const int boundary_condition_flag_x_min,
-    const int boundary_condition_flag_x_max
+    const double gamma
 )
 {
     ErrorStatus error_status = make_success_error_status();
@@ -723,13 +717,12 @@ IN_FILE ErrorStatus time_integrator_ssp_rk3_1d(
     );
 
     error_status = set_boundary_condition_1d(
+        boundary_condition_param,
         temp_density,
         temp_velocity_x,
         temp_pressure,
         num_ghost_cells_side,
-        num_cells,
-        boundary_condition_flag_x_min,
-        boundary_condition_flag_x_max
+        num_cells
     );
     if (error_status.return_code != SUCCESS)
     {
@@ -828,13 +821,12 @@ IN_FILE ErrorStatus time_integrator_ssp_rk3_1d(
     );
 
     error_status = set_boundary_condition_1d(
+        boundary_condition_param,
         temp_density,
         temp_velocity_x,
         temp_pressure,
         num_ghost_cells_side,
-        num_cells,
-        boundary_condition_flag_x_min,
-        boundary_condition_flag_x_max
+        num_cells
     );
     if (error_status.return_code != SUCCESS)
     {
@@ -933,13 +925,12 @@ IN_FILE ErrorStatus time_integrator_ssp_rk3_1d(
     );
 
     error_status = set_boundary_condition_1d(
+        boundary_condition_param,
         density,
         velocity_x,
         pressure,
         num_ghost_cells_side,
-        num_cells,
-        boundary_condition_flag_x_min,
-        boundary_condition_flag_x_max
+        num_cells
     );
     if (error_status.return_code != SUCCESS)
     {
@@ -982,6 +973,7 @@ err_memory_interface:
 }
 
 ErrorStatus godunov_first_order_1d(
+    BoundaryConditionParam *__restrict boundary_condition_param,
     System *__restrict system,
     IntegratorParam *__restrict integrator_param,
     StoringParam *__restrict storing_param,
@@ -1004,8 +996,6 @@ ErrorStatus godunov_first_order_1d(
     const int num_cells = system->num_cells_x;
     const int num_ghost_cells_side = system->num_ghost_cells_side;
     const int num_interfaces = num_cells + 1;
-    const int boundary_condition_flag_x_min = system->boundary_condition_flag_x_min_;
-    const int boundary_condition_flag_x_max = system->boundary_condition_flag_x_max_;
 
     /* Integrator parameters */
     const double cfl = integrator_param->cfl;
@@ -1040,6 +1030,7 @@ ErrorStatus godunov_first_order_1d(
 
     /* Time integrator function */
     ErrorStatus (*time_integrator_1d_func)(
+        const BoundaryConditionParam *__restrict boundary_condition_param,
         IntegratorParam *__restrict integrator_param,
         Settings *__restrict settings,
         double *__restrict density,
@@ -1054,9 +1045,7 @@ ErrorStatus godunov_first_order_1d(
         const int num_ghost_cells_side,
         const int num_interfaces,
         const double dt,
-        const double gamma,
-        const int boundary_condition_flag_x_min,
-        const int boundary_condition_flag_x_max
+        const double gamma
     );
 
     switch (integrator_param->time_integrator_flag_)
@@ -1091,7 +1080,7 @@ ErrorStatus godunov_first_order_1d(
     const int store_initial_offset = (is_storing && storing_param->store_initial) ? 1 : 0;
     if (is_storing && storing_param->store_initial)
     {
-        error_status = WRAP_TRACEBACK(store_snapshot(system, integrator_param, simulation_status, storing_param));
+        error_status = WRAP_TRACEBACK(store_snapshot(boundary_condition_param, system, integrator_param, simulation_status, storing_param));
         if (error_status.return_code != SUCCESS)
         {
             goto err_store_first_snapshot;
@@ -1122,6 +1111,7 @@ ErrorStatus godunov_first_order_1d(
 
         /* Advance step */
         error_status = time_integrator_1d_func(
+            boundary_condition_param,
             integrator_param,
             settings,
             density,
@@ -1136,9 +1126,7 @@ ErrorStatus godunov_first_order_1d(
             num_ghost_cells_side,
             num_interfaces,
             dt,
-            gamma,
-            boundary_condition_flag_x_min,
-            boundary_condition_flag_x_max
+            gamma
         );
         if (error_status.return_code != SUCCESS)
         {
@@ -1147,7 +1135,7 @@ ErrorStatus godunov_first_order_1d(
 
         if (is_compute_geometry_source_term)
         {
-            error_status = WRAP_TRACEBACK(add_geometry_source_term(system, dt));
+            error_status = WRAP_TRACEBACK(add_geometry_source_term(boundary_condition_param, system, dt));
             if (error_status.return_code != SUCCESS)
             {
                 goto err_compute_geometry_source_term;
@@ -1160,7 +1148,7 @@ ErrorStatus godunov_first_order_1d(
         /* Store snapshot */
         if (is_storing && ((*t_ptr) >= storing_interval * (*store_count_ptr - store_initial_offset + 1)))
         {
-            error_status = WRAP_TRACEBACK(store_snapshot(system, integrator_param, simulation_status, storing_param));
+            error_status = WRAP_TRACEBACK(store_snapshot(boundary_condition_param, system, integrator_param, simulation_status, storing_param));
             if (error_status.return_code != SUCCESS)
             {
                 goto err_store_snapshot;

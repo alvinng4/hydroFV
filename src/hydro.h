@@ -4,11 +4,14 @@
  * \brief Header file for the hydrodynamic module.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-18
+ * \date 2025-03-21
  */
 
 #ifndef HYDRO_H
 #define HYDRO_H
+
+/* Boundary conditions */
+#include "boundary.h"
 
 /* Common definitions */
 #include "common.h"
@@ -35,6 +38,7 @@
 /**
  * \brief Launch the hydrodynamics simulation.
  * 
+ * \param boundary_condition_param Pointer to the boundary condition parameters.
  * \param system Pointer to the hydrodynamic system.
  * \param integrator_param Pointer to the integrator parameters.
  * \param storing_param Pointer to the storing parameters.
@@ -45,6 +49,7 @@
  * \return ErrorStatus.
  */
 ErrorStatus launch_simulation(
+    BoundaryConditionParam *__restrict boundary_condition_param,
     System *__restrict system,
     IntegratorParam *__restrict integrator_param,
     StoringParam *__restrict storing_param,
