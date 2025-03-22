@@ -2,10 +2,10 @@
 Plot the result of Kelvin-Helmholtz instability simulation.
 
 Usage:
-    python plot_sod_shock.py
+    python animate_kelvin_helmholtz_2d.py
 
 Author: Ching-Yin Ng
-Date: 2025-03-09
+Date: 2025-03-22
 """
 
 import glob
@@ -19,7 +19,7 @@ SNAPSHOT_FOLDER = Path(__file__).parent / "snapshots/"
 FRAME_FOLDER = Path(__file__).parent / "frames/"
 FILE_PATH = Path(__file__).parent / "kelvin_helmholtz_2d.gif"
 
-LENGTH = 13.0
+LENGTH = 35.0
 
 
 def main() -> None:
@@ -62,7 +62,7 @@ def main() -> None:
                 extent=(x_min, x_max, y_min, y_max),
                 vmin=1.0,
                 vmax=2.0,
-                cmap="gist_gray",
+                cmap="coolwarm",
             )
             colorbar = plt.colorbar(ax.images[0], ax=ax, shrink=0.75)
             colorbar.set_label("Density")
