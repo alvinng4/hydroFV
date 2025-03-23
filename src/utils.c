@@ -82,7 +82,5 @@ double get_time_step_2d(
         }
     }
 
-    const double factor = fmin(dx / S_max_x, dy / S_max_y);
-
-    return cfl * factor;
+    return cfl / (S_max_x / dx + S_max_y / dy);
 }
