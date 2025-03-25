@@ -4,7 +4,7 @@
  * \brief Definitions of functions for storing snapshots of the hydrodynamic system.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-21
+ * \date 2025-03-25
  */
 
 #include <hdf5.h>
@@ -142,6 +142,7 @@ ErrorStatus finalize_storing_param(StoringParam *__restrict storing_param)
             }
             WRAP_RAISE_WARNING(warning_message);
         }
+    }
 #else
     struct stat st = {0};
     if (mkdir(storing_param->output_dir, 0777) == -1)

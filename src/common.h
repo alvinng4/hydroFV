@@ -37,6 +37,7 @@ typedef struct IntegratorParam
     double cfl_initial_shrink_factor;
     int cfl_initial_shrink_num_steps;
     double tol;
+
     int integrator_flag_;
     int riemann_solver_flag_;
     int reconstruction_flag_;
@@ -50,6 +51,7 @@ typedef struct StoringParam
     bool is_storing;
     bool store_initial;
     double storing_interval;
+
     int storing_method_flag_;
     int store_count_;
 } StoringParam;
