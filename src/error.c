@@ -79,10 +79,6 @@ ErrorStatus raise_error(
             error_status.return_code = error_code;
             error_type = "Failure";
             break;
-        case ERROR:
-            error_status.return_code = error_code;
-            error_type = "Error";
-            break;
         case VALUE_ERROR:
             error_status.return_code = error_code;
             error_type = "ValueError";

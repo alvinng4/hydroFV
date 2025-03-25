@@ -19,7 +19,7 @@ typedef struct ProgressBarParam
     double time_last_update;
     double diff_time_last_five_update[5];
     double last_five_progress_percent[5];
-    int at_least_four_count;
+    int at_least_five_count;
     double current_progress;
     double total;
 } ProgressBarParam;

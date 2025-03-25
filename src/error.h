@@ -15,12 +15,11 @@
 #define UNKNOWN_ERROR -1
 #define SUCCESS 0
 #define FAILURE 1
-#define ERROR 2
-#define VALUE_ERROR 3
-#define POINTER_ERROR 4
-#define MEMORY_ERROR 5
-#define OS_ERROR 6
-#define NOT_IMPLEMENTED_ERROR 7
+#define VALUE_ERROR 2
+#define POINTER_ERROR 3
+#define MEMORY_ERROR 4
+#define OS_ERROR 5
+#define NOT_IMPLEMENTED_ERROR 6
 
 
 /* Traceback code */

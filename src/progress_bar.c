@@ -9,10 +9,9 @@
 
 #include <stdbool.h>
 #include <stdio.h>
-#include <time.h>
-#include <sys/time.h>
 
 #include "hydro.h"
+#include "hydro_time.h"
 #include "progress_bar.h"
 
 #define PROGRESS_BAR_LENGTH 40
@@ -35,18 +34,6 @@
 #define YELLOW "\033[0;33m"
 #define CYAN "\033[0;36m"
 #define MAGENTA "\033[0;35m"
-
-/**
- * \brief Get current time as a decimal number of seconds using clock_gettime(CLOCK_MONOTONIC, )
- * 
- * \return Current time as a decimal number of seconds
- */
-IN_FILE double get_current_time(void)
-{
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (double) ts.tv_sec + (double) ts.tv_nsec / 1.0e9;
-}
 
 /**
  * \brief Print the progress bar to stdout.
@@ -76,7 +63,7 @@ IN_FILE void print_progress_bar(
     const int num_dark_bar = PROGRESS_BAR_LENGTH - num_red_bar;
 
     /* Elapsed time */
-    const time_t time_elapsed_time_t = get_current_time() - progress_bar_param->start;
+    const time_t time_elapsed_time_t = hydro_get_current_time() - progress_bar_param->start;
 
     time_t hours_elapsed = time_elapsed_time_t / 3600;
     time_t minutes_elapsed = (time_elapsed_time_t % 3600) / 60;
@@ -193,7 +180,7 @@ ErrorStatus start_progress_bar(
 {
     ErrorStatus error_status;
 
-    progress_bar_param->start = get_current_time();
+    progress_bar_param->start = hydro_get_current_time();
     progress_bar_param->time_last_update = progress_bar_param->start;
     progress_bar_param->current_progress = 0.0;
     progress_bar_param->total = total;
@@ -205,7 +192,7 @@ ErrorStatus start_progress_bar(
 
     progress_bar_param->last_five_progress_percent[0] = 0.0;
     progress_bar_param->diff_time_last_five_update[0] = 0.0;
-    progress_bar_param->at_least_four_count = 0;
+    progress_bar_param->at_least_five_count = 0;
 
     print_progress_bar(progress_bar_param, 0.0, 0, false);
 
@@ -263,7 +250,7 @@ void update_progress_bar(
     bool is_end
 )
 {
-    const double current_time = get_current_time();
+    const double current_time = hydro_get_current_time();
     if (
         (current_time - progress_bar_param->time_last_update) < MIN_UPDATE_INTERVAL_SECOND
         && !is_end
@@ -282,11 +269,11 @@ void update_progress_bar(
 
     const double diff_now_start = current_time - progress_bar_param->start;
 
-    if (progress_bar_param->at_least_four_count < 4)
+    if (progress_bar_param->at_least_five_count < 5)
     {
-        progress_bar_param->last_five_progress_percent[progress_bar_param->at_least_four_count] = percent;
-        progress_bar_param->diff_time_last_five_update[progress_bar_param->at_least_four_count] = diff_now_start;
-        (progress_bar_param->at_least_four_count)++;
+        progress_bar_param->last_five_progress_percent[progress_bar_param->at_least_five_count] = percent;
+        progress_bar_param->diff_time_last_five_update[progress_bar_param->at_least_five_count] = diff_now_start;
+        (progress_bar_param->at_least_five_count)++;
     }
     else
     {
@@ -309,7 +296,7 @@ void update_progress_bar(
         // even when the progress bar ends since it could
         // be triggered by an error rather than the actual
         // completion of the task.
-        if (progress_bar_param->at_least_four_count < 4)
+        if (progress_bar_param->at_least_five_count < 5)
         {
             print_progress_bar(progress_bar_param, percent, -1.0, true);
         }
@@ -323,7 +310,7 @@ void update_progress_bar(
     {
         progress_bar_param->time_last_update = current_time;
 
-        if (progress_bar_param->at_least_four_count < 4)
+        if (progress_bar_param->at_least_five_count < 5)
         {
             print_progress_bar(progress_bar_param, percent, -1.0, false);
         }
