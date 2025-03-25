@@ -20,7 +20,10 @@ Finite volume hydrodynamics solver for the compressible Euler's equation.
     * Piecewise linear and piecewise parabolic reconstruction
     * Minmod, Van Leer and Monotonized Central (MC) slope limiters
     * SSP-RK2 and SSP-RK3 time integration
-    * Recommended settings: piecewise linear reconstruction + MC limiter + SSP-RK2
+
+- Todos:
+    * Piecewise linear and piecewise parabolic method with characteristic tracing
+    * Cartesian 3D coordinate system (easy to extend from 2d to 3d but time consuming)
 
 ## Requirements
 Required:
