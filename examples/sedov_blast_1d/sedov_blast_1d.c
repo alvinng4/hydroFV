@@ -1,10 +1,11 @@
 #include <stdio.h>
 
 #include "hydro.h"
+#include "hydro_time.h"
 
 #define RIEMANN_SOLVER "riemann_solver_hllc" // "riemann_solver_exact" or "riemann_solver_hllc"
 #define COORD_SYS "spherical_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
-#define NUM_TOTAL_CELLS 256
+#define NUM_TOTAL_CELLS 128
 #define NUM_GHOST_CELLS_SIDE 3
 #define NUM_CELLS NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
 #define INTEGRATOR "godunov_first_order_1d" // "godunov_first_order_1d" or "random_choice_1d"
@@ -17,7 +18,7 @@
 #define TOL 1e-6 // For the riemann solver
 
 /* Sedov Blast parameters */
-#define NUM_EXPLOSION_CELLS 2
+#define NUM_EXPLOSION_CELLS 12
 
 #define GAMMA 1.4
 #define RHO_0 1.0
@@ -158,6 +159,8 @@ int main(void)
     /* Simulation status */
     SimulationStatus simulation_status;
 
+    printf("Launching simulation...\n");
+    double start = hydro_get_current_time();
     error_status = WRAP_TRACEBACK(launch_simulation(
         &boundary_condition_param,
         &system,
@@ -167,10 +170,13 @@ int main(void)
         &simulation_param,
         &simulation_status
     ));
+    double end = hydro_get_current_time();
     if (error_status.return_code != SUCCESS)
     {
         goto error;
     }
+    printf("Simulation time: %g s, Number of steps: %lld\n", end - start, simulation_status.num_steps);
+    printf("Done!\n");
 
     free_system_memory(&system);
     return 0;
