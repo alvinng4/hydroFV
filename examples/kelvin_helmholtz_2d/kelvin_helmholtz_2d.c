@@ -1,8 +1,18 @@
+/**
+ * \file kelvin_helmholtz_2d.c
+ * 
+ * \brief Kelvin-Helmholtz instability simulation in 2D,
+ *        based on McNally et al., 2012, ApJ, 201, 18.
+ * 
+ * \author Ching-Yin Ng
+ * \date 2025-03-25
+ */
+
 #include <math.h>
 #include <stdio.h>
-#include <time.h>
 
 #include "hydro.h"
+#include "hydro_time.h"
 
 #define RIEMANN_SOLVER "riemann_solver_hllc"
 #define COORD_SYS "cartesian_2d"
@@ -12,11 +22,11 @@
 #define NUM_CELLS_X NUM_TOTAL_CELLS_X - 2 * NUM_GHOST_CELLS_SIDE
 #define NUM_CELLS_Y NUM_TOTAL_CELLS_Y - 2 * NUM_GHOST_CELLS_SIDE
 #define INTEGRATOR "godunov_first_order_2d"
-#define RECONSTRUCTION "piecewise_parabolic" // "piecewise_constant", "piecewise_linear" or "piecewise_parabolic"
+#define RECONSTRUCTION "piecewise_linear" // "piecewise_constant", "piecewise_linear" or "piecewise_parabolic"
 #define LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
-#define TIME_INTEGRATOR "ssp_rk3" // "euler", "ssp_rk2" or "ssp_rk3"
+#define TIME_INTEGRATOR "ssp_rk2" // "euler", "ssp_rk2" or "ssp_rk3"
 
-#define CFL 0.4
+#define CFL 1.0
 #define TF 20.0
 #define TOL 1e-6 // For the riemann solver
 
@@ -162,7 +172,7 @@ int main(void)
     StoringParam storing_param = get_new_storing_param();
     storing_param.is_storing = true;
     storing_param.store_initial = true;
-    storing_param.storing_interval = 0.05;
+    storing_param.storing_interval = 0.02;
     storing_param.output_dir = "snapshots/";
 
     /* Settings */
@@ -180,7 +190,7 @@ int main(void)
     SimulationStatus simulation_status;
 
     printf("Launching simulation...\n");
-    time_t start = clock();
+    double start = hydro_get_current_time();
     error_status = WRAP_TRACEBACK(launch_simulation(
         &boundary_condition_param,
         &system,
@@ -190,12 +200,12 @@ int main(void)
         &simulation_param,
         &simulation_status
     ));
-    time_t end = clock();
+    double end = hydro_get_current_time();
     if (error_status.return_code != SUCCESS)
     {
         goto error;
     }
-    printf("Simulation time: %f s, Number of steps: %lld\n", (double) (end - start) / CLOCKS_PER_SEC, simulation_status.num_steps);
+    printf("Simulation time: %g s, Number of steps: %lld\n", end - start, simulation_status.num_steps);
     printf("Done!\n");
 
     free_system_memory(&system);

@@ -1,7 +1,7 @@
 #include <stdio.h>
-#include <time.h>
 
 #include "hydro.h"
+#include "hydro_time.h"
 
 #define RIEMANN_SOLVER "riemann_solver_hllc" // "riemann_solver_exact" or "riemann_solver_hllc"
 #define COORD_SYS "spherical_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
@@ -160,7 +160,7 @@ int main(void)
     SimulationStatus simulation_status;
 
     printf("Launching simulation...\n");
-    time_t start = clock();
+    double start = hydro_get_current_time();
     error_status = WRAP_TRACEBACK(launch_simulation(
         &boundary_condition_param,
         &system,
@@ -170,12 +170,12 @@ int main(void)
         &simulation_param,
         &simulation_status
     ));
-    time_t end = clock();
+    double end = hydro_get_current_time();
     if (error_status.return_code != SUCCESS)
     {
         goto error;
     }
-    printf("Simulation time: %f s, Number of steps: %lld\n", (double) (end - start) / CLOCKS_PER_SEC, simulation_status.num_steps);
+    printf("Simulation time: %g s, Number of steps: %lld\n", end - start, simulation_status.num_steps);
     printf("Done!\n");
 
     free_system_memory(&system);
