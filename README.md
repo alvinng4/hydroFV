@@ -18,8 +18,9 @@ Finite volume hydrodynamics solver for the compressible Euler's equation.
 
 - Extensions for Godunov scheme:
     * Piecewise linear and piecewise parabolic reconstruction
-    * Minmod, Van Leer and Monotonized Central slope limiters
+    * Minmod, Van Leer and Monotonized Central (MC) slope limiters
     * SSP-RK2 and SSP-RK3 time integration
+    * Recommended settings: piecewise linear reconstruction + MC limiter + SSP-RK2
 
 ## Requirements
 Required:
@@ -29,6 +30,16 @@ Required:
 Optional:
 - CMake
 - OpenMP
+
+## Compilation
+### Using CMake
+Take `examples/sod_shock_1d` as an example:
+```
+cmake [-DUSE_OPENMP=ON] .
+cmake --build .
+./sod_shock_1d
+```
+where `USE_OPENMP` is an optional flag to enable OpenMP parallelization.
 
 ## Sample usage
 Check the `examples` directory for sample usage.
