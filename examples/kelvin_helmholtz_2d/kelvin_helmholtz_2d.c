@@ -12,7 +12,6 @@
 #include <stdio.h>
 
 #include "hydro.h"
-#include "hydro_time.h"
 
 #define RIEMANN_SOLVER "riemann_solver_hllc"
 #define COORD_SYS "cartesian_2d"
@@ -189,8 +188,6 @@ int main(void)
     /* Simulation status */
     SimulationStatus simulation_status;
 
-    printf("Launching simulation...\n");
-    double start = hydro_get_current_time();
     error_status = WRAP_TRACEBACK(launch_simulation(
         &boundary_condition_param,
         &system,
@@ -200,13 +197,10 @@ int main(void)
         &simulation_param,
         &simulation_status
     ));
-    double end = hydro_get_current_time();
     if (error_status.return_code != SUCCESS)
     {
         goto error;
     }
-    printf("Simulation time: %g s, Number of steps: %lld\n", end - start, simulation_status.num_steps);
-    printf("Done!\n");
 
     free_system_memory(&system);
     return 0;
