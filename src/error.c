@@ -1,17 +1,17 @@
 /**
  * \file error.c
- * 
- * \brief Exception handling functions for the hydrodynamics simulation
+ * \brief Exception handling functions
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-11
+ * \date March 2025
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "hydro.h"
+#include "common.h"
+#include "error.h"
 
 #define RESET "\033[0m"
 #define BRIGHT_RED "\033[1;31m"
@@ -262,7 +262,7 @@ void free_traceback(ErrorStatus *__restrict error_status)
 
 void print_and_free_traceback(ErrorStatus *__restrict error_status)
 {
-    fprintf(stderr, "%sTraceback%s %s(most recent call last):%s\n", BRIGHT_RED, RESET, DIM_RED, RESET);
+    fprintf(stderr, "\n%sTraceback%s %s(most recent call last):%s\n", BRIGHT_RED, RESET, DIM_RED, RESET);
     switch (error_status->traceback_code_)
     {
         case TRACEBACK_NOT_INITIALIZED:
@@ -278,7 +278,7 @@ void print_and_free_traceback(ErrorStatus *__restrict error_status)
             break;
         case TRACEBACK_TRUNCATED:
             fputs(error_status->traceback, stderr);
-            fputs("\n    Something went wrong. Traceback was truncated.\n", stderr);
+            fputs("\n    Something went wrong. Traceback are truncated.\n", stderr);
             free(error_status->traceback);
             error_status->traceback = NULL;
             break;

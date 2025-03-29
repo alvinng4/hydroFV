@@ -12,6 +12,7 @@ Author: Ching-Yin Ng
 Date: 2025-03-25
 """
 
+import glob
 from pathlib import Path
 
 import h5py
@@ -19,7 +20,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 IS_PLOT_REFERENCE_SOL = True
-RESULT_PATH = Path(__file__).parent / "snapshots/snapshot_0.h5"
+RESULT_PATH = Path(__file__).parent / "snapshots/"
+SNAPSHOT_PATH = sorted(glob.glob(str(RESULT_PATH / "*.h5")))[-1]
 
 MARKER_SIZE = 3
 
@@ -29,7 +31,7 @@ P_0 = 1e-5
 
 
 def main() -> None:
-    with h5py.File(RESULT_PATH, "r") as f:
+    with h5py.File(SNAPSHOT_PATH, "r") as f:
         density = f["fields/density"][()]
         velocity_x = f["fields/velocity_x"][()]
         velocity_y = f["fields/velocity_y"][()]
