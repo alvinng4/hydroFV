@@ -28,15 +28,15 @@ ErrorStatus get_slope_limiter_flag(
 
     if (strcmp(integrator_param->slope_limiter, "minmod") == 0)
     {
-        integrator_param->slope_limiter_flag_ = LIMITER_MINMOD;
+        integrator_param->slope_limiter_flag_ = SLOPE_LIMITER_MINMOD;
     }
     else if (strcmp(integrator_param->slope_limiter, "van_leer") == 0)
     {
-        integrator_param->slope_limiter_flag_ = LIMITER_VAN_LEER;
+        integrator_param->slope_limiter_flag_ = SLOPE_LIMITER_VAN_LEER;
     }
     else if (strcmp(integrator_param->slope_limiter, "monotonized_center") == 0)
     {
-        integrator_param->slope_limiter_flag_ = LIMITER_MONOTONIZED_CENTER;
+        integrator_param->slope_limiter_flag_ = SLOPE_LIMITER_MONOTONIZED_CENTRAL;
     }
     else
     {
@@ -74,7 +74,7 @@ IN_FILE double van_leer(const double a, const double b)
     }
 }
 
-IN_FILE double monotonized_center(const double a, const double b)
+IN_FILE double monotonized_central(const double a, const double b)
 {
     if (a * b <= 0.0)
     {
@@ -99,14 +99,14 @@ ErrorStatus limit_slope(
 {
     switch (integrator_param->slope_limiter_flag_)
     {
-        case LIMITER_MINMOD:
+        case SLOPE_LIMITER_MINMOD:
             *limited_slope = minmod(slope_L, slope_R);
             break;
-        case LIMITER_VAN_LEER:
+        case SLOPE_LIMITER_VAN_LEER:
             *limited_slope = van_leer(slope_L, slope_R);
             break;
-        case LIMITER_MONOTONIZED_CENTER:
-            *limited_slope = monotonized_center(slope_L, slope_R);
+        case SLOPE_LIMITER_MONOTONIZED_CENTRAL:
+            *limited_slope = monotonized_central(slope_L, slope_R);
             break;
         default:
             return WRAP_RAISE_ERROR(VALUE_ERROR, "Limiter not recognized.");
