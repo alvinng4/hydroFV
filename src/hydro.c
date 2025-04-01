@@ -109,38 +109,34 @@ IN_FILE ErrorStatus final_check(
     (void) simulation_status;
 
     /* Check number of ghost cells */
-    switch (integrator_param->reconstruction_flag_)
+    switch (integrator_param->integrator_flag_)
     {
-        case RECONSTRUCTION_PIECEWISE_CONSTANT:
+        case INTEGRATOR_RANDOM_CHOICE_1D:
+        case INTEGRATOR_GODUNOV_FIRST_ORDER_1D:
+        case INTEGRATOR_GODUNOV_FIRST_ORDER_2D:
+        case INTEGRATOR_GODUNOV_FIRST_ORDER_3D:
             if (system->num_ghost_cells_side < 1)
             {
                 error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Number of ghost cells must be at least 1.");
                 goto error;
             }
             break;
-        case RECONSTRUCTION_PIECEWISE_LINEAR:
+        case INTEGRATOR_MUSCL_HANCOCK_1D:
             if (system->num_ghost_cells_side < 2)
             {
                 error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Number of ghost cells must be at least 2.");
                 goto error;
             }
             break;
-        case RECONSTRUCTION_PIECEWISE_PARABOLIC:
-            if (system->num_ghost_cells_side < 3)
-            {
-                error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Number of ghost cells must be at least 3.");
-                goto error;
-            }
-            break;
         default:
-            error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Reconstruction flag not recognized.");
+            error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Integrator flag not recognized.");
             goto error;
     }
 
     /* Check coordinate system */
     switch (integrator_param->integrator_flag_)
     {
-        case INTEGRATOR_RANDOM_CHOICE_1D: case INTEGRATOR_GODUNOV_FIRST_ORDER_1D:
+        case INTEGRATOR_RANDOM_CHOICE_1D: case INTEGRATOR_GODUNOV_FIRST_ORDER_1D: case INTEGRATOR_MUSCL_HANCOCK_1D:
             if (
                 system->coord_sys_flag_ != COORD_SYS_CARTESIAN_1D
                 && system->coord_sys_flag_ != COORD_SYS_CYLINDRICAL_1D

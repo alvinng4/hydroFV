@@ -33,14 +33,14 @@ set(
     hydro.c
     hydro_time.c
     integrator_random_choice_1d.c
-    integrator_godunov_first_order_1d.c
-    integrator_godunov_first_order_2d.c
+    integrator_godunov_first_order.c
+    integrator_muscl_hancock.c
     integrator.c
     progress_bar.c
-    reconstruction.c
     riemann_solver_exact.c
     riemann_solver_hllc.c
     riemann_solver.c
+    slope_limiter.c
     source_term.c
     storing.c
     system.c

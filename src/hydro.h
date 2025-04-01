@@ -22,11 +22,11 @@
 /* Integrators */
 #include "integrator.h"
 
-/* Reconstruction */
-#include "reconstruction.h"
-
 /* Riemann solver */
 #include "riemann_solver.h"
+
+/* Slope limiter */
+#include "slope_limiter.h"
 
 /* Definitions for storing simulation data */
 #include "storing.h"
