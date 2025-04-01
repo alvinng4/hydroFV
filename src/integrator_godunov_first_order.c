@@ -516,6 +516,17 @@ ErrorStatus godunov_first_order_2d(
             goto err_set_boundary_condition;
         }
 
+        /* Add gravity source term */
+        error_status = add_gravity_source_term_2d(
+            boundary_condition_param,
+            system,
+            dt
+        );
+        if (error_status.return_code != SUCCESS)
+        {
+            goto err_gravity_source_term;
+        }
+
         (*t_ptr) += dt;
         (*num_steps_ptr)++;
 
@@ -543,6 +554,7 @@ ErrorStatus godunov_first_order_2d(
     return make_success_error_status();
 
 err_store_snapshot:
+err_gravity_source_term:
 err_set_boundary_condition:
 err_convert_conserved_to_primitive:
 err_solve_flux_y:

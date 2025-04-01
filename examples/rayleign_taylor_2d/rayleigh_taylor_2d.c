@@ -2,7 +2,6 @@
 #include <stdio.h>
 
 #include "hydro.h"
-#include "hydro_time.h"
 
 #define RIEMANN_SOLVER "riemann_solver_hllc"
 #define COORD_SYS "cartesian_2d"
@@ -11,10 +10,8 @@
 #define NUM_GHOST_CELLS_SIDE 3
 #define NUM_CELLS_X NUM_TOTAL_CELLS_X - 2 * NUM_GHOST_CELLS_SIDE
 #define NUM_CELLS_Y NUM_TOTAL_CELLS_Y - 2 * NUM_GHOST_CELLS_SIDE
-#define INTEGRATOR "godunov_first_order_2d"
-#define RECONSTRUCTION "piecewise_parabolic" // "piecewise_constant", "piecewise_linear" or "piecewise_parabolic"
-#define LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
-#define TIME_INTEGRATOR "ssp_rk3" // "euler", "ssp_rk2" or "ssp_rk3"
+#define INTEGRATOR "muscl_hancock_2d" // "muscl_hancock_2d" or "godunov_first_order_2d"
+#define SLOPE_LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
 
 #define CFL 0.5
 #define TF 20.0
@@ -146,9 +143,7 @@ int main(void)
     IntegratorParam integrator_param = get_new_integrator_param();
     integrator_param.integrator = INTEGRATOR;
     integrator_param.riemann_solver = RIEMANN_SOLVER;
-    integrator_param.reconstruction = RECONSTRUCTION;
-    integrator_param.reconstruction_limiter = LIMITER;
-    integrator_param.time_integrator = TIME_INTEGRATOR;
+    integrator_param.slope_limiter = SLOPE_LIMITER;
     integrator_param.cfl = CFL;
 
     /* Storing parameters */
