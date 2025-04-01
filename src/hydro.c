@@ -122,6 +122,7 @@ IN_FILE ErrorStatus final_check(
             }
             break;
         case INTEGRATOR_MUSCL_HANCOCK_1D:
+        case INTEGRATOR_MUSCL_HANCOCK_2D:
             if (system->num_ghost_cells_side < 2)
             {
                 error_status = WRAP_RAISE_ERROR(VALUE_ERROR, "Number of ghost cells must be at least 2.");
@@ -136,7 +137,9 @@ IN_FILE ErrorStatus final_check(
     /* Check coordinate system */
     switch (integrator_param->integrator_flag_)
     {
-        case INTEGRATOR_RANDOM_CHOICE_1D: case INTEGRATOR_GODUNOV_FIRST_ORDER_1D: case INTEGRATOR_MUSCL_HANCOCK_1D:
+        case INTEGRATOR_RANDOM_CHOICE_1D:
+        case INTEGRATOR_GODUNOV_FIRST_ORDER_1D:
+        case INTEGRATOR_MUSCL_HANCOCK_1D:
             if (
                 system->coord_sys_flag_ != COORD_SYS_CARTESIAN_1D
                 && system->coord_sys_flag_ != COORD_SYS_CYLINDRICAL_1D
@@ -168,6 +171,7 @@ IN_FILE ErrorStatus final_check(
             }
             break;
         case INTEGRATOR_GODUNOV_FIRST_ORDER_2D:
+        case INTEGRATOR_MUSCL_HANCOCK_2D:
             if (system->coord_sys_flag_ != COORD_SYS_CARTESIAN_2D)
             {
                 size_t error_message_size = (

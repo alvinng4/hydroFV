@@ -53,6 +53,10 @@ IN_FILE ErrorStatus get_integrator_flag(IntegratorParam *__restrict integrator_p
     {
         integrator_param->integrator_flag_ = INTEGRATOR_MUSCL_HANCOCK_1D;
     }
+    else if (strcmp(integrator_param->integrator, "muscl_hancock_2d") == 0)
+    {
+        integrator_param->integrator_flag_ = INTEGRATOR_MUSCL_HANCOCK_2D;
+    }
     else
     {
         return WRAP_RAISE_ERROR(VALUE_ERROR, "Integrator not recognized.");
@@ -127,6 +131,10 @@ ErrorStatus integrator_launch_simulation(
             ));
         case INTEGRATOR_MUSCL_HANCOCK_1D:
             return WRAP_TRACEBACK(muscl_hancock_1d(
+                boundary_condition_param, system, integrator_param, storing_param, settings, simulation_param, simulation_status
+            ));
+        case INTEGRATOR_MUSCL_HANCOCK_2D:
+            return WRAP_TRACEBACK(muscl_hancock_2d(
                 boundary_condition_param, system, integrator_param, storing_param, settings, simulation_param, simulation_status
             ));
         default:

@@ -288,7 +288,7 @@ ErrorStatus godunov_first_order_2d(
         snprintf(
             error_message,
             error_message_size,
-            "Wrong coordinate system. Supported coordinate system: \"cartesian_1d\", got: \"%s\"",
+            "Wrong coordinate system. Supported coordinate system: \"cartesian_2d\", got: \"%s\"",
             system->coord_sys
         );
         error_status = WRAP_RAISE_ERROR(VALUE_ERROR, error_message);
@@ -392,18 +392,18 @@ ErrorStatus godunov_first_order_2d(
             for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
             {
                 /* x-direction */
-                double flux_mass_x;
-                double flux_momentum_x_x;
-                double flux_momentum_x_y;
-                double flux_energy_x;
+                double flux_mass;
+                double flux_momentum_x;
+                double flux_momentum_y;
+                double flux_energy;
 
                 local_error_status = WRAP_TRACEBACK(solve_flux_2d(
                     integrator_param,
                     settings,
-                    &flux_mass_x,
-                    &flux_momentum_x_x,
-                    &flux_momentum_x_y,
-                    &flux_energy_x,
+                    &flux_mass,
+                    &flux_momentum_x,
+                    &flux_momentum_y,
+                    &flux_energy,
                     gamma,
                     density[j * total_num_cells_x + (i - 1)],
                     velocity_x[j * total_num_cells_x + (i - 1)],
@@ -426,15 +426,15 @@ ErrorStatus godunov_first_order_2d(
 #endif
                 }
 
-                mass[j * total_num_cells_x + (i - 1)] -= dt * flux_mass_x * surface_area_x[i - 1];
-                momentum_x[j * total_num_cells_x + (i - 1)] -= dt * flux_momentum_x_x * surface_area_x[i - 1];
-                momentum_y[j * total_num_cells_x + (i - 1)] -= dt * flux_momentum_x_y * surface_area_x[i - 1];
-                energy[j * total_num_cells_x + (i - 1)] -= dt * flux_energy_x * surface_area_x[i - 1];
+                mass[j * total_num_cells_x + (i - 1)] -= dt * flux_mass * surface_area_x[i - 1];
+                momentum_x[j * total_num_cells_x + (i - 1)] -= dt * flux_momentum_x * surface_area_x[i - 1];
+                momentum_y[j * total_num_cells_x + (i - 1)] -= dt * flux_momentum_y * surface_area_x[i - 1];
+                energy[j * total_num_cells_x + (i - 1)] -= dt * flux_energy * surface_area_x[i - 1];
 
-                mass[j * total_num_cells_x + i] += dt * flux_mass_x * surface_area_x[i];
-                momentum_x[j * total_num_cells_x + i] += dt * flux_momentum_x_x * surface_area_x[i];
-                momentum_y[j * total_num_cells_x + i] += dt * flux_momentum_x_y * surface_area_x[i];
-                energy[j * total_num_cells_x + i] += dt * flux_energy_x * surface_area_x[i];
+                mass[j * total_num_cells_x + i] += dt * flux_mass * surface_area_x[i];
+                momentum_x[j * total_num_cells_x + i] += dt * flux_momentum_x * surface_area_x[i];
+                momentum_y[j * total_num_cells_x + i] += dt * flux_momentum_y * surface_area_x[i];
+                energy[j * total_num_cells_x + i] += dt * flux_energy * surface_area_x[i];
             }
         }
 
@@ -453,18 +453,18 @@ ErrorStatus godunov_first_order_2d(
             for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_interfaces_y); j++)
             {
                 /* y-direction */
-                double flux_mass_y;
-                double flux_momentum_y_x;
-                double flux_momentum_y_y;
-                double flux_energy_y;
+                double flux_mass;
+                double flux_momentum_x;
+                double flux_momentum_y;
+                double flux_energy;
                 
                 local_error_status = WRAP_TRACEBACK(solve_flux_2d(
                     integrator_param,
                     settings,
-                    &flux_mass_y,
-                    &flux_momentum_y_y,
-                    &flux_momentum_y_x,
-                    &flux_energy_y,
+                    &flux_mass,
+                    &flux_momentum_y,
+                    &flux_momentum_x,
+                    &flux_energy,
                     gamma,
                     density[(j - 1) * total_num_cells_x + i],
                     velocity_y[(j - 1) * total_num_cells_x + i],
@@ -488,15 +488,15 @@ ErrorStatus godunov_first_order_2d(
 #endif
                 }
 
-                mass[(j - 1) * total_num_cells_x + i] -= dt * flux_mass_y * surface_area_y[j - 1];
-                momentum_x[(j - 1) * total_num_cells_x + i] -= dt * flux_momentum_y_x * surface_area_y[j - 1];
-                momentum_y[(j - 1) * total_num_cells_x + i] -= dt * flux_momentum_y_y * surface_area_y[j - 1];
-                energy[(j - 1) * total_num_cells_x + i] -= dt * flux_energy_y * surface_area_y[j - 1];
+                mass[(j - 1) * total_num_cells_x + i] -= dt * flux_mass * surface_area_y[j - 1];
+                momentum_x[(j - 1) * total_num_cells_x + i] -= dt * flux_momentum_x * surface_area_y[j - 1];
+                momentum_y[(j - 1) * total_num_cells_x + i] -= dt * flux_momentum_y * surface_area_y[j - 1];
+                energy[(j - 1) * total_num_cells_x + i] -= dt * flux_energy * surface_area_y[j - 1];
 
-                mass[j * total_num_cells_x + i] += dt * flux_mass_y * surface_area_y[j];
-                momentum_x[j * total_num_cells_x + i] += dt * flux_momentum_y_x * surface_area_y[j];
-                momentum_y[j * total_num_cells_x + i] += dt * flux_momentum_y_y * surface_area_y[j];
-                energy[j * total_num_cells_x + i] += dt * flux_energy_y * surface_area_y[j];
+                mass[j * total_num_cells_x + i] += dt * flux_mass * surface_area_y[j];
+                momentum_x[j * total_num_cells_x + i] += dt * flux_momentum_x * surface_area_y[j];
+                momentum_y[j * total_num_cells_x + i] += dt * flux_momentum_y * surface_area_y[j];
+                energy[j * total_num_cells_x + i] += dt * flux_energy * surface_area_y[j];
             }
         }
 

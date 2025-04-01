@@ -19,11 +19,7 @@
 #define INTEGRATOR_GODUNOV_FIRST_ORDER_2D 3
 #define INTEGRATOR_GODUNOV_FIRST_ORDER_3D 4
 #define INTEGRATOR_MUSCL_HANCOCK_1D 5
-
-#define TIME_INTEGRATOR_EULER 1
-#define TIME_INTEGRATOR_SSP_RK2 2
-#define TIME_INTEGRATOR_SSP_RK3 3
-
+#define INTEGRATOR_MUSCL_HANCOCK_2D 6
 
 /**
  * \brief Get uninitialized integrator parameters struct.
@@ -88,7 +84,7 @@ ErrorStatus random_choice_1d(
 );
 
 /**
- * \brief First-order Godunov scheme for the 1D Euler equations.
+ * \brief Godunov first-order upwind scheme for the 1D Euler equations.
  * 
  * \param boundary_condition_param Pointer to the boundary condition parameters.
  * \param system Pointer to the hydrodynamic system.
@@ -111,7 +107,7 @@ ErrorStatus godunov_first_order_1d(
 );
 
 /**
- * \brief First-order Godunov scheme for the 2D Euler equations.
+ * \brief Godunov first order upwind scheme for the 2D Euler equations.
  * 
  * \param boundary_condition_param Pointer to the boundary condition parameters.
  * \param system Pointer to the hydrodynamic system.
@@ -134,7 +130,7 @@ ErrorStatus godunov_first_order_2d(
 );
 
 /**
- * \brief Piecewise parabolic method for the 1D Euler equations.
+ * \brief MUSCL-Hancock scheme for the 1D Euler equations.
  * 
  * \param boundary_condition_param Pointer to the boundary condition parameters.
  * \param system Pointer to the hydrodynamic system.
@@ -147,6 +143,29 @@ ErrorStatus godunov_first_order_2d(
  * \return Error status.
  */
 ErrorStatus muscl_hancock_1d(
+    BoundaryConditionParam *__restrict boundary_condition_param,
+    System *__restrict system,
+    IntegratorParam *__restrict integrator_param,
+    StoringParam *__restrict storing_param,
+    Settings *__restrict settings,
+    SimulationParam *__restrict simulation_param,
+    SimulationStatus *__restrict simulation_status
+);
+
+/**
+ * \brief MUSCL-Hancock scheme for the 2D Euler equations.
+ * 
+ * \param boundary_condition_param Pointer to the boundary condition parameters.
+ * \param system Pointer to the hydrodynamic system.
+ * \param integrator_param Pointer to the integrator parameters.
+ * \param storing_param Pointer to the storing parameters.
+ * \param settings Pointer to the settings.
+ * \param simulation_param Pointer to the simulation parameters.
+ * \param simulation_status Pointer to the simulation status.
+ * 
+ * \return Error status.
+ */
+ErrorStatus muscl_hancock_2d(
     BoundaryConditionParam *__restrict boundary_condition_param,
     System *__restrict system,
     IntegratorParam *__restrict integrator_param,
