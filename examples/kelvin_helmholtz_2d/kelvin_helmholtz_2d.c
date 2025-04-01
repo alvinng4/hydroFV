@@ -5,30 +5,31 @@
  *        based on McNally et al., 2012, ApJ, 201, 18.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-25
+ * \date April 2025
  */
 
 #include <math.h>
 #include <stdio.h>
 
 #include "hydro.h"
-#include "hydro_time.h"
 
 #define RIEMANN_SOLVER "riemann_solver_hllc"
 #define COORD_SYS "cartesian_2d"
-#define NUM_TOTAL_CELLS_X 512
-#define NUM_TOTAL_CELLS_Y 512
-#define NUM_GHOST_CELLS_SIDE 3
+#define NUM_TOTAL_CELLS_X 256
+#define NUM_TOTAL_CELLS_Y 256
+#define NUM_GHOST_CELLS_SIDE 2
 #define NUM_CELLS_X NUM_TOTAL_CELLS_X - 2 * NUM_GHOST_CELLS_SIDE
 #define NUM_CELLS_Y NUM_TOTAL_CELLS_Y - 2 * NUM_GHOST_CELLS_SIDE
-#define INTEGRATOR "godunov_first_order_2d"
-#define RECONSTRUCTION "piecewise_linear" // "piecewise_constant", "piecewise_linear" or "piecewise_parabolic"
-#define LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
-#define TIME_INTEGRATOR "ssp_rk2" // "euler", "ssp_rk2" or "ssp_rk3"
+#define INTEGRATOR "muscl_hancock_2d" // "muscl_hancock_2d" or "godunov_first_order_2d"
+#define SLOPE_LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
 
-#define CFL 1.0
+#define CFL 0.4
 #define TF 20.0
 #define TOL 1e-6 // For the riemann solver
+
+#define STORE_INITIAL true
+#define STORING_INTERVAL 0.02
+#define OUTPUT_DIR "snapshots/"
 
 /* Parameters */
 #define GAMMA 5.0 / 3.0
@@ -163,17 +164,15 @@ int main(void)
     IntegratorParam integrator_param = get_new_integrator_param();
     integrator_param.integrator = INTEGRATOR;
     integrator_param.riemann_solver = RIEMANN_SOLVER;
-    integrator_param.reconstruction = RECONSTRUCTION;
-    integrator_param.reconstruction_limiter = LIMITER;
-    integrator_param.time_integrator = TIME_INTEGRATOR;
+    integrator_param.slope_limiter = SLOPE_LIMITER;
     integrator_param.cfl = CFL;
 
     /* Storing parameters */
     StoringParam storing_param = get_new_storing_param();
     storing_param.is_storing = true;
-    storing_param.store_initial = true;
-    storing_param.storing_interval = 0.02;
-    storing_param.output_dir = "snapshots/";
+    storing_param.store_initial = STORE_INITIAL;
+    storing_param.storing_interval = STORING_INTERVAL;
+    storing_param.output_dir = OUTPUT_DIR;
 
     /* Settings */
     Settings settings = {
