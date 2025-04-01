@@ -5,7 +5,7 @@
 #define RIEMANN_SOLVER "riemann_solver_hllc" // "riemann_solver_exact" or "riemann_solver_hllc"
 #define COORD_SYS "cartesian_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
 #define NUM_TOTAL_CELLS 64
-#define NUM_GHOST_CELLS_SIDE 3
+#define NUM_GHOST_CELLS_SIDE 2
 #define NUM_CELLS NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
 #define INTEGRATOR "muscl_hancock_1d" // "muscl_hancock_1d", "godunov_first_order_1d" or "random_choice_1d"
 #define SLOPE_LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
