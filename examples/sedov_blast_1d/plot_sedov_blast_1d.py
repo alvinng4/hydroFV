@@ -2,14 +2,14 @@
 Plot the result of Sedov-Taylor blast test
 
 Usage:
-    python plot_sedov_blast.py
+    python plot_sedov_blast_1d.py
 
 Reference:
     J. R. Kamm and F. X. Timmes, On Efficient Generation of Numerically Robust Sedov Solutions, LANL Report,
     No. LA-UR-07-2849 (2007).
 
 Author: Ching-Yin Ng
-Date: 2025-03-11
+Date: Aprl 2025
 """
 
 from pathlib import Path
@@ -21,7 +21,7 @@ import numpy as np
 IS_PLOT_REFERENCE_SOL = True
 RESULT_PATH = Path(__file__).parent / "snapshots/snapshot_0.h5"
 
-MARKER_SIZE = 4
+MARKER_SIZE = 3
 
 RHO_0 = 1.0
 U_0 = 0.0
@@ -50,15 +50,15 @@ def main() -> None:
         axs[1].plot(x_sol, u_sol, "r-")
         axs[2].plot(x_sol, p_sol, "r-")
 
-    axs[0].plot(mid_points, density, "k.", markersize=1)
+    axs[0].plot(mid_points, density, "kx-", markersize=MARKER_SIZE, linewidth=1)
     axs[0].set_xlabel("Position")
     axs[0].set_ylabel("Density")
 
-    axs[1].plot(mid_points, velocity, "k.", markersize=1)
+    axs[1].plot(mid_points, velocity, "kx-", markersize=MARKER_SIZE, linewidth=1)
     axs[1].set_xlabel("Position")
     axs[1].set_ylabel("Velocity")
 
-    axs[2].plot(mid_points, pressure, "k.", markersize=1)
+    axs[2].plot(mid_points, pressure, "kx-", markersize=MARKER_SIZE, linewidth=1)
     axs[2].set_xlabel("Position")
     axs[2].set_ylabel("Pressure")
 

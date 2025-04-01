@@ -1,24 +1,26 @@
 #include <stdio.h>
 
 #include "hydro.h"
-#include "hydro_time.h"
 
 #define RIEMANN_SOLVER "riemann_solver_hllc" // "riemann_solver_exact" or "riemann_solver_hllc"
-#define COORD_SYS "spherical_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
-#define NUM_TOTAL_CELLS 128
-#define NUM_GHOST_CELLS_SIDE 3
+#define COORD_SYS "cylindrical_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
+#define NUM_TOTAL_CELLS 64
+#define NUM_GHOST_CELLS_SIDE 2
 #define NUM_CELLS NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
-#define INTEGRATOR "godunov_first_order_1d" // "godunov_first_order_1d" or "random_choice_1d"
-#define RECONSTRUCTION "piecewise_parabolic" // "piecewise_constant", "piecewise_linear" or "piecewise_parabolic"
-#define LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
-#define TIME_INTEGRATOR "ssp_rk3" // "euler", "ssp_rk2" or "ssp_rk3"
+#define INTEGRATOR "muscl_hancock_1d" // "muscl_hancock_1d", "godunov_first_order_1d" or "random_choice_1d"
+#define SLOPE_LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
 
 #define CFL 0.4
 #define TF 1.0
 #define TOL 1e-6 // For the riemann solver
 
-/* Sedov Blast parameters */
-#define NUM_EXPLOSION_CELLS 12
+#define IS_STORING true
+#define IS_STORING_INITIAL false
+#define STORING_INTERVAL TF // Only store the final snapshot
+#define OUTPUT_DIR "snapshots/"
+
+/* Sod shock parameters */
+#define NUM_EXPLOSION_CELLS 3
 
 #define GAMMA 1.4
 #define RHO_0 1.0
@@ -105,9 +107,6 @@ int main(void)
 {
     ErrorStatus error_status;
 
-    /* Boundary conditions */
-    BoundaryConditionParam boundary_condition_param = get_new_boundary_condition_param();
-
     /* System parameters */
     System system = get_new_system_struct();
     system.coord_sys = COORD_SYS;
@@ -123,6 +122,11 @@ int main(void)
         goto error;
     }
 
+    /* Boundary conditions */
+    BoundaryConditionParam boundary_condition_param = get_new_boundary_condition_param();
+    boundary_condition_param.boundary_condition_x_min = LEFT_BOUNDARY_CONDITION;
+    boundary_condition_param.boundary_condition_x_max = RIGHT_BOUNDARY_CONDITION;
+
     error_status = WRAP_TRACEBACK(get_initial_system(&boundary_condition_param, &system));
     if (error_status.return_code != SUCCESS)
     {
@@ -133,17 +137,15 @@ int main(void)
     IntegratorParam integrator_param = get_new_integrator_param();
     integrator_param.integrator = INTEGRATOR;
     integrator_param.riemann_solver = RIEMANN_SOLVER;
-    integrator_param.reconstruction = RECONSTRUCTION;
-    integrator_param.reconstruction_limiter = LIMITER;
-    integrator_param.time_integrator = TIME_INTEGRATOR;
+    integrator_param.slope_limiter = SLOPE_LIMITER;
     integrator_param.cfl = CFL;
 
     /* Storing parameters */
     StoringParam storing_param = get_new_storing_param();
-    storing_param.is_storing = true;
-    storing_param.store_initial = false;
-    storing_param.storing_interval = TF; // Only store the final snapshot
-    storing_param.output_dir = "snapshots/";
+    storing_param.is_storing = IS_STORING;
+    storing_param.store_initial = IS_STORING_INITIAL;
+    storing_param.storing_interval = STORING_INTERVAL;
+    storing_param.output_dir = OUTPUT_DIR;
 
     /* Settings */
     Settings settings = {
