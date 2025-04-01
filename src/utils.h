@@ -1,16 +1,24 @@
 /**
  * \file utils.h
  * 
- * \brief Header file for utility functions for the hydrodynamics simulation.
+ * \brief Utility functions for the hydrodynamics simulation.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-11
+ * \date April 2025
  */
 
 #ifndef UTILS_H
 #define UTILS_H
 
 #include "hydro.h"
+
+
+/**
+ * \brief Get current time as a decimal number of seconds using clock_gettime(CLOCK_MONOTONIC, )
+ * 
+ * \return Current time as a decimal number of seconds
+ */
+double hydro_get_current_time(void);
 
 /**
  * \brief Compute the sound speed corresponding to the given density and pressure.

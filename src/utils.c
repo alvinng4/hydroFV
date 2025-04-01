@@ -1,15 +1,24 @@
 /**
  * \file utils.c
  * 
- * \brief Utility functions for the hydrodynamics simulation.
+ * \brief Utility function definitions for the hydrodynamics simulation.
  * 
  * \author Ching-Yin Ng
- * \date 2025-03-11
+ * \date April 2025
  */
 
 #include <math.h>
+#include <sys/time.h>
 
 #include "hydro.h"
+
+
+double hydro_get_current_time(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double) ts.tv_sec + (double) ts.tv_nsec / 1.0e9;
+}
 
 double get_sound_speed(const double gamma, const double rho, const double p)
 {

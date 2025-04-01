@@ -34,6 +34,8 @@
 /* Definitions related to the hydrodynamic system */
 #include "system.h"
 
+/* Utilities */
+#include "utils.h"
 
 /**
  * \brief Launch the hydrodynamics simulation.

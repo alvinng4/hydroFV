@@ -31,7 +31,6 @@ set(
     boundary.c
     error.c
     hydro.c
-    hydro_time.c
     integrator_random_choice_1d.c
     integrator_godunov_first_order.c
     integrator_muscl_hancock.c

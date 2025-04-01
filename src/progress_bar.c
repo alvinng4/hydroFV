@@ -11,7 +11,6 @@
 #include <stdio.h>
 
 #include "hydro.h"
-#include "hydro_time.h"
 #include "progress_bar.h"
 
 #define PROGRESS_BAR_LENGTH 40
