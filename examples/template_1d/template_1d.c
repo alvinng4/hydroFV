@@ -8,7 +8,7 @@
 #define NUM_GHOST_CELLS_SIDE 2
 #define NUM_CELLS NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
 #define INTEGRATOR "muscl_hancock_1d" // "muscl_hancock_1d", "godunov_first_order_1d" or "random_choice_1d"
-#define SLOPE_LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
+#define SLOPE_LIMITER "monotonized_central" // "minmod", "van_leer" or "monotonized_central"
 
 #define CFL 0.9
 #define TF 0.2

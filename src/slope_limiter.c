@@ -34,7 +34,7 @@ ErrorStatus get_slope_limiter_flag(
     {
         integrator_param->slope_limiter_flag_ = SLOPE_LIMITER_VAN_LEER;
     }
-    else if (strcmp(integrator_param->slope_limiter, "monotonized_center") == 0)
+    else if (strcmp(integrator_param->slope_limiter, "monotonized_central") == 0)
     {
         integrator_param->slope_limiter_flag_ = SLOPE_LIMITER_MONOTONIZED_CENTRAL;
     }

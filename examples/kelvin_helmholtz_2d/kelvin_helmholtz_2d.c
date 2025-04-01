@@ -21,7 +21,7 @@
 #define NUM_CELLS_X NUM_TOTAL_CELLS_X - 2 * NUM_GHOST_CELLS_SIDE
 #define NUM_CELLS_Y NUM_TOTAL_CELLS_Y - 2 * NUM_GHOST_CELLS_SIDE
 #define INTEGRATOR "muscl_hancock_2d" // "muscl_hancock_2d" or "godunov_first_order_2d"
-#define SLOPE_LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
+#define SLOPE_LIMITER "monotonized_central" // "minmod", "van_leer" or "monotonized_central"
 
 #define CFL 0.4
 #define TF 20.0
