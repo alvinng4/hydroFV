@@ -1,21 +1,23 @@
 #include <stdio.h>
 
 #include "hydro.h"
-#include "hydro_time.h"
 
-#define RIEMANN_SOLVER "riemann_solver_exact" // "riemann_solver_exact" or "riemann_solver_hllc"
+#define RIEMANN_SOLVER "riemann_solver_hllc" // "riemann_solver_exact" or "riemann_solver_hllc"
 #define COORD_SYS "cartesian_1d" // "cartesian_1d", "cylindrical_1d" or "spherical_1d"
 #define NUM_TOTAL_CELLS 64
 #define NUM_GHOST_CELLS_SIDE 3
 #define NUM_CELLS NUM_TOTAL_CELLS - 2 * NUM_GHOST_CELLS_SIDE
-#define INTEGRATOR "godunov_first_order_1d" // "godunov_first_order_1d" or "random_choice_1d"
-#define RECONSTRUCTION "piecewise_parabolic" // "piecewise_constant", "piecewise_linear" or "piecewise_parabolic"
-#define LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
-#define TIME_INTEGRATOR "ssp_rk3" // "euler", "ssp_rk2" or "ssp_rk3"
+#define INTEGRATOR "muscl_hancock_1d" // "muscl_hancock_1d", "godunov_first_order_1d" or "random_choice_1d"
+#define SLOPE_LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
 
-#define CFL 1.0
+#define CFL 0.9
 #define TF 0.2
 #define TOL 1e-6 // For the riemann solver
+
+#define IS_STORING true
+#define IS_STORING_INITIAL false
+#define STORING_INTERVAL TF // Only store the final snapshot
+#define OUTPUT_DIR "snapshots_muscl_hancock/"
 
 /* Sod shock parameters */
 #define GAMMA 1.4
@@ -26,8 +28,8 @@
 #define U_R 0.0
 #define P_R 0.1
 #define DISCONTINUITY_POS 0.5
-#define LEFT_BOUNDARY_CONDITION "transmissive"
-#define RIGHT_BOUNDARY_CONDITION "transmissive"
+#define LEFT_BOUNDARY_CONDITION "transmissive"  // "reflective", "transmissive", "periodic" or "custom"
+#define RIGHT_BOUNDARY_CONDITION "transmissive" // "reflective", "transmissive", "periodic" or "custom"
 #define DOMAIN_MIN 0.0
 #define DOMAIN_MAX 1.0
 
@@ -101,17 +103,15 @@ int main(void)
     IntegratorParam integrator_param = get_new_integrator_param();
     integrator_param.integrator = INTEGRATOR;
     integrator_param.riemann_solver = RIEMANN_SOLVER;
-    integrator_param.reconstruction = RECONSTRUCTION;
-    integrator_param.reconstruction_limiter = LIMITER;
-    integrator_param.time_integrator = TIME_INTEGRATOR;
+    integrator_param.slope_limiter = SLOPE_LIMITER;
     integrator_param.cfl = CFL;
 
     /* Storing parameters */
     StoringParam storing_param = get_new_storing_param();
-    storing_param.is_storing = true;
-    storing_param.store_initial = false;
-    storing_param.storing_interval = TF; // Only store the final snapshot
-    storing_param.output_dir = "snapshots/";
+    storing_param.is_storing = IS_STORING;
+    storing_param.store_initial = IS_STORING_INITIAL;
+    storing_param.storing_interval = STORING_INTERVAL;
+    storing_param.output_dir = OUTPUT_DIR;
 
     /* Settings */
     Settings settings = {
