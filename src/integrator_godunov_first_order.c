@@ -313,6 +313,8 @@ ErrorStatus godunov_first_order_2d(
     const int num_cells_x = system->num_cells_x;
     const int num_cells_y = system->num_cells_y;
     const int total_num_cells_x = num_cells_x + 2 * num_ghost_cells_side;
+    const int num_interfaces_x = num_cells_x + 1;
+    const int num_interfaces_y = num_cells_y + 1;
 
     /* Integrator parameters */
     const double cfl = integrator_param->cfl;
@@ -384,10 +386,10 @@ ErrorStatus godunov_first_order_2d(
 #ifdef USE_OPENMP
         #pragma omp parallel for
 #endif
-        for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x + 1); i++)
+        for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_interfaces_x); i++)
         {
             ErrorStatus local_error_status;
-            for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y + 1); j++)
+            for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
             {
                 /* x-direction */
                 double flux_mass_x;
@@ -445,10 +447,10 @@ ErrorStatus godunov_first_order_2d(
 #ifdef USE_OPENMP
         #pragma omp parallel for
 #endif
-        for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x + 1); i++)
+        for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x); i++)
         {
             ErrorStatus local_error_status;
-            for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y + 1); j++)
+            for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_interfaces_y); j++)
             {
                 /* y-direction */
                 double flux_mass_y;
