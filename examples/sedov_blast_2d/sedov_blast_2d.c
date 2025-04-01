@@ -2,7 +2,6 @@
 #include <stdio.h>
 
 #include "hydro.h"
-#include "hydro_time.h"
 
 #define RIEMANN_SOLVER "riemann_solver_hllc"
 #define COORD_SYS "cartesian_2d"
@@ -11,12 +10,10 @@
 #define NUM_GHOST_CELLS_SIDE 3
 #define NUM_CELLS_X NUM_TOTAL_CELLS_X - 2 * NUM_GHOST_CELLS_SIDE
 #define NUM_CELLS_Y NUM_TOTAL_CELLS_Y - 2 * NUM_GHOST_CELLS_SIDE
-#define INTEGRATOR "godunov_first_order_2d"
-#define RECONSTRUCTION "piecewise_parabolic" // "piecewise_constant", "piecewise_linear" or "piecewise_parabolic"
-#define LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
-#define TIME_INTEGRATOR "ssp_rk3" // "euler", "ssp_rk2" or "ssp_rk3"
+#define INTEGRATOR "muscl_hancock_2d" // "muscl_hancock_2d" or "godunov_first_order_2d"
+#define SLOPE_LIMITER "monotonized_center" // "minmod", "van_leer" or "monotonized_center"
 
-#define CFL 1.0
+#define CFL 0.4
 #define TF 1.0
 #define TOL 1e-6 // For the riemann solver
 
@@ -24,8 +21,6 @@
 #define STORING_INTERVAL 0.01
 
 /* Sedov Blast parameters */
-#define INITIAL_RADIUS 0.05
-
 #define GAMMA 1.4
 #define RHO_0 1.0
 #define U_0 0.0
@@ -85,31 +80,22 @@ IN_FILE ErrorStatus get_initial_system(
         return error_status;
     }
 
-    int num_explosion_cells = 0;
-    for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x); i++)
-    {
-        for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
-        {
-            if (sqrt(pow(system->mid_points_x_[i], 2) + pow(system->mid_points_y_[j], 2)) < INITIAL_RADIUS)
-            {
-                num_explosion_cells++;
-            }
-        }
-    }
-
-    printf("Number of explosion cells: %d\n", num_explosion_cells);
-
+    double min_radius = INFINITY;
+    int min_idx = -1;
     for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x); i++)
     {
         for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
         {
             const int idx = j * total_num_cells_x + i;
-            if (sqrt(pow(system->mid_points_x_[i], 2) + pow(system->mid_points_y_[j], 2)) < INITIAL_RADIUS)
+            const double radius = sqrt(pow(system->mid_points_x_[i], 2) + pow(system->mid_points_y_[j], 2));
+            if (radius < min_radius)
             {
-                system->energy_[idx] = E_0 / num_explosion_cells;
+                min_radius = radius;
+                min_idx = idx;
             }
         }
     }
+    system->energy_[min_idx] = E_0;
 
     error_status = WRAP_TRACEBACK(convert_conserved_to_primitive(system));
     if (error_status.return_code != SUCCESS)
@@ -160,9 +146,7 @@ int main(void)
     IntegratorParam integrator_param = get_new_integrator_param();
     integrator_param.integrator = INTEGRATOR;
     integrator_param.riemann_solver = RIEMANN_SOLVER;
-    integrator_param.reconstruction = RECONSTRUCTION;
-    integrator_param.reconstruction_limiter = LIMITER;
-    integrator_param.time_integrator = TIME_INTEGRATOR;
+    integrator_param.slope_limiter = SLOPE_LIMITER;
     integrator_param.cfl = CFL;
 
     /* Storing parameters */
