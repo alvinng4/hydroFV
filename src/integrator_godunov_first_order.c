@@ -386,10 +386,10 @@ ErrorStatus godunov_first_order_2d(
 #ifdef USE_OPENMP
         #pragma omp parallel for
 #endif
-        for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_interfaces_x); i++)
+        for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
         {
             ErrorStatus local_error_status;
-            for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
+            for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_interfaces_x); i++)
             {
                 /* x-direction */
                 double flux_mass;
