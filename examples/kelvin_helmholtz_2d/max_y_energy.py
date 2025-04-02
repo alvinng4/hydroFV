@@ -29,7 +29,7 @@ def main() -> None:
         "MHM $512^2$"
     ]
 
-    plt.figure()
+    plt.figure(figsize=(10, 4))
     for folder, label in zip(SNAPSHOT_FOLDERS, labels):
         snapshot_files = sorted(
             glob.glob(str(folder / "snapshot_*.h5")), key=natural_sort_key
@@ -65,7 +65,7 @@ def main() -> None:
 
     
     plt.xlabel("Time")
-    plt.ylabel("$\mathrm{max}(1 / 2 \rho v^2_y)$")
+    plt.ylabel(r"$\mathrm{max}\left(\frac{1}{2} \rho v^2_y \right)$")
 
     plt.xlim(0, 1.5)
 
