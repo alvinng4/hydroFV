@@ -80,7 +80,7 @@ IN_FILE double monotonized_central(const double a, const double b)
     {
         return 0.0;
     }
-    else if (a + b > 0)
+    else if (a > 0)
     {
         return fmin(0.5 * (a + b), 2.0 * fmin(fabs(a), fabs(b)));
     }
