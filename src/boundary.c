@@ -529,6 +529,9 @@ ErrorStatus set_boundary_condition_cartesian_2d(
         case BOUNDARY_CONDITION_NONE:
             break;
         case BOUNDARY_CONDITION_REFLECTIVE:
+#ifdef USE_OPENMP
+            #pragma omp parallel for
+#endif        
             for (int i = 0; i < num_ghost_cells_side; i++)
             {
                 for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
@@ -541,6 +544,9 @@ ErrorStatus set_boundary_condition_cartesian_2d(
             }
             break;
         case BOUNDARY_CONDITION_TRANSMISSIVE:
+#ifdef USE_OPENMP
+            #pragma omp parallel for
+#endif
             for (int i = 0; i < num_ghost_cells_side; i++)
             {
                 for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
@@ -576,6 +582,9 @@ ErrorStatus set_boundary_condition_cartesian_2d(
         case BOUNDARY_CONDITION_NONE:
             break;
         case BOUNDARY_CONDITION_REFLECTIVE:
+#ifdef USE_OPENMP
+        #pragma omp parallel for
+#endif        
             for (int i = 0; i < num_ghost_cells_side; i++)
             {
                 for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
@@ -588,6 +597,9 @@ ErrorStatus set_boundary_condition_cartesian_2d(
             }
             break;
         case BOUNDARY_CONDITION_TRANSMISSIVE:
+#ifdef USE_OPENMP
+            #pragma omp parallel for
+#endif
             for (int i = 0; i < num_ghost_cells_side; i++)
             {
                 for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
@@ -600,6 +612,9 @@ ErrorStatus set_boundary_condition_cartesian_2d(
             }
             break;
         case BOUNDARY_CONDITION_PERIODIC:
+#ifdef USE_OPENMP
+            #pragma omp parallel for
+#endif
             for (int i = 0; i < num_ghost_cells_side; i++)
             {
                 for (int j = num_ghost_cells_side; j < (num_ghost_cells_side + num_cells_y); j++)
@@ -637,6 +652,9 @@ ErrorStatus set_boundary_condition_cartesian_2d(
         case BOUNDARY_CONDITION_NONE:
             break;
         case BOUNDARY_CONDITION_REFLECTIVE:
+#ifdef USE_OPENMP
+            #pragma omp parallel for
+#endif
             for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x); i++)
             {
                 for (int j = 0; j < num_ghost_cells_side; j++)
@@ -649,6 +667,9 @@ ErrorStatus set_boundary_condition_cartesian_2d(
             }
             break;
         case BOUNDARY_CONDITION_TRANSMISSIVE:
+#ifdef USE_OPENMP
+            #pragma omp parallel for
+#endif
             for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x); i++)
             {
                 for (int j = 0; j < num_ghost_cells_side; j++)
@@ -684,6 +705,9 @@ ErrorStatus set_boundary_condition_cartesian_2d(
         case BOUNDARY_CONDITION_NONE:
             break;
         case BOUNDARY_CONDITION_REFLECTIVE:
+#ifdef USE_OPENMP
+            #pragma omp parallel for
+#endif
             for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x); i++)
             {
                 for (int j = 0; j < num_ghost_cells_side; j++)
@@ -696,6 +720,9 @@ ErrorStatus set_boundary_condition_cartesian_2d(
             }
             break;
         case BOUNDARY_CONDITION_TRANSMISSIVE:
+#ifdef USE_OPENMP
+            #pragma omp parallel for
+#endif
             for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x); i++)
             {
                 for (int j = 0; j < num_ghost_cells_side; j++)
@@ -708,6 +735,9 @@ ErrorStatus set_boundary_condition_cartesian_2d(
             }
             break;
         case BOUNDARY_CONDITION_PERIODIC:
+#ifdef USE_OPENMP
+            #pragma omp parallel for
+#endif
             for (int i = num_ghost_cells_side; i < (num_ghost_cells_side + num_cells_x); i++)
             {
                 for (int j = 0; j < num_ghost_cells_side; j++)
