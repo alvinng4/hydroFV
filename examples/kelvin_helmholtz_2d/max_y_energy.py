@@ -12,11 +12,11 @@ rc('text', usetex=True)  # Ensure LaTeX is installed and configured
 
 # Define the simulation folders.
 SNAPSHOT_FOLDERS = [
-    Path(__file__).parent / "snapshots_mode_first_order_256/",
-    Path(__file__).parent / "snapshots_mode_second_order_256/",
-    Path(__file__).parent / "snapshots_mode_second_order_512/",
+    Path(__file__).parent / "snapshots_godunov_256/",
+    Path(__file__).parent / "snapshots_mhm_256/",
+    Path(__file__).parent / "snapshots_mhm_512/",
 ]
-REFERENCE_PATH = Path(__file__).parent / "data.csv"
+REFERENCE_PATH = Path(__file__).parent / "max_y_energy_ref.csv"
 
 def natural_sort_key(s):
     """Sort strings with embedded numbers naturally."""
@@ -24,9 +24,9 @@ def natural_sort_key(s):
 
 def main() -> None:
     labels = [
-        "First-order $256^2$",
-        "Second-order $256^2$",
-        "Second-order $512^2$"
+        "Godunov $256^2$",
+        "MHM $256^2$",
+        "MHM $512^2$"
     ]
 
     plt.figure()
@@ -41,10 +41,6 @@ def main() -> None:
                 t = f["simulation_status/simulation_time"][()]
                 velocity_y = f["fields/velocity_y"][()]
                 density = f["fields/density"][()]
-                x_min = f["parameters/x_min"][()]
-                x_max = f["parameters/x_max"][()]
-                y_min = f["parameters/y_min"][()]
-                y_max = f["parameters/y_max"][()]
                 num_cells_x = f["parameters/num_cells_x"][()]
                 num_cells_y = f["parameters/num_cells_y"][()]
                 num_ghost_cells_side = f["parameters/num_ghost_cells_side"][()]

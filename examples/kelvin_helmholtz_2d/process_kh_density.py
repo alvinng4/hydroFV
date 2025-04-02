@@ -8,9 +8,9 @@ import numpy as np
 
 # Define the simulation folders.
 SNAPSHOT_FOLDERS = [
-    Path(__file__).parent / "snapshots_first_order_256/",
-    Path(__file__).parent / "snapshots_second_order_256/",
-    Path(__file__).parent / "snapshots_second_order_512/",
+    Path(__file__).parent / "snapshots_godunov_256/",
+    Path(__file__).parent / "snapshots_mhm_256/",
+    Path(__file__).parent / "snapshots_mhm_512/",
 ]
 
 def natural_sort_key(s):

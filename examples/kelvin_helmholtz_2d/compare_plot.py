@@ -15,18 +15,18 @@ VMAX=2.0
 # Parameters
 PROCESSED_FILES_FOLDER = "processed_files/"
 FILES = [
-    "snapshots_first_order_256_1.5.csv",
-    "snapshots_first_order_256_3.0.csv",
-    "snapshots_first_order_256_9.0.csv",
-    "snapshots_first_order_256_15.0.csv",
-    "snapshots_second_order_256_1.5.csv",
-    "snapshots_second_order_256_3.0.csv",
-    "snapshots_second_order_256_9.0.csv",
-    "snapshots_second_order_256_15.0.csv",
-    "snapshots_second_order_512_1.5.csv",
-    "snapshots_second_order_512_3.0.csv",
-    "snapshots_second_order_512_9.0.csv",
-    "snapshots_second_order_512_15.0.csv",
+    "snapshots_godunov_256_1.5.csv",
+    "snapshots_godunov_256_3.0.csv",
+    "snapshots_godunov_256_9.0.csv",
+    "snapshots_godunov_256_15.0.csv",
+    "snapshots_mhm_256_1.5.csv",
+    "snapshots_mhm_256_3.0.csv",
+    "snapshots_mhm_256_9.0.csv",
+    "snapshots_mhm_256_15.0.csv",
+    "snapshots_mhm_512_1.5.csv",
+    "snapshots_mhm_512_3.0.csv",
+    "snapshots_mhm_512_9.0.csv",
+    "snapshots_mhm_512_15.0.csv",
 ]
 colors = ["#145c8c", "#1f78b4", "#ffffff", "#e02225", "#821012"]
 cmap_name = "custom"
@@ -40,9 +40,9 @@ CMAP = custom_cmap
 fig, axs = plt.subplots(nrows=3, ncols=4, figsize=(9, 7))
 axs = axs.flatten()
 
-axs[0].set_ylabel("First Order $256^2$")
-axs[4].set_ylabel("Second Order $256^2$")
-axs[8].set_ylabel("Second Order $512^2$")
+axs[0].set_ylabel("Godunov $256^2$")
+axs[4].set_ylabel("MHM $256^2$")
+axs[8].set_ylabel("MHM $512^2$")
 
 axs[0].set_title("$t = 1.5$")
 axs[1].set_title("$t = 3.0$")
@@ -62,11 +62,11 @@ for ax, filename in zip(axs, FILES):
     
     # Determine grid dimensions based on filename resolution.
     if "256" in filename:
-        n_x = n_y = 250
+        n_x = n_y = 252
     elif "512" in filename:
-        n_x = n_y = 506
+        n_x = n_y = 508
     else:
-        n_x = n_y = 250  # fallback default
+        n_x = n_y = 252  # fallback default
 
     # Reshape density field assuming the CSV rows are ordered appropriately.
     density_grid = density.reshape((n_y, n_x))

@@ -14,12 +14,21 @@ from pathlib import Path
 import h5py
 import matplotlib.pyplot as plt
 import PIL
+from matplotlib.colors import LinearSegmentedColormap
 
 SNAPSHOT_FOLDER = Path(__file__).parent / "snapshots/"
 FRAME_FOLDER = Path(__file__).parent / "frames/"
 FILE_PATH = Path(__file__).parent / "kelvin_helmholtz_2d.gif"
 
 LENGTH = 35.0
+
+colors = ["#145c8c", "#1f78b4", "#ffffff", "#e02225", "#821012"]
+cmap_name = "custom"
+
+# Create the custom colormap
+custom_cmap = LinearSegmentedColormap.from_list(cmap_name, colors, N=256)
+CMAP = custom_cmap
+# CMAP='coolwarm'
 
 
 def main() -> None:
@@ -62,7 +71,7 @@ def main() -> None:
                 extent=(x_min, x_max, y_min, y_max),
                 vmin=1.0,
                 vmax=2.0,
-                cmap="coolwarm",
+                cmap=CMAP,
             )
             colorbar = plt.colorbar(ax.images[0], ax=ax, shrink=0.75)
             colorbar.set_label("Density")
