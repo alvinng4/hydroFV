@@ -2,6 +2,9 @@
 
 Finite volume hydrodynamics solver for the compressible Euler's equation.
 
+![Kelvin Helmholtz 2D](examples/figures/kelvin_helmholtz_2d.png)
+![Sedov blast wave 2D](examples/figures/sedov_blast_cartesian_2d_snapshots.png)
+
 ## Features
 - Coordinate systems:
     * Cartesian 1D, 2D
@@ -15,15 +18,8 @@ Finite volume hydrodynamics solver for the compressible Euler's equation.
 - Integrators:
     * Random choice 1D
     * Godunov first order upwind scheme
-
-- Extensions for Godunov scheme:
-    * Piecewise linear and piecewise parabolic reconstruction
-    * Minmod, Van Leer and Monotonized Central (MC) slope limiters
-    * SSP-RK2 and SSP-RK3 time integration
-
-- Todos:
-    * Piecewise linear and piecewise parabolic method with characteristic tracing
-    * Cartesian 3D coordinate system (easy to extend from 2d to 3d but time consuming)
+    * MUSCL-Hancock scheme
+        - With Minmod, Van Leer and Monotonized Central (MC) slope limiters
 
 ## Requirements
 Required:
@@ -38,11 +34,13 @@ Optional:
 ### Using CMake
 Take `examples/sod_shock_1d` as an example:
 ```
-cmake [-DUSE_OPENMP=ON] .
-cmake --build .
+mkdir build
+cd build
+cmake [-DUSE_OPENMP=ON] ..
+cmake --build . 
 ./sod_shock_1d
 ```
 where `USE_OPENMP` is an optional flag to enable OpenMP parallelization.
 
-## Sample usage
-Check the `examples` directory for sample usage.
+## Sample usage and templates
+Check the `examples` directory for sample usage and templates for 1D and 2D.
