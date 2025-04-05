@@ -2,9 +2,6 @@
 
 Finite volume hydrodynamics solver for the compressible Euler's equation.
 
-![Kelvin Helmholtz 2D](examples/figures/kelvin_helmholtz_2d.png)
-![Sedov blast wave 2D](examples/figures/sedov_blast_cartesian_2d_snapshots.png)
-
 ## Features
 - Coordinate systems:
     * Cartesian 1D, 2D
@@ -44,3 +41,6 @@ where `USE_OPENMP` is an optional flag to enable OpenMP parallelization.
 
 ## Sample usage and templates
 Check the `examples` directory for sample usage and templates for 1D and 2D.
+
+![Kelvin Helmholtz 2D](examples/figures/kelvin_helmholtz_2d.png)
+![Sedov blast wave 2D](examples/figures/sedov_blast_cartesian_2d_snapshots.png)
