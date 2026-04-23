@@ -24,18 +24,17 @@ Required:
 - HDF5 library for output
 
 Optional:
-- CMake
+- CMake (Needed if you want to compile examples)
 - OpenMP
 
 ## Compilation
 ### Using CMake
 Take `examples/sod_shock_1d` as an example:
 ```
-mkdir build
-cd build
-cmake [-DUSE_OPENMP=ON] ..
-cmake --build . 
-./sod_shock_1d
+cd examples/sod_shock_1d
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release [-DUSE_OPENMP=ON]
+cmake --build build --config Release
+./build/sod_shock_1d
 ```
 where `USE_OPENMP` is an optional flag to enable OpenMP parallelization.
 
